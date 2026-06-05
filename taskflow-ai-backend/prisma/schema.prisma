@@ -1,0 +1,247 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  ADMIN
+  MEMBER
+  VIEWER
+}
+
+enum TaskPriority {
+  Baja
+  Media
+  Alta
+  Critica
+  AlwaysOn
+}
+
+model User {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  name         String
+  initials     String   @db.VarChar(2)
+  color        String   @default("#6366f1")
+  passwordHash String
+  avatarUrl    String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  refreshTokens RefreshToken[]
+  memberships   WorkspaceMember[]
+  assignedTasks TaskAssignee[]
+  comments      Comment[]
+  activities    Activity[]
+  preferences   UserPreference?
+  notifications Notification[]
+}
+
+model RefreshToken {
+  id        String   @id @default(cuid())
+  token     String   @unique
+  userId    String
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Workspace {
+  id        String   @id @default(cuid())
+  name      String
+  slug      String   @unique
+  color     String   @default("#6366f1")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  members  WorkspaceMember[]
+  boards   Board[]
+  invites  WorkspaceInvite[]
+  settings WorkspaceSettings?
+  statuses WorkspaceStatus[]
+}
+
+model WorkspaceStatus {
+  id          String   @id @default(cuid())
+  workspaceId String
+  slug        String
+  label       String
+  color       String   @default("#c4c4c4")
+  position    Int      @default(0)
+  isDefault   Boolean  @default(false)
+  createdAt   DateTime @default(now())
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  @@unique([workspaceId, slug])
+}
+
+model WorkspaceMember {
+  id          String   @id @default(cuid())
+  workspaceId String
+  userId      String
+  role        Role     @default(MEMBER)
+  joinedAt    DateTime @default(now())
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([workspaceId, userId])
+}
+
+model WorkspaceInvite {
+  id          String    @id @default(cuid())
+  workspaceId String
+  email       String
+  role        Role      @default(MEMBER)
+  token       String    @unique @default(cuid())
+  expiresAt   DateTime
+  acceptedAt  DateTime?
+  createdAt   DateTime  @default(now())
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  @@unique([workspaceId, email])
+}
+
+model WorkspaceSettings {
+  id          String   @id @default(cuid())
+  workspaceId String   @unique
+  timezone    String   @default("America/Asuncion")
+  language    String   @default("es")
+  logoUrl     String?
+  updatedAt   DateTime @updatedAt
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+}
+
+model Board {
+  id          String   @id @default(cuid())
+  workspaceId String
+  name        String
+  description String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  workspace   Workspace      @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  groups      Group[]
+  automations Automation[]
+  settings    BoardSettings?
+}
+
+model BoardSettings {
+  id              String       @id @default(cuid())
+  boardId         String       @unique
+  defaultStatus   String       @default("Nuevo")
+  defaultPriority TaskPriority @default(Media)
+  updatedAt       DateTime     @updatedAt
+
+  board Board @relation(fields: [boardId], references: [id], onDelete: Cascade)
+}
+
+model Group {
+  id      String @id @default(cuid())
+  boardId String
+  name    String
+  color   String @default("#6366f1")
+  order   Int    @default(0)
+
+  board Board  @relation(fields: [boardId], references: [id], onDelete: Cascade)
+  tasks Task[]
+}
+
+model Task {
+  id          String       @id @default(cuid())
+  groupId     String
+  title       String
+  description String?
+  status      String       @default("Nuevo")
+  priority    TaskPriority @default(Media)
+  deadline    DateTime?
+  fileUrl     String?
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+
+  group      Group          @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  assignees  TaskAssignee[]
+  comments   Comment[]
+  activities Activity[]
+}
+
+model TaskAssignee {
+  taskId String
+  userId String
+
+  task Task @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([taskId, userId])
+}
+
+model Comment {
+  id        String   @id @default(cuid())
+  taskId    String
+  authorId  String
+  content   String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  task   Task @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  author User @relation(fields: [authorId], references: [id], onDelete: Cascade)
+}
+
+model Activity {
+  id        String   @id @default(cuid())
+  taskId    String
+  userId    String
+  action    String
+  metadata  Json?
+  createdAt DateTime @default(now())
+
+  task Task @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Automation {
+  id           String   @id @default(cuid())
+  boardId      String
+  name         String
+  triggerEvent String
+  actionType   String
+  config       Json     @default("{}")
+  enabled      Boolean  @default(true)
+  triggerCount Int      @default(0)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  board Board @relation(fields: [boardId], references: [id], onDelete: Cascade)
+}
+
+model Notification {
+  id        String   @id @default(cuid())
+  userId    String
+  title     String
+  body      String
+  taskId    String?
+  boardId   String?
+  read      Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model UserPreference {
+  id                 String   @id @default(cuid())
+  userId             String   @unique
+  theme              String   @default("light")
+  language           String   @default("es")
+  emailNotifications Boolean  @default(true)
+  updatedAt          DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
