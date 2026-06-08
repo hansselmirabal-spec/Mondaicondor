@@ -85,6 +85,13 @@ export async function sendAlertEmail(
   body: string,
   taskUrl?: string,
 ) {
+  // body format: "Task title" cambió de estado:\nDe → A\n\nPor: Nombre\nFecha: ...
+  const lines = body.split('\n').filter(Boolean)
+  const taskLine = lines[0] ?? ''
+  const changeLine = lines[1] ?? ''
+  const authorLine = lines[2]?.replace('Por: ', '') ?? ''
+  const dateLine = lines[3]?.replace('Fecha: ', '') ?? ''
+
   await transporter.sendMail({
     from: `"TaskFlow AI" <${process.env.SMTP_USER}>`,
     to,
@@ -104,7 +111,7 @@ export async function sendAlertEmail(
           <!-- Header -->
           <tr>
             <td style="background:linear-gradient(135deg,#1a1a2e,#292944);padding:32px 40px;text-align:center;">
-              <div style="display:inline-flex;align-items:center;gap:10px;">
+              <div style="display:inline-block;">
                 <div style="width:40px;height:40px;background:#2563eb;border-radius:10px;display:inline-block;vertical-align:middle;line-height:40px;text-align:center;">
                   <span style="color:#fff;font-size:20px;font-weight:bold;">⚡</span>
                 </div>
@@ -114,28 +121,47 @@ export async function sendAlertEmail(
           </tr>
           <!-- Alert banner -->
           <tr>
-            <td style="background:#fef3c7;border-bottom:3px solid #f59e0b;padding:16px 40px;">
-              <p style="margin:0;font-size:13px;font-weight:600;color:#92400e;letter-spacing:0.05em;text-transform:uppercase;">
+            <td style="background:#fef3c7;border-bottom:3px solid #f59e0b;padding:14px 40px;">
+              <p style="margin:0;font-size:12px;font-weight:700;color:#92400e;letter-spacing:0.06em;text-transform:uppercase;">
                 🔔 Alerta de automatización
               </p>
             </td>
           </tr>
           <!-- Body -->
           <tr>
-            <td style="padding:40px;">
-              <h1 style="margin:0 0 8px;font-size:20px;font-weight:700;color:#111827;">${title}</h1>
-              <p style="margin:0 0 24px;font-size:15px;color:#6b7280;">Hola <strong>${name}</strong>,</p>
-              <p style="margin:0 0 24px;font-size:15px;color:#374151;line-height:1.6;">
-                Se disparó una automatización en tu espacio de trabajo:
-              </p>
-              <div style="background:#f8fafc;border:1px solid #e2e8f0;border-left:4px solid #2563eb;border-radius:8px;padding:16px 20px;margin:0 0 24px;">
-                <p style="margin:0;font-size:15px;color:#1e293b;font-family:monospace;">${body}</p>
+            <td style="padding:36px 40px;">
+              <h1 style="margin:0 0 6px;font-size:20px;font-weight:700;color:#111827;">${title}</h1>
+              <p style="margin:0 0 28px;font-size:14px;color:#6b7280;">Hola <strong style="color:#374151;">${name}</strong>,</p>
+
+              <!-- Task name -->
+              <p style="margin:0 0 6px;font-size:12px;font-weight:600;color:#6b7280;text-transform:uppercase;letter-spacing:0.05em;">Tarea</p>
+              <p style="margin:0 0 20px;font-size:15px;font-weight:600;color:#111827;">${taskLine.replace(/^"/, '').replace(/ cambió de estado:$/, '').replace(/"$/, '')}</p>
+
+              <!-- Status change -->
+              <p style="margin:0 0 6px;font-size:12px;font-weight:600;color:#6b7280;text-transform:uppercase;letter-spacing:0.05em;">Cambio de estado</p>
+              <div style="display:inline-block;background:#f0f9ff;border:1px solid #bae6fd;border-radius:8px;padding:10px 18px;margin:0 0 20px;">
+                <span style="font-size:15px;font-weight:600;color:#0369a1;">${changeLine}</span>
               </div>
+
+              <!-- Meta row -->
+              <table width="100%" cellpadding="0" cellspacing="0" style="margin:0 0 28px;">
+                <tr>
+                  <td style="width:50%;padding-right:8px;">
+                    <p style="margin:0 0 4px;font-size:11px;font-weight:600;color:#9ca3af;text-transform:uppercase;letter-spacing:0.05em;">Realizado por</p>
+                    <p style="margin:0;font-size:14px;font-weight:600;color:#374151;">${authorLine}</p>
+                  </td>
+                  <td style="width:50%;padding-left:8px;">
+                    <p style="margin:0 0 4px;font-size:11px;font-weight:600;color:#9ca3af;text-transform:uppercase;letter-spacing:0.05em;">Fecha y hora</p>
+                    <p style="margin:0;font-size:14px;color:#374151;">${dateLine}</p>
+                  </td>
+                </tr>
+              </table>
+
               ${taskUrl ? `
-              <div style="text-align:center;margin:24px 0 0;">
+              <div style="text-align:center;">
                 <a href="${taskUrl}"
-                   style="display:inline-block;background:#2563eb;color:#ffffff;font-size:14px;font-weight:600;text-decoration:none;padding:12px 28px;border-radius:8px;">
-                  Ver tarea
+                   style="display:inline-block;background:#2563eb;color:#ffffff;font-size:14px;font-weight:600;text-decoration:none;padding:13px 32px;border-radius:8px;">
+                  Ver tarea →
                 </a>
               </div>
               ` : ''}
@@ -143,8 +169,8 @@ export async function sendAlertEmail(
           </tr>
           <!-- Footer -->
           <tr>
-            <td style="background:#f9fafb;padding:20px 40px;border-top:1px solid #e5e7eb;text-align:center;">
-              <p style="margin:0;font-size:12px;color:#9ca3af;">
+            <td style="background:#f9fafb;padding:18px 40px;border-top:1px solid #e5e7eb;text-align:center;">
+              <p style="margin:0;font-size:11px;color:#9ca3af;">
                 © ${new Date().getFullYear()} TaskFlow AI · Este es un mensaje automático generado por una automatización.
               </p>
             </td>

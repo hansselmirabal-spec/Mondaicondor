@@ -193,6 +193,20 @@ taskRoutes.put('/:id', zValidator('json', updateTaskSchema), async (c) => {
   return c.json({ task })
 })
 
+const STATUS_LABELS: Record<string, string> = {
+  Nuevo: 'Nuevo',
+  Asignado: 'Asignado',
+  EnProgreso: 'En progreso',
+  EnRevision: 'En revisión',
+  Bloqueado: 'Bloqueado',
+  Completado: 'Completado',
+  AlwaysOn: 'Always On',
+}
+
+function formatStatus(slug: string): string {
+  return STATUS_LABELS[slug] ?? slug
+}
+
 async function evaluateAutomations(
   task: Awaited<ReturnType<typeof prisma.task.update>>,
   before: { status: string; priority: string; groupId: string },
@@ -224,26 +238,48 @@ async function evaluateAutomations(
       const alertCfg = auto.config as { userIds?: string[] }
       const userIds = alertCfg.userIds ?? []
       if (userIds.length > 0) {
-        const newStatus = (task as any).status as string
+        const taskTitle = (task as any).title as string
+        const fromStatus = formatStatus(before.status)
+        const toStatus = formatStatus((task as any).status)
+
+        // Look up who triggered the change
+        const actor = await prisma.user.findUnique({
+          where: { id: triggeredBy },
+          select: { name: true },
+        })
+        const actorName = actor?.name ?? 'Sistema'
+
+        const now = new Date()
+        const dateLabel = now.toLocaleDateString('es-PY', { day: 'numeric', month: 'short', year: 'numeric' })
+        const timeLabel = now.toLocaleTimeString('es-PY', { hour: '2-digit', minute: '2-digit' })
+
+        const notifBody = `"${taskTitle}" cambió de ${fromStatus} → ${toStatus} · por ${actorName} el ${dateLabel} a las ${timeLabel}`
+        const emailBody = `"${taskTitle}" cambió de estado:\n${fromStatus} → ${toStatus}\n\nPor: ${actorName}\nFecha: ${dateLabel} a las ${timeLabel}`
+
         await prisma.notification.createMany({
           data: userIds.map((uid: string) => ({
             userId: uid,
             title: auto.name,
-            body: `"${(task as any).title}" → ${newStatus}`,
+            body: notifBody,
             taskId: task.id,
             boardId,
           })),
         })
 
-        // Send email to each alerted user — fire and forget
-        const users = await prisma.user.findMany({
-          where: { id: { in: userIds } },
-          select: { id: true, email: true, name: true },
+        // Send email only to members with emailNotifications enabled
+        const board = await prisma.board.findUnique({ where: { id: boardId }, select: { workspaceId: true } })
+        const members = await prisma.workspaceMember.findMany({
+          where: {
+            workspaceId: board!.workspaceId,
+            userId: { in: userIds },
+            emailNotifications: true,
+          },
+          include: { user: { select: { email: true, name: true } } },
         })
-        const taskUrl = `${process.env.APP_URL ?? 'http://localhost:5173'}/boards?task=${task.id}`
+        const taskUrl = `${process.env.APP_URL ?? 'http://localhost:5173'}/boards/${boardId}?task=${task.id}`
         await Promise.allSettled(
-          users.map((u) =>
-            sendAlertEmail(u.email, u.name, auto.name, `"${(task as any).title}" → ${newStatus}`, taskUrl),
+          members.map((m) =>
+            sendAlertEmail(m.user.email, m.user.name, auto.name, emailBody, taskUrl),
           ),
         )
 
