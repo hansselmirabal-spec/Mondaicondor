@@ -224,12 +224,6 @@ export function Sidebar() {
           </div>
         </div>
 
-        {/* Agents notice */}
-        <div className="px-3 py-2 text-xs text-white/50 border-b border-white/10 cursor-pointer hover:text-white/70 transition-colors">
-          <span className="font-medium text-white/60">Mis agentes del espacio de trabajo</span>
-          <span className="ml-1 text-white/30">›</span>
-        </div>
-
         {/* Workspace selector */}
         <WorkspaceSelector />
 

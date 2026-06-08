@@ -3,7 +3,6 @@ import { useEffect } from 'react'
 import { Sidebar } from './Sidebar'
 import { FloatingActions } from './FloatingActions'
 import { TaskDetailDrawer } from '@/components/task/TaskDetailDrawer'
-import { AgentPanel } from '@/components/panels/AgentPanel'
 import { AutomationPanel } from '@/components/panels/AutomationPanel'
 import { ToastContainer } from '@/components/ui/Toast'
 import { useBoardStore } from '@/store/boardStore'
@@ -52,7 +51,6 @@ export function AppShell() {
         <Outlet />
       </main>
       <TaskDetailDrawer />
-      <AgentPanel />
       <AutomationPanel />
       <FloatingActions />
       <ToastContainer />

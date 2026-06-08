@@ -1,5 +1,5 @@
 import {
-  Plus, Search, User, Filter, ArrowUpDown, EyeOff, Rows3, Zap, Bot, MoreHorizontal, Check, X, Calendar, Flag
+  Plus, Search, User, Filter, ArrowUpDown, EyeOff, Rows3, Zap, MoreHorizontal, Check, X, Calendar, Flag
 } from 'lucide-react'
 import { useNavigate, useSearchParams, useParams } from 'react-router-dom'
 import { useState } from 'react'
@@ -324,10 +324,6 @@ export function BoardToolbar() {
       <button onClick={() => openPanel('automations')} className="flex items-center gap-1 px-2 py-1.5 text-sm text-gray-600 hover:bg-gray-100 rounded-md transition-colors">
         <Zap className="w-3.5 h-3.5 text-orange-500" />
         <span>Automatizar</span>
-      </button>
-      <button onClick={() => openPanel('agents')} className="flex items-center gap-1 px-2 py-1.5 text-sm text-gray-600 hover:bg-gray-100 rounded-md transition-colors">
-        <Bot className="w-3.5 h-3.5 text-purple-500" />
-        <span>Agentes IA</span>
       </button>
       <button className="p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-md transition-colors">
         <MoreHorizontal className="w-4 h-4" />

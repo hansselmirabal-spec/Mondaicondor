@@ -1,4 +1,4 @@
-import { ChevronDown, Plug, Zap, UserPlus, Link2, MoreHorizontal, Share2, X, Send, Settings, Archive, Copy, Check, Loader2, Pencil } from 'lucide-react'
+import { ChevronDown, Zap, UserPlus, Link2, MoreHorizontal, Share2, X, Send, Settings, Archive, Copy, Check, Loader2, Pencil } from 'lucide-react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { useState, useRef, useEffect } from 'react'
 import type { MockBoard } from '@/types'
@@ -130,10 +130,6 @@ export function BoardHeader({ board }: BoardHeaderProps) {
         </div>
 
         <div className="flex items-center gap-1">
-          <button className="flex items-center gap-1 px-2 py-1.5 text-sm text-gray-600 hover:bg-gray-50 rounded-md transition-colors">
-            <Plug className="w-3.5 h-3.5" />
-            <span>Integrar</span>
-          </button>
           <button onClick={() => openPanel('automations')} className="flex items-center gap-1 px-2 py-1.5 text-sm text-gray-600 hover:bg-gray-50 rounded-md transition-colors">
             <Zap className="w-3.5 h-3.5 text-orange-500" />
             <span>Automatizar / 6</span>
