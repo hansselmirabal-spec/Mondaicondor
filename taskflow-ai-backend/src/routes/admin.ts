@@ -4,6 +4,7 @@ import { z } from 'zod'
 import bcrypt from 'bcryptjs'
 import { prisma } from '../lib/prisma.js'
 import { authMiddleware } from '../middleware/auth.js'
+import { sendInviteEmail } from '../lib/email.js'
 import type { AppEnv } from '../lib/types.js'
 
 export const adminRoutes = new Hono<AppEnv>()
@@ -61,6 +62,11 @@ adminRoutes.post('/workspaces/:workspaceId/users', zValidator('json', createUser
     return c.json({ error: 'Solo admins pueden crear usuarios' }, 403)
   }
 
+  const workspace = await prisma.workspace.findUnique({ where: { id: workspaceId }, select: { name: true } })
+  const workspaceName = workspace?.name ?? 'TaskFlow AI'
+  const appUrl = process.env.APP_URL ?? 'http://localhost:5173'
+  const loginUrl = `${appUrl}/login`
+
   const existing = await prisma.user.findUnique({ where: { email } })
   if (existing) {
     const alreadyMember = await prisma.workspaceMember.findUnique({
@@ -72,6 +78,7 @@ adminRoutes.post('/workspaces/:workspaceId/users', zValidator('json', createUser
       data: { workspaceId, userId: existing.id, role },
       include: { user: { select: { id: true, name: true, email: true, initials: true, color: true, createdAt: true } } },
     })
+    sendInviteEmail(email, workspaceName, loginUrl, role).catch(() => {})
     return c.json({ member }, 201)
   }
 
@@ -90,6 +97,7 @@ adminRoutes.post('/workspaces/:workspaceId/users', zValidator('json', createUser
     })
   })
 
+  sendInviteEmail(email, workspaceName, loginUrl, role).catch(() => {})
   return c.json({ member }, 201)
 })
 

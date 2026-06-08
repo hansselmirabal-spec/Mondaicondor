@@ -81,14 +81,14 @@ export async function sendPasswordResetEmail(to: string, name: string, resetUrl:
 export async function sendInviteEmail(
   to: string,
   workspaceName: string,
-  inviteUrl: string,
+  loginUrl: string,
   role: string,
 ) {
   const roleLabel = role === 'ADMIN' ? 'Administrador' : role === 'VIEWER' ? 'Visualizador' : 'Miembro'
   await transporter.sendMail({
     from: `"TaskFlow AI" <${process.env.SMTP_USER}>`,
     to,
-    subject: `Invitación a ${workspaceName} — TaskFlow AI`,
+    subject: `Tu cuenta en ${workspaceName} — TaskFlow AI`,
     html: `
 <!DOCTYPE html>
 <html lang="es">
@@ -115,22 +115,25 @@ export async function sendInviteEmail(
           <!-- Body -->
           <tr>
             <td style="padding:40px;">
-              <h1 style="margin:0 0 8px;font-size:22px;font-weight:700;color:#111827;">Te invitaron a un workspace</h1>
+              <h1 style="margin:0 0 16px;font-size:22px;font-weight:700;color:#111827;">Tu cuenta está lista</h1>
               <p style="margin:0 0 24px;font-size:15px;color:#374151;line-height:1.6;">
-                Fuiste invitado a unirte al workspace <strong>${workspaceName}</strong> en TaskFlow AI como <strong>${roleLabel}</strong>.
+                Fuiste agregado al workspace <strong>${workspaceName}</strong> como <strong>${roleLabel}</strong>.
+                Podés ingresar con el siguiente correo:
               </p>
-              <div style="text-align:center;margin:32px 0;">
-                <a href="${inviteUrl}"
+              <!-- Credentials box -->
+              <div style="background:#f0f9ff;border:1px solid #bae6fd;border-radius:8px;padding:16px 20px;margin:0 0 28px;">
+                <p style="margin:0 0 6px;font-size:12px;font-weight:600;color:#0369a1;text-transform:uppercase;letter-spacing:0.05em;">Email de acceso</p>
+                <p style="margin:0;font-size:15px;font-weight:600;color:#0c4a6e;">${to}</p>
+              </div>
+              <p style="margin:0 0 28px;font-size:14px;color:#6b7280;line-height:1.5;">
+                Usá la contraseña que el administrador te proporcionó. Podés cambiarla desde tu perfil una vez que ingreses.
+              </p>
+              <div style="text-align:center;">
+                <a href="${loginUrl}"
                    style="display:inline-block;background:#2563eb;color:#ffffff;font-size:15px;font-weight:600;text-decoration:none;padding:14px 32px;border-radius:8px;">
-                  Aceptar invitación
+                  Ingresar a TaskFlow AI
                 </a>
               </div>
-              <p style="margin:0 0 8px;font-size:13px;color:#9ca3af;line-height:1.5;">
-                Si no esperabas esta invitación, podés ignorar este correo.
-              </p>
-              <p style="margin:0;font-size:13px;color:#9ca3af;">
-                Este enlace expira en <strong>7 días</strong>.
-              </p>
             </td>
           </tr>
           <!-- Footer -->
