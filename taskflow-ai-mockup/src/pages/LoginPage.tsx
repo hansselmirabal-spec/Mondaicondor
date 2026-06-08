@@ -1,13 +1,15 @@
 import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
-import { Zap } from 'lucide-react'
+import { useNavigate, Link, useLocation } from 'react-router-dom'
+import { Zap, CheckCircle } from 'lucide-react'
 import { useAuthStore } from '@/store/authStore'
 
 export function LoginPage() {
   const navigate = useNavigate()
+  const location = useLocation()
   const { login, isLoading, error, clearError } = useAuthStore()
   const [email, setEmail] = useState('tacosta@condor.com.py')
   const [password, setPassword] = useState('password123')
+  const resetSuccess = (location.state as { resetSuccess?: boolean } | null)?.resetSuccess
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
@@ -30,6 +32,13 @@ export function LoginPage() {
         <div className="bg-white rounded-2xl p-8 shadow-2xl">
           <h1 className="text-xl font-bold text-gray-900 mb-1">Bienvenido de nuevo</h1>
           <p className="text-sm text-gray-500 mb-6">Ingresá a tu espacio de trabajo</p>
+
+          {resetSuccess && (
+            <div className="mb-4 p-3 bg-green-50 border border-green-200 rounded-lg text-sm text-green-700 flex items-center gap-2">
+              <CheckCircle className="w-4 h-4 flex-shrink-0" />
+              <span>Contraseña actualizada. Ya podés ingresar.</span>
+            </div>
+          )}
 
           {error && (
             <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-600 flex items-center justify-between">
@@ -75,9 +84,14 @@ export function LoginPage() {
             </button>
           </form>
 
-          <p className="text-center text-xs text-gray-400 mt-4">
-            password: password123
-          </p>
+          <div className="text-center mt-4">
+            <Link
+              to="/forgot-password"
+              className="text-xs text-gray-400 hover:text-gray-600 transition-colors"
+            >
+              ¿Olvidaste tu contraseña?
+            </Link>
+          </div>
         </div>
       </div>
     </div>

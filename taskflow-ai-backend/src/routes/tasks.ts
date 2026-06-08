@@ -4,6 +4,7 @@ import { z } from 'zod'
 import { prisma } from '../lib/prisma.js'
 import { authMiddleware } from '../middleware/auth.js'
 import type { AppEnv } from '../lib/types.js'
+import { sendAlertEmail } from '../lib/email.js'
 
 export const taskRoutes = new Hono<AppEnv>()
 
@@ -233,6 +234,19 @@ async function evaluateAutomations(
             boardId,
           })),
         })
+
+        // Send email to each alerted user — fire and forget
+        const users = await prisma.user.findMany({
+          where: { id: { in: userIds } },
+          select: { id: true, email: true, name: true },
+        })
+        const taskUrl = `${process.env.APP_URL ?? 'http://localhost:5173'}/boards?task=${task.id}`
+        await Promise.allSettled(
+          users.map((u) =>
+            sendAlertEmail(u.email, u.name, auto.name, `"${(task as any).title}" → ${newStatus}`, taskUrl),
+          ),
+        )
+
         applied = true
       }
     }

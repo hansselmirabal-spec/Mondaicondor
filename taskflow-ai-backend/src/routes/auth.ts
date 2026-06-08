@@ -5,6 +5,7 @@ import bcrypt from 'bcryptjs'
 import { prisma } from '../lib/prisma.js'
 import { signAccessToken, signRefreshToken, verifyRefreshToken } from '../lib/jwt.js'
 import { authMiddleware } from '../middleware/auth.js'
+import { sendPasswordResetEmail } from '../lib/email.js'
 
 export const authRoutes = new Hono()
 
@@ -127,4 +128,69 @@ authRoutes.post('/logout', authMiddleware, async (c) => {
   }
 
   return c.json({ message: 'Sesión cerrada' })
+})
+
+const forgotPasswordSchema = z.object({
+  email: z.string().email(),
+})
+
+authRoutes.post('/forgot-password', zValidator('json', forgotPasswordSchema), async (c) => {
+  const { email } = c.req.valid('json')
+
+  const user = await prisma.user.findUnique({ where: { email } })
+
+  // Always respond 200 — don't leak whether email exists
+  if (!user) {
+    return c.json({ message: 'Si el email existe, recibirás un correo.' })
+  }
+
+  const expiresAt = new Date(Date.now() + 60 * 60 * 1000) // 1 hour
+  const resetToken = await prisma.passwordResetToken.create({
+    data: { userId: user.id, expiresAt },
+  })
+
+  const appUrl = process.env.APP_URL ?? 'http://localhost:5173'
+  const resetUrl = `${appUrl}/reset-password?token=${resetToken.token}`
+
+  // Fire and forget — don't block response if email fails
+  sendPasswordResetEmail(user.email, user.name, resetUrl).catch((err) => {
+    console.error('[email] Failed to send password reset email:', err)
+  })
+
+  return c.json({ message: 'Si el email existe, recibirás un correo.' })
+})
+
+const resetPasswordSchema = z.object({
+  token: z.string(),
+  newPassword: z.string().min(8),
+})
+
+authRoutes.post('/reset-password', zValidator('json', resetPasswordSchema), async (c) => {
+  const { token, newPassword } = c.req.valid('json')
+
+  const resetToken = await prisma.passwordResetToken.findUnique({
+    where: { token },
+    include: { user: true },
+  })
+
+  if (!resetToken || resetToken.used || resetToken.expiresAt < new Date()) {
+    return c.json({ error: 'El enlace es inválido o ha expirado.' }, 400)
+  }
+
+  const passwordHash = await bcrypt.hash(newPassword, 12)
+
+  await prisma.$transaction([
+    prisma.user.update({
+      where: { id: resetToken.userId },
+      data: { passwordHash },
+    }),
+    prisma.passwordResetToken.update({
+      where: { id: resetToken.id },
+      data: { used: true },
+    }),
+    // Invalidate all refresh tokens for security
+    prisma.refreshToken.deleteMany({ where: { userId: resetToken.userId } }),
+  ])
+
+  return c.json({ message: 'Contraseña actualizada.' })
 })

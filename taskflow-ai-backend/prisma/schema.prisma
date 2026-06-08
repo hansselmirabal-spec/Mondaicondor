@@ -39,6 +39,7 @@ model User {
   activities    Activity[]
   preferences   UserPreference?
   notifications Notification[]
+  resetTokens   PasswordResetToken[]
 }
 
 model RefreshToken {
@@ -230,6 +231,17 @@ model Notification {
   taskId    String?
   boardId   String?
   read      Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model PasswordResetToken {
+  id        String   @id @default(cuid())
+  userId    String
+  token     String   @unique @default(cuid())
+  expiresAt DateTime
+  used      Boolean  @default(false)
   createdAt DateTime @default(now())
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)

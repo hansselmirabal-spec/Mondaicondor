@@ -125,6 +125,18 @@ export const api = {
         method: 'POST',
         body: JSON.stringify({ refreshToken }),
       }),
+
+    forgotPassword: (email: string) =>
+      request<{ message: string }>('/auth/forgot-password', {
+        method: 'POST',
+        body: JSON.stringify({ email }),
+      }),
+
+    resetPassword: (token: string, newPassword: string) =>
+      request<{ message: string }>('/auth/reset-password', {
+        method: 'POST',
+        body: JSON.stringify({ token, newPassword }),
+      }),
   },
 
   users: {
