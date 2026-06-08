@@ -2,6 +2,8 @@ import { test, expect } from '@playwright/test'
 import { loginViaUI, BOARD_URL } from './helpers'
 
 test.describe('Auth', () => {
+  // Auth tests must start without pre-loaded auth state to test login flow
+  test.use({ storageState: { cookies: [], origins: [] } })
   test('login page renders correctly', async ({ page }) => {
     await page.goto('/login')
     await expect(page.getByRole('heading', { name: 'Bienvenido de nuevo' })).toBeVisible()
@@ -36,10 +38,9 @@ test.describe('Auth', () => {
     expect(page.url()).toContain('login')
   })
 
-  test('authenticated user bypasses login redirect', async ({ page }) => {
+  test('after login user can access board directly', async ({ page }) => {
     await loginViaUI(page)
     await page.goto(BOARD_URL)
-    // Should NOT land on login
     await page.waitForSelector('text=tarea 1', { timeout: 15_000 })
     expect(page.url()).not.toContain('login')
   })

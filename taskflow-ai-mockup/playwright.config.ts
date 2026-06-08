@@ -7,9 +7,11 @@ export default defineConfig({
   fullyParallel: false,
   workers: 1,
   retries: 1,
+  globalSetup: './e2e/global-setup.ts',
   reporter: [['list'], ['html', { open: 'never', outputFolder: 'playwright-report' }]],
   use: {
     baseURL: 'http://localhost:5173',
+    storageState: 'e2e/auth.json',
     trace: 'on-first-retry',
     screenshot: 'only-on-failure',
     video: 'off',
