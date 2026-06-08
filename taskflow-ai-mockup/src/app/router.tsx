@@ -7,7 +7,10 @@ import { BoardsPage } from '@/pages/BoardsPage'
 import { BoardPage } from '@/pages/BoardPage'
 import { SettingsPage } from '@/pages/SettingsPage'
 import { MembersPage } from '@/pages/MembersPage'
+import { MembersSettingsPage } from '@/pages/MembersSettingsPage'
 import { WorkspaceStatusPage } from '@/pages/WorkspaceStatusPage'
+import { EmailAlertsPage } from '@/pages/EmailAlertsPage'
+import { SettingsLayout } from '@/components/layout/SettingsLayout'
 import { AuthGuard } from '@/components/auth/AuthGuard'
 
 export const router = createBrowserRouter([
@@ -36,7 +39,16 @@ export const router = createBrowserRouter([
       { path: 'boards/:boardId', element: <BoardPage /> },
       { path: 'boards/:boardId/settings', element: <SettingsPage /> },
       { path: 'members', element: <MembersPage /> },
-      { path: 'settings/statuses', element: <WorkspaceStatusPage /> },
+      {
+        path: 'settings',
+        element: <SettingsLayout />,
+        children: [
+          { index: true, element: <Navigate to="statuses" replace /> },
+          { path: 'statuses', element: <WorkspaceStatusPage /> },
+          { path: 'email-alerts', element: <EmailAlertsPage /> },
+          { path: 'members', element: <MembersSettingsPage /> },
+        ],
+      },
     ],
   },
   {

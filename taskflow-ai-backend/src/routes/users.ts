@@ -29,6 +29,26 @@ const updatePreferencesSchema = z.object({
   emailNotifications: z.boolean().optional(),
 })
 
+userRoutes.get('/list', async (c) => {
+  const users = await prisma.user.findMany({
+    select: { id: true, name: true, email: true, initials: true, color: true, avatarUrl: true },
+    orderBy: { name: 'asc' },
+  })
+  return c.json({ users })
+})
+
+userRoutes.get('/search', async (c) => {
+  const email = c.req.query('email')
+  if (!email) return c.json({ user: null })
+
+  const user = await prisma.user.findUnique({
+    where: { email },
+    select: { id: true, name: true, email: true, initials: true, color: true, avatarUrl: true },
+  })
+
+  return c.json({ user: user ?? null })
+})
+
 userRoutes.get('/me', async (c) => {
   const { userId } = c.get('user')
 

@@ -3,6 +3,7 @@ import { zValidator } from '@hono/zod-validator'
 import { z } from 'zod'
 import { prisma } from '../lib/prisma.js'
 import { authMiddleware } from '../middleware/auth.js'
+import { sendInviteEmail } from '../lib/email.js'
 import type { AppEnv } from '../lib/types.js'
 
 export const workspaceRoutes = new Hono<AppEnv>()
@@ -100,7 +101,16 @@ workspaceRoutes.get('/:id', async (c) => {
   const workspace = await prisma.workspace.findUnique({
     where: { id },
     include: {
-      members: { include: { user: { select: { id: true, name: true, email: true, initials: true, color: true } } } },
+      members: {
+        select: {
+          id: true,
+          userId: true,
+          role: true,
+          joinedAt: true,
+          emailNotifications: true,
+          user: { select: { id: true, name: true, email: true, initials: true, color: true } },
+        },
+      },
       settings: true,
       _count: { select: { boards: true } },
     },
@@ -153,6 +163,8 @@ workspaceRoutes.post('/:id/invite', zValidator('json', inviteSchema), async (c) 
     return c.json({ error: 'Sin permisos para invitar' }, 403)
   }
 
+  const workspace = await prisma.workspace.findUnique({ where: { id }, select: { name: true } })
+
   const invite = await prisma.workspaceInvite.upsert({
     where: { workspaceId_email: { workspaceId: id, email } },
     update: { role, expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), acceptedAt: null },
@@ -163,6 +175,14 @@ workspaceRoutes.post('/:id/invite', zValidator('json', inviteSchema), async (c) 
       expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
     },
   })
+
+  const fullInviteUrl = `${process.env.APP_URL ?? 'http://localhost:5173'}/workspaces/accept/${invite.token}`
+
+  try {
+    await sendInviteEmail(email, workspace?.name ?? 'TaskFlow AI', fullInviteUrl, role)
+  } catch (emailErr) {
+    console.error('Failed to send invite email:', emailErr)
+  }
 
   return c.json({ invite, inviteUrl: `/workspaces/accept/${invite.token}` }, 201)
 })
@@ -370,6 +390,31 @@ workspaceRoutes.delete('/:id/statuses/:statusId', async (c) => {
   await prisma.workspaceStatus.delete({ where: { id: statusId } })
   return c.json({ message: 'Estado eliminado' })
 })
+
+// ── Email Notifications ──────────────────────────────────────────────────────
+
+workspaceRoutes.put('/:id/members/:memberId/email-notifications',
+  zValidator('json', z.object({ enabled: z.boolean() })),
+  async (c) => {
+    const { userId } = c.get('user')
+    const { id, memberId } = c.req.param()
+    const { enabled } = c.req.valid('json')
+
+    const callerMembership = await prisma.workspaceMember.findUnique({
+      where: { workspaceId_userId: { workspaceId: id, userId } },
+    })
+    if (!callerMembership || callerMembership.role !== 'ADMIN') {
+      return c.json({ error: 'Solo admins pueden cambiar esta configuración' }, 403)
+    }
+
+    const updated = await prisma.workspaceMember.update({
+      where: { workspaceId_userId: { workspaceId: id, userId: memberId } },
+      data: { emailNotifications: enabled },
+    })
+
+    return c.json({ member: { userId: updated.userId, emailNotifications: updated.emailNotifications } })
+  }
+)
 
 // ── Workspace Settings ───────────────────────────────────────────────────────
 

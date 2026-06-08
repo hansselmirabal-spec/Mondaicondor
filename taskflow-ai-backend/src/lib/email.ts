@@ -78,6 +78,79 @@ export async function sendPasswordResetEmail(to: string, name: string, resetUrl:
   })
 }
 
+export async function sendInviteEmail(
+  to: string,
+  workspaceName: string,
+  inviteUrl: string,
+  role: string,
+) {
+  const roleLabel = role === 'ADMIN' ? 'Administrador' : role === 'VIEWER' ? 'Visualizador' : 'Miembro'
+  await transporter.sendMail({
+    from: `"TaskFlow AI" <${process.env.SMTP_USER}>`,
+    to,
+    subject: `Invitación a ${workspaceName} — TaskFlow AI`,
+    html: `
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+</head>
+<body style="margin:0;padding:0;background-color:#f4f4f7;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background-color:#f4f4f7;padding:40px 20px;">
+    <tr>
+      <td align="center">
+        <table width="100%" cellpadding="0" cellspacing="0" style="max-width:520px;background:#ffffff;border-radius:12px;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,0.08);">
+          <!-- Header -->
+          <tr>
+            <td style="background:linear-gradient(135deg,#1a1a2e,#292944);padding:32px 40px;text-align:center;">
+              <div style="display:inline-flex;align-items:center;gap:10px;">
+                <div style="width:40px;height:40px;background:#2563eb;border-radius:10px;display:inline-block;vertical-align:middle;line-height:40px;text-align:center;">
+                  <span style="color:#fff;font-size:20px;font-weight:bold;">⚡</span>
+                </div>
+                <span style="color:#ffffff;font-size:22px;font-weight:700;vertical-align:middle;margin-left:8px;">TaskFlow AI</span>
+              </div>
+            </td>
+          </tr>
+          <!-- Body -->
+          <tr>
+            <td style="padding:40px;">
+              <h1 style="margin:0 0 8px;font-size:22px;font-weight:700;color:#111827;">Te invitaron a un workspace</h1>
+              <p style="margin:0 0 24px;font-size:15px;color:#374151;line-height:1.6;">
+                Fuiste invitado a unirte al workspace <strong>${workspaceName}</strong> en TaskFlow AI como <strong>${roleLabel}</strong>.
+              </p>
+              <div style="text-align:center;margin:32px 0;">
+                <a href="${inviteUrl}"
+                   style="display:inline-block;background:#2563eb;color:#ffffff;font-size:15px;font-weight:600;text-decoration:none;padding:14px 32px;border-radius:8px;">
+                  Aceptar invitación
+                </a>
+              </div>
+              <p style="margin:0 0 8px;font-size:13px;color:#9ca3af;line-height:1.5;">
+                Si no esperabas esta invitación, podés ignorar este correo.
+              </p>
+              <p style="margin:0;font-size:13px;color:#9ca3af;">
+                Este enlace expira en <strong>7 días</strong>.
+              </p>
+            </td>
+          </tr>
+          <!-- Footer -->
+          <tr>
+            <td style="background:#f9fafb;padding:20px 40px;border-top:1px solid #e5e7eb;text-align:center;">
+              <p style="margin:0;font-size:12px;color:#9ca3af;">
+                © ${new Date().getFullYear()} TaskFlow AI · Este es un mensaje automático, no respondas este correo.
+              </p>
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>
+    `.trim(),
+  })
+}
+
 export async function sendAlertEmail(
   to: string,
   name: string,

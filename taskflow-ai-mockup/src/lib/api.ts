@@ -140,6 +140,8 @@ export const api = {
   },
 
   users: {
+    list: () => request<{ users: ApiUser[] }>('/users/list'),
+
     me: () => request<{ user: ApiUser }>('/users/me'),
 
     updateProfile: (data: { name?: string; color?: string; avatarUrl?: string | null }) =>
@@ -175,6 +177,9 @@ export const api = {
         method: 'PUT',
         body: JSON.stringify(data),
       }),
+
+    search: (email: string) =>
+      request<{ user: ApiUser | null }>(`/users/search?email=${encodeURIComponent(email)}`),
   },
 
   workspaces: {
@@ -201,6 +206,12 @@ export const api = {
       request<{ invite: { token: string }; inviteUrl: string }>(`/workspaces/${id}/invite`, {
         method: 'POST',
         body: JSON.stringify({ email, role }),
+      }),
+
+    addMember: (workspaceId: string, data: { email: string; role: 'ADMIN' | 'MEMBER' | 'VIEWER' }) =>
+      request<{ invite: { token: string }; inviteUrl: string }>(`/workspaces/${workspaceId}/invite`, {
+        method: 'POST',
+        body: JSON.stringify(data),
       }),
 
     updateMemberRole: (workspaceId: string, memberId: string, role: 'ADMIN' | 'MEMBER' | 'VIEWER') =>
@@ -235,6 +246,12 @@ export const api = {
         method: 'PUT',
         body: JSON.stringify({ order }),
       }),
+
+    updateMemberEmailNotifications: (workspaceId: string, memberId: string, enabled: boolean) =>
+      request<{ member: { userId: string; emailNotifications: boolean } }>(
+        `/workspaces/${workspaceId}/members/${memberId}/email-notifications`,
+        { method: 'PUT', body: JSON.stringify({ enabled }) }
+      ),
   },
 
   boards: {
@@ -409,6 +426,7 @@ export interface ApiTaskUpdate {
 export interface ApiWorkspaceMember {
   userId: string
   role: 'ADMIN' | 'MEMBER' | 'VIEWER'
+  emailNotifications: boolean
   user: ApiUser
 }
 

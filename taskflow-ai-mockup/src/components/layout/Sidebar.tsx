@@ -3,7 +3,7 @@ import {
   LogOut, Settings, User as UserIcon, Bell, X, Check
 } from 'lucide-react'
 import { useState, useRef, useEffect, useCallback } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useLocation } from 'react-router-dom'
 import { WorkspaceSelector } from './WorkspaceSelector'
 import { BoardList } from './BoardList'
 import { toast } from '@/components/ui/Toast'
@@ -36,6 +36,7 @@ function NavIcon({ icon, label, active = false, onClick }: NavIconProps) {
 
 export function Sidebar() {
   const navigate = useNavigate()
+  const location = useLocation()
   const { user, logout } = useAuthStore()
   const [avatarOpen, setAvatarOpen] = useState(false)
   const [profileOpen, setProfileOpen] = useState(false)
@@ -125,12 +126,6 @@ export function Sidebar() {
                   <UserIcon className="w-3.5 h-3.5 text-gray-400" /> Mi perfil
                 </button>
                 <button
-                  onClick={() => { setAvatarOpen(false); navigate('/settings/statuses') }}
-                  className="w-full flex items-center gap-2 px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-50 rounded-lg transition-colors"
-                >
-                  <Settings className="w-3.5 h-3.5 text-gray-400" /> Estados
-                </button>
-                <button
                   onClick={() => { logout(); navigate('/login') }}
                   className="w-full flex items-center gap-2 px-3 py-1.5 text-sm text-red-600 hover:bg-red-50 rounded-lg transition-colors"
                 >
@@ -142,8 +137,9 @@ export function Sidebar() {
         </div>
 
         <NavIcon icon={<Home className="w-4 h-4" />} label="Inicio" onClick={() => navigate('/boards')} />
-        <NavIcon icon={<LayoutGrid className="w-4 h-4" />} label="Espacio" active onClick={() => navigate('/boards')} />
+        <NavIcon icon={<LayoutGrid className="w-4 h-4" />} label="Espacio" active={!location.pathname.startsWith('/settings')} onClick={() => navigate('/boards')} />
         <NavIcon icon={<Users className="w-4 h-4" />} label="Equipo" onClick={() => navigate('/members')} />
+        <NavIcon icon={<Settings className="w-4 h-4" />} label="Config." active={location.pathname.startsWith('/settings')} onClick={() => navigate('/settings')} />
         <div className="flex-1" />
 
         {/* Notification bell */}
