@@ -7,8 +7,8 @@ export function LoginPage() {
   const navigate = useNavigate()
   const location = useLocation()
   const { login, isLoading, error, clearError } = useAuthStore()
-  const [email, setEmail] = useState('tacosta@condor.com.py')
-  const [password, setPassword] = useState('password123')
+  const [email, setEmail] = useState('')
+  const [password, setPassword] = useState('')
   const resetSuccess = (location.state as { resetSuccess?: boolean } | null)?.resetSuccess
 
   async function handleSubmit(e: React.FormEvent) {
