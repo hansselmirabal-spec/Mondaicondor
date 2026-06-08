@@ -59,6 +59,8 @@ interface BoardStore {
   removeGroup: (groupId: string) => void
   patchGroup: (groupId: string, patch: { name?: string; color?: string }) => void
 
+  clearBoardData: () => void
+
   favorites: string[]
   toggleFavorite: (boardId: string) => void
   isFavorite: (boardId: string) => boolean
@@ -150,6 +152,16 @@ export const useBoardStore = create<BoardStore>((set, get) => ({
       groups: b.groups.map(g => g.id === groupId ? { ...g, ...patch } : g),
     })),
   })),
+
+  clearBoardData: () => set({
+    apiTasks: [],
+    newTasks: [],
+    taskMutations: {},
+    deadlineHistory: {},
+    workspaceStatuses: [],
+    comments: [],
+    boards: [],
+  }),
 
   favorites: [],
   toggleFavorite: boardId =>

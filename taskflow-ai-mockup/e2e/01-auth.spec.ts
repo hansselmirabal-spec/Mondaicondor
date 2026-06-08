@@ -14,8 +14,8 @@ test.describe('Auth', () => {
 
   test('login with valid credentials redirects to boards', async ({ page }) => {
     await page.goto('/login')
-    await page.locator('input[type="email"]').fill('tacosta@condor.com.py')
-    await page.locator('input[type="password"]').fill('password123')
+    await page.locator('input[type="email"]').pressSequentially('tacosta@condor.com.py')
+    await page.locator('input[type="password"]').pressSequentially('password123')
     await page.getByRole('button', { name: 'Ingresar' }).click()
     await page.waitForURL(/boards|workspace/, { timeout: 15_000 })
     expect(page.url()).toMatch(/boards|workspace/)

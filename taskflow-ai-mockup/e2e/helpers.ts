@@ -13,8 +13,9 @@ export async function gotoBoard(page: Page) {
 
 // loginViaUI is still used by auth tests that need to test the login flow explicitly
 export async function loginViaUI(page: Page) {
-  // Auth tests start with a fresh context (no storageState) — they test login from scratch
   await page.goto('/login')
+  await page.locator('input[type="email"]').fill('tacosta@condor.com.py')
+  await page.locator('input[type="password"]').fill('password123')
   await page.getByRole('button', { name: 'Ingresar' }).click()
   await page.waitForURL(/boards|workspace/, { timeout: 60_000 })
 }

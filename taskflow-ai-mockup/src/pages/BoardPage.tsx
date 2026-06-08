@@ -1,5 +1,5 @@
 import { useParams, Navigate } from 'react-router-dom'
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef } from 'react'
 import { useBoardStore } from '@/store/boardStore'
 import { useFilterStore } from '@/store/filterStore'
 import { BoardHeader } from '@/components/board/BoardHeader'
@@ -20,13 +20,18 @@ export function BoardPage() {
 
   const [loading, setLoading] = useState(true)
   const [notFound, setNotFound] = useState(false)
+  const activeBoardId = useRef(boardId)
 
   useEffect(() => {
     if (!boardId) return
+    activeBoardId.current = boardId
     setLoading(true)
+    setNotFound(false)
     async function load() {
       try {
         const { board: apiBoard } = await api.boards.get(boardId!)
+        // Guard: ignore stale responses if the user navigated away
+        if (activeBoardId.current !== boardId) return
         const mockBoard = toMockBoard(apiBoard)
         setBoards(prev => {
           const idx = prev.findIndex(b => b.id === boardId)
@@ -39,12 +44,14 @@ export function BoardPage() {
         })
         setApiTasks(extractTasks(apiBoard))
         api.workspaces.listStatuses(apiBoard.workspaceId)
-          .then(({ statuses }) => setWorkspaceStatuses(statuses as WorkspaceStatus[]))
+          .then(({ statuses }) => {
+            if (activeBoardId.current === boardId) setWorkspaceStatuses(statuses as WorkspaceStatus[])
+          })
           .catch(() => {})
       } catch {
-        setNotFound(true)
+        if (activeBoardId.current === boardId) setNotFound(true)
       } finally {
-        setLoading(false)
+        if (activeBoardId.current === boardId) setLoading(false)
       }
     }
     load()

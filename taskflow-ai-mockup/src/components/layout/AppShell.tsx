@@ -19,13 +19,14 @@ export function AppShell() {
 
   useEffect(() => {
     if (workspaces.length > 0) return
+    const activeWorkspace = workspace
     async function load() {
       try {
         const { workspaces: list } = await api.workspaces.list()
         if (!list.length) return
         const mapped = list.map(w => ({ id: w.id, name: w.name, color: w.color }))
         setWorkspaces(mapped)
-        const active = workspace ?? mapped[0]
+        const active = activeWorkspace ?? mapped[0]
         setWorkspace(active)
         const [{ boards: apiBoards }, { workspace: wsDetail }] = await Promise.all([
           api.boards.listByWorkspace(active.id),
@@ -42,6 +43,7 @@ export function AppShell() {
       } catch {}
     }
     load()
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   return (

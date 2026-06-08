@@ -10,9 +10,9 @@ import type { MockBoard } from '@/types'
 
 export function BoardsPage() {
   const navigate = useNavigate()
-  const { boards, setBoards, addBoard, removeBoard, patchBoard, favorites, toggleFavorite, isFavorite } = useBoardStore()
+  const { boards, setBoards, addBoard, removeBoard, patchBoard, favorites, toggleFavorite, isFavorite, workspace } = useBoardStore()
 
-  const [workspaceId, setWorkspaceId] = useState<string | null>(null)
+  const workspaceId = workspace?.id ?? null
   const [loading, setLoading] = useState(true)
   const [showModal, setShowModal] = useState(false)
   const [boardName, setBoardName] = useState('')
@@ -27,13 +27,11 @@ export function BoardsPage() {
   const menuRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
+    if (!workspaceId) { setLoading(false); return }
+    setLoading(true)
     async function load() {
       try {
-        const { workspaces } = await api.workspaces.list()
-        if (!workspaces.length) return
-        const ws = workspaces[0]
-        setWorkspaceId(ws.id)
-        const { boards: apiBoards } = await api.boards.listByWorkspace(ws.id)
+        const { boards: apiBoards } = await api.boards.listByWorkspace(workspaceId!)
         setBoards(apiBoards.map(toMockBoard))
       } catch (e) {
         console.error('Error cargando tableros:', e)
@@ -42,7 +40,7 @@ export function BoardsPage() {
       }
     }
     load()
-  }, [])
+  }, [workspaceId])
 
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {

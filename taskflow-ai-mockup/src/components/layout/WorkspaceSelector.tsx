@@ -14,6 +14,7 @@ export function WorkspaceSelector() {
   const setWorkspace = useBoardStore(state => state.setWorkspace)
   const updateWorkspace = useBoardStore(state => state.updateWorkspace)
   const removeWorkspace = useBoardStore(state => state.removeWorkspace)
+  const clearBoardData = useBoardStore(state => state.clearBoardData)
   const setBoards = useBoardStore(state => state.setBoards)
   const setApiUsers = useBoardStore(state => state.setApiUsers)
   const addBoard = useBoardStore(state => state.addBoard)
@@ -54,6 +55,7 @@ export function WorkspaceSelector() {
   async function switchWorkspace(ws: { id: string; name: string; color: string }) {
     if (ws.id === workspace?.id) { setDropdownOpen(false); return }
     setSwitchingId(ws.id)
+    clearBoardData()
     try {
       const [{ boards: apiBoards }, { workspace: wsDetail }] = await Promise.all([
         api.boards.listByWorkspace(ws.id),
