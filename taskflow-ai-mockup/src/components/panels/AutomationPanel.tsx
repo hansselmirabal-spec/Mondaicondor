@@ -1,5 +1,5 @@
-import { X, Zap, ArrowRight, ToggleLeft, ToggleRight, Plus, Trash2, Bell, Check } from 'lucide-react'
-import { useState, useEffect } from 'react'
+import { X, Zap, ArrowRight, ToggleLeft, ToggleRight, Plus, Trash2, Bell, Check, Pencil } from 'lucide-react'
+import { useState, useEffect, useRef } from 'react'
 import { useNavigate, useSearchParams, useParams } from 'react-router-dom'
 import { Modal } from '@/components/ui/Modal'
 import { AssigneeAvatar } from '@/components/ui/AssigneeAvatar'
@@ -71,6 +71,13 @@ export function AutomationPanel() {
   const [newAction, setNewAction] = useState(ACTION_OPTIONS[0].value)
   const [newConfig, setNewConfig] = useState<Record<string, string>>({})
   const [newAlertUserIds, setNewAlertUserIds] = useState<string[]>([])
+  const autoNameRef = useRef('')
+
+  function generateAutoName(trigger: string, action: string) {
+    const aLabel = ACTION_OPTIONS.find(o => o.value === action)?.label ?? action
+    const tLabel = TRIGGER_OPTIONS.find(o => o.value === trigger)?.label ?? trigger
+    return `${aLabel} — ${tLabel.toLowerCase().replace('cuando ', '')}`
+  }
 
   function close() {
     const params = new URLSearchParams(searchParams)
@@ -79,7 +86,9 @@ export function AutomationPanel() {
   }
 
   function resetModal() {
-    setNewName('')
+    const auto = generateAutoName(TRIGGER_OPTIONS[0].value, ACTION_OPTIONS[0].value)
+    autoNameRef.current = auto
+    setNewName(auto)
     setNewTrigger(TRIGGER_OPTIONS[0].value)
     setNewAction(ACTION_OPTIONS[0].value)
     setNewConfig({})
@@ -94,6 +103,13 @@ export function AutomationPanel() {
       .catch(console.error)
       .finally(() => setLoading(false))
   }, [isOpen, boardId])
+
+  useEffect(() => {
+    if (!showModal) return
+    const auto = generateAutoName(TRIGGER_OPTIONS[0].value, ACTION_OPTIONS[0].value)
+    autoNameRef.current = auto
+    setNewName(auto)
+  }, [showModal])
 
   useEffect(() => {
     if (!isOpen) return
@@ -250,10 +266,20 @@ export function AutomationPanel() {
       <Modal isOpen={showModal} onClose={() => { setShowModal(false); resetModal() }} title="Nueva automatización" size="md">
         <div className="p-5 space-y-4">
           <div>
-            <label className="block text-xs font-semibold text-gray-700 mb-1">Nombre</label>
+            <label className="block text-xs font-semibold text-gray-700 mb-1 flex items-center gap-1">
+              Nombre
+              {newName === autoNameRef.current && (
+                <span className="text-[10px] font-normal text-gray-400 flex items-center gap-0.5">
+                  <Pencil className="w-2.5 h-2.5" /> auto
+                </span>
+              )}
+            </label>
             <input
               value={newName}
-              onChange={e => setNewName(e.target.value)}
+              onChange={e => {
+                autoNameRef.current = ''
+                setNewName(e.target.value)
+              }}
               className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-orange-400"
               placeholder="Ej: Urgencia por completado"
               autoFocus
@@ -264,7 +290,15 @@ export function AutomationPanel() {
             <label className="block text-xs font-semibold text-gray-700 mb-1">Cuando...</label>
             <select
               value={newTrigger}
-              onChange={e => setNewTrigger(e.target.value)}
+              onChange={e => {
+                const trig = e.target.value
+                setNewTrigger(trig)
+                const auto = generateAutoName(trig, newAction)
+                if (!newName || newName === autoNameRef.current) {
+                  autoNameRef.current = auto
+                  setNewName(auto)
+                }
+              }}
               className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-orange-400"
             >
               {TRIGGER_OPTIONS.map(t => <option key={t.value} value={t.value}>{t.label}</option>)}
@@ -275,7 +309,17 @@ export function AutomationPanel() {
             <label className="block text-xs font-semibold text-gray-700 mb-1">Entonces...</label>
             <select
               value={newAction}
-              onChange={e => { setNewAction(e.target.value); setNewConfig({}); setNewAlertUserIds([]) }}
+              onChange={e => {
+                const act = e.target.value
+                setNewAction(act)
+                setNewConfig({})
+                setNewAlertUserIds([])
+                const auto = generateAutoName(newTrigger, act)
+                if (!newName || newName === autoNameRef.current) {
+                  autoNameRef.current = auto
+                  setNewName(auto)
+                }
+              }}
               className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-orange-400"
             >
               {ACTION_OPTIONS.map(a => <option key={a.value} value={a.value}>{a.label}</option>)}
