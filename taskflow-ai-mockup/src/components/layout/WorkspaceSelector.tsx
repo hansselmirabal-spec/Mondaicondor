@@ -1,4 +1,4 @@
-import { ChevronDown, Plus, Check } from 'lucide-react'
+import { ChevronDown, Plus, Check, Pencil, Trash2 } from 'lucide-react'
 import { useState, useRef, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useBoardStore } from '@/store/boardStore'
@@ -12,6 +12,8 @@ export function WorkspaceSelector() {
   const workspace = useBoardStore(state => state.workspace)
   const setWorkspaces = useBoardStore(state => state.setWorkspaces)
   const setWorkspace = useBoardStore(state => state.setWorkspace)
+  const updateWorkspace = useBoardStore(state => state.updateWorkspace)
+  const removeWorkspace = useBoardStore(state => state.removeWorkspace)
   const setBoards = useBoardStore(state => state.setBoards)
   const setApiUsers = useBoardStore(state => state.setApiUsers)
   const addBoard = useBoardStore(state => state.addBoard)
@@ -30,6 +32,14 @@ export function WorkspaceSelector() {
   const [wsName, setWsName] = useState('')
   const [wsColor, setWsColor] = useState('#6366f1')
   const [wsSaving, setWsSaving] = useState(false)
+
+  const [editingWsId, setEditingWsId] = useState<string | null>(null)
+  const [editWsName, setEditWsName] = useState('')
+  const [editWsColor, setEditWsColor] = useState('#6366f1')
+  const [editWsSaving, setEditWsSaving] = useState(false)
+  const [confirmDeleteWsId, setConfirmDeleteWsId] = useState<string | null>(null)
+  const [deletingWs, setDeletingWs] = useState(false)
+  const [wsMenuOpenId, setWsMenuOpenId] = useState<string | null>(null)
 
   useEffect(() => {
     if (!dropdownOpen) return
@@ -83,6 +93,39 @@ export function WorkspaceSelector() {
     }
   }
 
+  async function handleEditWorkspace() {
+    if (!editingWsId) return
+    const trimmed = editWsName.trim()
+    if (!trimmed) return
+    setEditWsSaving(true)
+    try {
+      await api.workspaces.update(editingWsId, { name: trimmed, color: editWsColor })
+      updateWorkspace(editingWsId, { name: trimmed, color: editWsColor })
+      toast('Workspace actualizado.', 'success')
+      setEditingWsId(null)
+    } catch {
+      toast('Error al actualizar el workspace.', 'error')
+    } finally {
+      setEditWsSaving(false)
+    }
+  }
+
+  async function handleDeleteWorkspace(wsId: string) {
+    setDeletingWs(true)
+    try {
+      await api.workspaces.delete(wsId)
+      removeWorkspace(wsId)
+      setConfirmDeleteWsId(null)
+      setDropdownOpen(false)
+      navigate('/boards')
+      toast('Workspace eliminado.', 'success')
+    } catch {
+      toast('Error al eliminar el workspace.', 'error')
+    } finally {
+      setDeletingWs(false)
+    }
+  }
+
   async function handleCreate() {
     if (!panelName.trim() || !workspace) return
     setSaving(true)
@@ -129,22 +172,77 @@ export function WorkspaceSelector() {
                 Mis workspaces
               </p>
               {workspaces.map(ws => (
-                <button
-                  key={ws.id}
-                  onClick={() => switchWorkspace(ws)}
-                  disabled={switchingId === ws.id}
-                  className="flex items-center gap-2.5 w-full px-3 py-2 text-sm text-white/80 hover:bg-white/10 transition-colors"
-                >
-                  <span
-                    className="w-5 h-5 rounded flex items-center justify-center text-white text-xs font-bold shrink-0"
-                    style={{ backgroundColor: ws.color }}
-                  >
-                    {ws.name[0]}
-                  </span>
-                  <span className="truncate flex-1 text-left">{ws.name}</span>
-                  {ws.id === workspace?.id && <Check className="w-3.5 h-3.5 text-blue-400 shrink-0" />}
-                  {switchingId === ws.id && <span className="text-xs text-white/40">...</span>}
-                </button>
+                <div key={ws.id} className="group/ws relative">
+                  {editingWsId === ws.id ? (
+                    <div className="px-3 py-2 space-y-2">
+                      <input
+                        autoFocus
+                        value={editWsName}
+                        onChange={e => setEditWsName(e.target.value)}
+                        onKeyDown={e => {
+                          if (e.key === 'Enter') handleEditWorkspace()
+                          if (e.key === 'Escape') setEditingWsId(null)
+                        }}
+                        className="w-full px-2 py-1.5 text-xs text-white bg-white/10 border border-white/20 rounded-md focus:outline-none focus:border-blue-400 placeholder-white/30"
+                      />
+                      <div className="flex items-center gap-2">
+                        <label className="text-[10px] text-white/40">Color:</label>
+                        <input type="color" value={editWsColor} onChange={e => setEditWsColor(e.target.value)} className="w-6 h-6 rounded cursor-pointer border-0 bg-transparent" />
+                      </div>
+                      <div className="flex gap-1.5">
+                        <button onClick={handleEditWorkspace} disabled={editWsSaving || !editWsName.trim()} className="flex-1 py-1 text-xs bg-blue-600 hover:bg-blue-700 disabled:opacity-40 text-white font-medium rounded-md transition-colors">
+                          {editWsSaving ? '...' : 'Guardar'}
+                        </button>
+                        <button onClick={() => setEditingWsId(null)} className="flex-1 py-1 text-xs text-white/60 border border-white/20 hover:bg-white/10 rounded-md transition-colors">
+                          Cancelar
+                        </button>
+                      </div>
+                    </div>
+                  ) : confirmDeleteWsId === ws.id ? (
+                    <div className="px-3 py-2 space-y-2">
+                      <p className="text-xs text-white/70">¿Eliminar <strong>{ws.name}</strong>?</p>
+                      <div className="flex gap-1.5">
+                        <button onClick={() => handleDeleteWorkspace(ws.id)} disabled={deletingWs} className="flex-1 py-1 text-xs bg-red-600 hover:bg-red-700 disabled:opacity-40 text-white font-medium rounded-md transition-colors">
+                          {deletingWs ? '...' : 'Eliminar'}
+                        </button>
+                        <button onClick={() => setConfirmDeleteWsId(null)} className="flex-1 py-1 text-xs text-white/60 border border-white/20 hover:bg-white/10 rounded-md transition-colors">
+                          Cancelar
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="flex items-center pr-1">
+                      <button
+                        onClick={() => switchWorkspace(ws)}
+                        disabled={switchingId === ws.id}
+                        className="flex items-center gap-2.5 flex-1 px-3 py-2 text-sm text-white/80 hover:bg-white/10 transition-colors"
+                      >
+                        <span className="w-5 h-5 rounded flex items-center justify-center text-white text-xs font-bold shrink-0" style={{ backgroundColor: ws.color }}>
+                          {ws.name[0]}
+                        </span>
+                        <span className="truncate flex-1 text-left">{ws.name}</span>
+                        {ws.id === workspace?.id && <Check className="w-3.5 h-3.5 text-blue-400 shrink-0" />}
+                        {switchingId === ws.id && <span className="text-xs text-white/40">...</span>}
+                      </button>
+                      <div className="flex gap-0.5 opacity-0 group-hover/ws:opacity-100 transition-opacity shrink-0 pr-1">
+                        <button
+                          onClick={() => { setWsMenuOpenId(null); setEditWsName(ws.name); setEditWsColor(ws.color); setEditingWsId(ws.id) }}
+                          className="p-1 rounded text-white/40 hover:text-white hover:bg-white/10 transition-colors"
+                          title="Editar workspace"
+                        >
+                          <Pencil className="w-3 h-3" />
+                        </button>
+                        <button
+                          onClick={() => setConfirmDeleteWsId(ws.id)}
+                          className="p-1 rounded text-white/40 hover:text-red-400 hover:bg-white/10 transition-colors"
+                          title="Eliminar workspace"
+                        >
+                          <Trash2 className="w-3 h-3" />
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </div>
               ))}
 
               <div className="border-t border-white/10 mt-1">

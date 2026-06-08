@@ -1,4 +1,4 @@
-import { ChevronDown, Plug, Zap, UserPlus, Link2, MoreHorizontal, Share2, X, Send, Settings, Archive, Copy, Check, Loader2 } from 'lucide-react'
+import { ChevronDown, Plug, Zap, UserPlus, Link2, MoreHorizontal, Share2, X, Send, Settings, Archive, Copy, Check, Loader2, Pencil } from 'lucide-react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { useState, useRef, useEffect } from 'react'
 import type { MockBoard } from '@/types'
@@ -14,7 +14,11 @@ export function BoardHeader({ board }: BoardHeaderProps) {
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
   const apiUsers = useBoardStore(state => state.apiUsers)
+  const patchBoard = useBoardStore(state => state.patchBoard)
   const [inviteModal, setInviteModal] = useState(false)
+  const [renamingBoard, setRenamingBoard] = useState(false)
+  const [renameDraft, setRenameDraft] = useState('')
+  const [renameSaving, setRenameSaving] = useState(false)
   const [inviteEmail, setInviteEmail] = useState('')
   const [inviteRole, setInviteRole] = useState<'ADMIN' | 'MEMBER' | 'VIEWER'>('MEMBER')
   const [inviting, setInviting] = useState(false)
@@ -67,6 +71,22 @@ export function BoardHeader({ board }: BoardHeaderProps) {
     setTimeout(() => setLinkCopied(false), 2000)
   }
 
+  async function handleRenameBoard() {
+    const trimmed = renameDraft.trim()
+    if (!trimmed || trimmed === board.name) { setRenamingBoard(false); return }
+    setRenameSaving(true)
+    try {
+      await api.boards.update(board.id, { name: trimmed })
+      patchBoard(board.id, { name: trimmed })
+      toast('Tablero renombrado.', 'success')
+      setRenamingBoard(false)
+    } catch {
+      toast('Error al renombrar.', 'error')
+    } finally {
+      setRenameSaving(false)
+    }
+  }
+
   function closeInviteModal() {
     setInviteModal(false)
     setInviteEmail('')
@@ -88,9 +108,9 @@ export function BoardHeader({ board }: BoardHeaderProps) {
           </button>
           {titleMenuOpen && (
             <div className="absolute top-full left-0 mt-1 z-50 bg-white border border-gray-200 rounded-xl shadow-xl w-52 overflow-hidden">
-              <button onClick={() => { toast('Renombrar próximamente.'); setTitleMenuOpen(false) }}
+              <button onClick={() => { setRenameDraft(board.name); setRenamingBoard(true); setTitleMenuOpen(false) }}
                 className="w-full flex items-center gap-2.5 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors">
-                <Settings className="w-4 h-4 text-gray-400" /> Editar nombre
+                <Pencil className="w-4 h-4 text-gray-400" /> Editar nombre
               </button>
               <button onClick={() => { toast('Descripción próximamente.'); setTitleMenuOpen(false) }}
                 className="w-full flex items-center gap-2.5 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors">
@@ -168,6 +188,29 @@ export function BoardHeader({ board }: BoardHeaderProps) {
           </div>
         </div>
       </div>
+
+      <Modal isOpen={renamingBoard} onClose={() => setRenamingBoard(false)} title="Renombrar tablero" size="sm">
+        <div className="p-5 space-y-4">
+          <input
+            value={renameDraft}
+            onChange={e => setRenameDraft(e.target.value)}
+            onKeyDown={e => { if (e.key === 'Enter') handleRenameBoard() }}
+            className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            autoFocus
+          />
+          <div className="flex gap-2">
+            <button onClick={() => setRenamingBoard(false)} className="flex-1 py-2 text-sm text-gray-600 border border-gray-200 rounded-lg hover:bg-gray-50">Cancelar</button>
+            <button
+              onClick={handleRenameBoard}
+              disabled={!renameDraft.trim() || renameSaving}
+              className="flex-1 py-2 text-sm bg-blue-600 hover:bg-blue-700 disabled:bg-blue-200 text-white font-medium rounded-lg transition-colors flex items-center justify-center gap-2"
+            >
+              {renameSaving && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
+              Guardar
+            </button>
+          </div>
+        </div>
+      </Modal>
 
       <Modal isOpen={inviteModal} onClose={closeInviteModal} title="Invitar miembros" size="md">
         <div className="p-5 space-y-4">

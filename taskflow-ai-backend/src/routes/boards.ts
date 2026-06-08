@@ -25,6 +25,11 @@ const createGroupSchema = z.object({
   color: z.string().regex(/^#[0-9a-fA-F]{6}$/).optional(),
 })
 
+const updateGroupSchema = z.object({
+  name: z.string().min(1).optional(),
+  color: z.string().regex(/^#[0-9a-fA-F]{6}$/).optional(),
+})
+
 const updateBoardSettingsSchema = z.object({
   defaultStatus: z.enum(['Nuevo', 'Asignado', 'EnProgreso', 'EnRevision', 'Bloqueado', 'Completado', 'AlwaysOn']).optional(),
   defaultPriority: z.enum(['Baja', 'Media', 'Alta', 'Critica', 'AlwaysOn']).optional(),
@@ -177,4 +182,37 @@ boardRoutes.post('/:id/groups', zValidator('json', createGroupSchema), async (c)
   })
 
   return c.json({ group }, 201)
+})
+
+boardRoutes.put('/groups/:groupId', zValidator('json', updateGroupSchema), async (c) => {
+  const { userId } = c.get('user')
+  const { groupId } = c.req.param()
+  const data = c.req.valid('json')
+
+  const group = await prisma.group.findUnique({ where: { id: groupId }, include: { board: true } })
+  if (!group) return c.json({ error: 'Grupo no encontrado' }, 404)
+
+  const membership = await assertWorkspaceAccess(group.board.workspaceId, userId)
+  if (!membership || membership.role === 'VIEWER') {
+    return c.json({ error: 'Sin permisos' }, 403)
+  }
+
+  const updated = await prisma.group.update({ where: { id: groupId }, data })
+  return c.json({ group: updated })
+})
+
+boardRoutes.delete('/groups/:groupId', async (c) => {
+  const { userId } = c.get('user')
+  const { groupId } = c.req.param()
+
+  const group = await prisma.group.findUnique({ where: { id: groupId }, include: { board: true } })
+  if (!group) return c.json({ error: 'Grupo no encontrado' }, 404)
+
+  const membership = await assertWorkspaceAccess(group.board.workspaceId, userId)
+  if (!membership || membership.role === 'VIEWER') {
+    return c.json({ error: 'Sin permisos' }, 403)
+  }
+
+  await prisma.group.delete({ where: { id: groupId } })
+  return c.json({ message: 'Grupo eliminado' })
 })

@@ -29,6 +29,7 @@ interface BoardStore {
 
   newTasks: MockTask[]
   addTask: (task: MockTask) => void
+  removeTask: (taskId: string) => void
 
   apiTasks: MockTask[]
   setApiTasks: (tasks: MockTask[]) => void
@@ -46,12 +47,17 @@ interface BoardStore {
   setWorkspaces: (list: Array<{ id: string; name: string; color: string }>) => void
   workspace: { id: string; name: string; color: string } | null
   setWorkspace: (ws: { id: string; name: string; color: string }) => void
+  updateWorkspace: (id: string, patch: { name?: string; color?: string }) => void
+  removeWorkspace: (id: string) => void
 
   boards: MockBoard[]
   setBoards: (boards: MockBoard[] | ((prev: MockBoard[]) => MockBoard[])) => void
   addBoard: (board: MockBoard) => void
   removeBoard: (boardId: string) => void
   patchBoard: (boardId: string, patch: Partial<MockBoard>) => void
+
+  removeGroup: (groupId: string) => void
+  patchGroup: (groupId: string, patch: { name?: string; color?: string }) => void
 
   favorites: string[]
   toggleFavorite: (boardId: string) => void
@@ -87,6 +93,10 @@ export const useBoardStore = create<BoardStore>((set, get) => ({
 
   newTasks: [],
   addTask: task => set(state => ({ newTasks: [...state.newTasks, task] })),
+  removeTask: taskId => set(state => ({
+    newTasks: state.newTasks.filter(t => t.id !== taskId),
+    apiTasks: state.apiTasks.filter(t => t.id !== taskId),
+  })),
 
   apiTasks: [],
   setApiTasks: tasks => set({ apiTasks: tasks }),
@@ -104,6 +114,14 @@ export const useBoardStore = create<BoardStore>((set, get) => ({
   setWorkspaces: list => set({ workspaces: list }),
   workspace: null,
   setWorkspace: ws => set({ workspace: ws }),
+  updateWorkspace: (id, patch) => set(state => ({
+    workspaces: state.workspaces.map(w => w.id === id ? { ...w, ...patch } : w),
+    workspace: state.workspace?.id === id ? { ...state.workspace, ...patch } : state.workspace,
+  })),
+  removeWorkspace: id => set(state => ({
+    workspaces: state.workspaces.filter(w => w.id !== id),
+    workspace: state.workspace?.id === id ? (state.workspaces.find(w => w.id !== id) ?? null) : state.workspace,
+  })),
 
   boards: [],
   setBoards: boards =>
@@ -116,6 +134,22 @@ export const useBoardStore = create<BoardStore>((set, get) => ({
     set(state => ({
       boards: state.boards.map(b => (b.id === boardId ? { ...b, ...patch } : b)),
     })),
+
+  removeGroup: groupId => set(state => ({
+    boards: state.boards.map(b => ({
+      ...b,
+      groups: b.groups.filter(g => g.id !== groupId),
+    })),
+    apiTasks: state.apiTasks.filter(t => t.groupId !== groupId),
+    newTasks: state.newTasks.filter(t => t.groupId !== groupId),
+  })),
+
+  patchGroup: (groupId, patch) => set(state => ({
+    boards: state.boards.map(b => ({
+      ...b,
+      groups: b.groups.map(g => g.id === groupId ? { ...g, ...patch } : g),
+    })),
+  })),
 
   favorites: [],
   toggleFavorite: boardId =>

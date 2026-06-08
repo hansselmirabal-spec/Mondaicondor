@@ -167,6 +167,15 @@ export const api = {
 
     get: (id: string) => request<{ workspace: ApiWorkspaceDetail }>(`/workspaces/${id}`),
 
+    update: (id: string, data: { name?: string; color?: string }) =>
+      request<{ workspace: ApiWorkspace }>(`/workspaces/${id}`, {
+        method: 'PUT',
+        body: JSON.stringify(data),
+      }),
+
+    delete: (id: string) =>
+      request<{ message: string }>(`/workspaces/${id}`, { method: 'DELETE' }),
+
     invite: (id: string, email: string, role: 'ADMIN' | 'MEMBER' | 'VIEWER') =>
       request<{ invite: { token: string }; inviteUrl: string }>(`/workspaces/${id}/invite`, {
         method: 'POST',
@@ -229,6 +238,17 @@ export const api = {
       }),
   },
 
+  groups: {
+    update: (groupId: string, data: { name?: string; color?: string }) =>
+      request<{ group: ApiGroup }>(`/boards/groups/${groupId}`, {
+        method: 'PUT',
+        body: JSON.stringify(data),
+      }),
+
+    delete: (groupId: string) =>
+      request<{ message: string }>(`/boards/groups/${groupId}`, { method: 'DELETE' }),
+  },
+
   admin: {
     listUsers: (workspaceId: string) =>
       request<{ members: ApiWorkspaceMember[] }>(`/admin/workspaces/${workspaceId}/users`),
@@ -260,6 +280,9 @@ export const api = {
 
     update: (taskId: string, data: Partial<ApiTaskUpdate>) =>
       request<{ task: ApiTask }>(`/tasks/${taskId}`, { method: 'PUT', body: JSON.stringify(data) }),
+
+    delete: (taskId: string) =>
+      request<{ message: string }>(`/tasks/${taskId}`, { method: 'DELETE' }),
 
     addComment: (taskId: string, content: string) =>
       request<{ comment: ApiComment }>(`/tasks/${taskId}/comments`, {

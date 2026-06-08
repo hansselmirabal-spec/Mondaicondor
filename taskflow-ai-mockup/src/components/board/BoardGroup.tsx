@@ -1,10 +1,13 @@
-import { ChevronDown, ChevronRight, Plus, Check, X } from 'lucide-react'
+import { ChevronDown, ChevronRight, Plus, Check, X, MoreHorizontal, Pencil, Trash2 } from 'lucide-react'
 import { useState, useRef, useEffect } from 'react'
 import type { MockGroup, MockTask } from '@/types'
 import { TaskRow } from './TaskRow'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { useUIStore } from '@/store/uiStore'
 import { useFilterStore, ALL_COLUMNS } from '@/store/filterStore'
+import { useBoardStore } from '@/store/boardStore'
+import { api } from '@/lib/api'
+import { toast } from '@/components/ui/Toast'
 
 interface BoardGroupProps {
   group: MockGroup
@@ -16,12 +19,61 @@ interface BoardGroupProps {
 export function BoardGroup({ group, tasks, label, onAddTask }: BoardGroupProps) {
   const { toggleGroup, isGroupCollapsed } = useUIStore()
   const { isColumnVisible } = useFilterStore()
+  const { removeGroup, patchGroup } = useBoardStore()
   const collapsed = isGroupCollapsed(group.id)
   const displayName = label ?? group.name
   const [adding, setAdding] = useState(false)
   const [newTitle, setNewTitle] = useState('')
   const [newDeadline, setNewDeadline] = useState('')
   const inputRef = useRef<HTMLInputElement>(null)
+
+  const [menuOpen, setMenuOpen] = useState(false)
+  const menuRef = useRef<HTMLDivElement>(null)
+  const [editingName, setEditingName] = useState(false)
+  const [nameDraft, setNameDraft] = useState('')
+  const nameInputRef = useRef<HTMLInputElement>(null)
+  const [confirmDelete, setConfirmDelete] = useState(false)
+
+  useEffect(() => {
+    if (!menuOpen) return
+    function handler(e: MouseEvent) {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) setMenuOpen(false)
+    }
+    document.addEventListener('mousedown', handler)
+    return () => document.removeEventListener('mousedown', handler)
+  }, [menuOpen])
+
+  useEffect(() => { if (editingName) nameInputRef.current?.focus() }, [editingName])
+
+  function startEdit() {
+    setMenuOpen(false)
+    setNameDraft(group.name)
+    setEditingName(true)
+  }
+
+  async function commitNameEdit() {
+    const trimmed = nameDraft.trim()
+    if (!trimmed || trimmed === group.name) { setEditingName(false); return }
+    try {
+      await api.groups.update(group.id, { name: trimmed })
+      patchGroup(group.id, { name: trimmed })
+      toast('Grupo actualizado.', 'success')
+    } catch {
+      toast('Error al renombrar el grupo.', 'error')
+    }
+    setEditingName(false)
+  }
+
+  async function handleDelete() {
+    try {
+      await api.groups.delete(group.id)
+      removeGroup(group.id)
+      toast('Grupo eliminado.', 'success')
+    } catch {
+      toast('Error al eliminar el grupo.', 'error')
+    }
+    setConfirmDelete(false)
+  }
 
   useEffect(() => { if (adding) inputRef.current?.focus() }, [adding])
 
@@ -44,7 +96,7 @@ export function BoardGroup({ group, tasks, label, onAddTask }: BoardGroupProps) 
 
   return (
     <div className="mb-6">
-      <div className="flex items-center gap-1 mb-1 px-2 py-1 select-none">
+      <div className="flex items-center gap-1 mb-1 px-2 py-1 select-none group/header">
         <button
           onClick={() => toggleGroup(group.id)}
           className="flex items-center gap-1 hover:bg-gray-100 rounded px-1 py-0.5 transition-colors"
@@ -53,9 +105,58 @@ export function BoardGroup({ group, tasks, label, onAddTask }: BoardGroupProps) 
             ? <ChevronRight className="w-4 h-4 text-gray-400" />
             : <ChevronDown className="w-4 h-4 text-gray-400" />
           }
-          <span className="text-sm font-semibold" style={{ color: group.color }}>{displayName}</span>
+          {editingName ? (
+            <input
+              ref={nameInputRef}
+              value={nameDraft}
+              onChange={e => setNameDraft(e.target.value)}
+              onKeyDown={e => {
+                if (e.key === 'Enter') commitNameEdit()
+                if (e.key === 'Escape') setEditingName(false)
+              }}
+              onBlur={commitNameEdit}
+              onClick={e => e.stopPropagation()}
+              className="text-sm font-semibold border border-blue-400 rounded px-1 focus:outline-none focus:ring-2 focus:ring-blue-400"
+              style={{ color: group.color, minWidth: '100px' }}
+            />
+          ) : (
+            <span className="text-sm font-semibold" style={{ color: group.color }}>{displayName}</span>
+          )}
           <span className="text-xs text-gray-400 ml-1">({tasks.length})</span>
         </button>
+
+        {confirmDelete ? (
+          <div className="flex items-center gap-1 ml-2">
+            <span className="text-xs text-gray-500">¿Eliminar?</span>
+            <button onClick={() => setConfirmDelete(false)} className="text-xs px-2 py-0.5 rounded hover:bg-gray-100 text-gray-500">No</button>
+            <button onClick={handleDelete} className="text-xs px-2 py-0.5 rounded bg-red-600 hover:bg-red-700 text-white">Sí</button>
+          </div>
+        ) : (
+          <div ref={menuRef} className="relative opacity-0 group-hover/header:opacity-100 transition-opacity ml-1">
+            <button
+              onClick={e => { e.stopPropagation(); setMenuOpen(o => !o) }}
+              className="p-0.5 rounded text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors"
+            >
+              <MoreHorizontal className="w-3.5 h-3.5" />
+            </button>
+            {menuOpen && (
+              <div className="absolute left-0 top-6 z-20 w-40 bg-white rounded-lg shadow-lg border border-gray-100 py-1">
+                <button
+                  onClick={startEdit}
+                  className="flex items-center gap-2 w-full px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+                >
+                  <Pencil className="w-3.5 h-3.5" /> Renombrar
+                </button>
+                <button
+                  onClick={() => { setMenuOpen(false); setConfirmDelete(true) }}
+                  className="flex items-center gap-2 w-full px-3 py-2 text-sm text-red-600 hover:bg-red-50 transition-colors"
+                >
+                  <Trash2 className="w-3.5 h-3.5" /> Eliminar
+                </button>
+              </div>
+            )}
+          </div>
+        )}
       </div>
 
       {!collapsed && (

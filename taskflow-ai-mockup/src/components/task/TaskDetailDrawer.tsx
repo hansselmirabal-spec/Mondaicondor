@@ -1,4 +1,4 @@
-import { X, Calendar, Flag, User, FileText, MessageSquare, Clock, ChevronDown, Plus, UserMinus, Pencil, History } from 'lucide-react'
+import { X, Calendar, Flag, User, FileText, MessageSquare, Clock, ChevronDown, Plus, UserMinus, Pencil, History, Trash2 } from 'lucide-react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { useState, useEffect, useRef } from 'react'
 import { useBoardStore } from '@/store/boardStore'
@@ -82,6 +82,7 @@ export function TaskDetailDrawer() {
   const currentUser = useAuthStore(state => state.user)
   const mutation = useBoardStore(state => task ? state.taskMutations[task.id] ?? {} : {})
   const updateTask = useBoardStore(state => state.updateTask)
+  const removeTask = useBoardStore(state => state.removeTask)
   const setDeadline = useBoardStore(state => state.setDeadline)
   const deadlineHistory = useBoardStore(state => task ? (state.deadlineHistory[task.id] ?? []) : [])
 
@@ -104,6 +105,7 @@ export function TaskDetailDrawer() {
   const [editingDeadline, setEditingDeadline] = useState(false)
   const [deadlineDraft, setDeadlineDraft] = useState('')
   const [showDeadlineHistory, setShowDeadlineHistory] = useState(false)
+  const [confirmDelete, setConfirmDelete] = useState(false)
   const pickerRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
@@ -182,6 +184,17 @@ export function TaskDetailDrawer() {
     api.tasks.update(task.id, { description: descDraft }).catch(console.error)
   }
 
+  async function handleDeleteTask() {
+    if (!task) return
+    try {
+      await api.tasks.delete(task.id)
+      removeTask(task.id)
+      close()
+    } catch {
+      // silently ignore — task is already removed optimistically
+    }
+  }
+
   return (
     <>
       <aside className="fixed right-0 top-0 h-full w-[480px] bg-white shadow-2xl z-50 flex flex-col border-l border-gray-200 overflow-hidden">
@@ -189,7 +202,22 @@ export function TaskDetailDrawer() {
           <button onClick={close} className="p-1.5 bg-red-500 hover:bg-red-600 text-white rounded-lg transition-colors shrink-0">
             <X className="w-5 h-5" />
           </button>
-          <h2 className="text-base font-semibold text-gray-900 leading-snug pt-0.5">{task.title}</h2>
+          <h2 className="text-base font-semibold text-gray-900 leading-snug pt-0.5 flex-1">{task.title}</h2>
+          {confirmDelete ? (
+            <div className="flex items-center gap-1.5 shrink-0">
+              <span className="text-xs text-gray-500">¿Eliminar?</span>
+              <button onClick={() => setConfirmDelete(false)} className="text-xs px-2 py-1 rounded border border-gray-200 text-gray-600 hover:bg-gray-50">No</button>
+              <button onClick={handleDeleteTask} className="text-xs px-2 py-1 rounded bg-red-600 hover:bg-red-700 text-white">Sí</button>
+            </div>
+          ) : (
+            <button
+              onClick={() => setConfirmDelete(true)}
+              title="Eliminar tarea"
+              className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors shrink-0"
+            >
+              <Trash2 className="w-4 h-4" />
+            </button>
+          )}
         </div>
 
         <div className="flex-1 overflow-y-auto px-5 py-4 space-y-5 scrollbar-thin">
