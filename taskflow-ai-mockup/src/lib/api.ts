@@ -154,6 +154,15 @@ export const api = {
         method: 'PUT',
         body: JSON.stringify({ currentPassword, newPassword }),
       }),
+
+    getPreferences: () =>
+      request<{ preferences: ApiUserPreferences | null }>('/users/me/preferences'),
+
+    updatePreferences: (data: Partial<ApiUserPreferences>) =>
+      request<{ preferences: ApiUserPreferences }>('/users/me/preferences', {
+        method: 'PUT',
+        body: JSON.stringify(data),
+      }),
   },
 
   workspaces: {
@@ -430,6 +439,12 @@ export interface ApiAutomation {
   triggerCount: number
   createdAt: string
   updatedAt: string
+}
+
+export interface ApiUserPreferences {
+  theme: 'light' | 'dark'
+  language: string
+  emailNotifications: boolean
 }
 
 export interface ApiNotification {
