@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import {
   Loader2,
   UserPlus,
@@ -231,6 +231,7 @@ function InviteNewUserTab({
   const [submitting, setSubmitting] = useState(false)
   const [inviteLink, setInviteLink] = useState<string | null>(null)
   const [copied, setCopied] = useState(false)
+  const linkInputRef = useRef<HTMLInputElement>(null)
 
   const isValid = email.includes('@') && email.includes('.')
 
@@ -252,8 +253,11 @@ function InviteNewUserTab({
   }
 
   function handleCopy() {
-    if (!inviteLink) return
-    copyToClipboard(inviteLink)
+    const input = linkInputRef.current
+    if (!input) return
+    input.select()
+    input.setSelectionRange(0, 99999)
+    document.execCommand('copy')
     setCopied(true)
     setTimeout(() => setCopied(false), 2000)
   }
@@ -277,6 +281,7 @@ function InviteNewUserTab({
           </p>
           <div className="flex gap-2">
             <input
+              ref={linkInputRef}
               readOnly
               value={inviteLink}
               className="flex-1 px-3 py-2 bg-white border border-green-300 rounded-lg text-xs text-gray-700 focus:outline-none"

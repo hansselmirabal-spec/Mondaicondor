@@ -30,6 +30,7 @@ export function BoardHeader({ board }: BoardHeaderProps) {
   const [moreMenuOpen, setMoreMenuOpen] = useState(false)
   const titleRef = useRef<HTMLDivElement>(null)
   const moreRef = useRef<HTMLDivElement>(null)
+  const linkInputRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
     function handler(e: MouseEvent) {
@@ -66,8 +67,11 @@ export function BoardHeader({ board }: BoardHeaderProps) {
   }
 
   function copyInviteLink() {
-    if (!inviteLink) return
-    copyToClipboard(inviteLink)
+    const input = linkInputRef.current
+    if (!input) return
+    input.select()
+    input.setSelectionRange(0, 99999)
+    document.execCommand('copy')
     setLinkCopied(true)
     setTimeout(() => setLinkCopied(false), 2000)
   }
@@ -249,7 +253,7 @@ export function BoardHeader({ board }: BoardHeaderProps) {
             <div className="bg-green-50 border border-green-200 rounded-lg p-3 space-y-2">
               <p className="text-xs font-semibold text-green-700">Enlace de invitación generado — válido 7 días</p>
               <div className="flex items-center gap-2">
-                <p className="flex-1 text-xs text-gray-600 bg-white border border-gray-200 rounded px-2 py-1.5 font-mono truncate">{inviteLink}</p>
+                <input ref={linkInputRef} readOnly value={inviteLink} onFocus={e => e.target.select()} className="flex-1 text-xs text-gray-600 bg-white border border-gray-200 rounded px-2 py-1.5 font-mono truncate focus:outline-none" />
                 <button
                   onClick={copyInviteLink}
                   className={`flex items-center gap-1 px-3 py-1.5 text-xs font-medium rounded-lg transition-colors shrink-0 ${linkCopied ? 'bg-green-600 text-white' : 'bg-gray-800 text-white hover:bg-gray-900'}`}
