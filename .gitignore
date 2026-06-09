@@ -1,0 +1,9 @@
+# Environment files — never commit real secrets
+.env.dev
+.env.qas
+.env.prod
+.env.local
+
+# OS
+.DS_Store
+Thumbs.db

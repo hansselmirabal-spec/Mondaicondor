@@ -1,0 +1,55 @@
+name: taskflow-dev
+
+services:
+  frontend:
+    build:
+      context: ./taskflow-ai-mockup
+      dockerfile: Dockerfile
+    image: taskflow-frontend:dev
+    ports:
+      - "5301:80"
+    networks:
+      - net
+    depends_on:
+      - backend
+    restart: unless-stopped
+
+  backend:
+    build:
+      context: ./taskflow-ai-backend
+      dockerfile: Dockerfile
+    image: taskflow-backend:dev
+    environment:
+      DATABASE_URL: postgresql://taskflow:${DB_PASSWORD}@db:5432/taskflow_dev
+      JWT_SECRET: ${JWT_SECRET}
+      JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET}
+      APP_URL: ${APP_URL}
+      PORT: "3000"
+      SMTP_HOST: ${SMTP_HOST:-}
+      SMTP_PORT: ${SMTP_PORT:-587}
+      SMTP_USER: ${SMTP_USER:-}
+      SMTP_PASSWORD: ${SMTP_PASSWORD:-}
+    networks:
+      - net
+    depends_on:
+      - db
+    restart: unless-stopped
+
+  db:
+    image: postgres:15-alpine
+    environment:
+      POSTGRES_DB: taskflow_dev
+      POSTGRES_USER: taskflow
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+    volumes:
+      - db-data:/var/lib/postgresql/data
+    networks:
+      - net
+    restart: unless-stopped
+
+networks:
+  net:
+    driver: bridge
+
+volumes:
+  db-data:
