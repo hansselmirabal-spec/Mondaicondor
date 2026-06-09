@@ -62,7 +62,7 @@ async function request<T>(path: string, options?: RequestInit): Promise<T> {
         })
         if (!retryRes.ok) {
           const err = await retryRes.json().catch(() => ({ error: retryRes.statusText }))
-          throw new Error(err.error ?? 'Error desconocido')
+          throw new Error(typeof err.error === 'string' ? err.error : err.message ?? `Error ${retryRes.status}`)
         }
         return retryRes.json() as Promise<T>
       } else {
@@ -92,7 +92,7 @@ async function request<T>(path: string, options?: RequestInit): Promise<T> {
             })
             if (!retryRes.ok) {
               const err = await retryRes.json().catch(() => ({ error: retryRes.statusText }))
-              reject(new Error(err.error ?? 'Error desconocido'))
+              reject(new Error(typeof err.error === 'string' ? err.error : err.message ?? `Error ${retryRes.status}`))
             } else {
               resolve(retryRes.json() as T)
             }
@@ -106,7 +106,10 @@ async function request<T>(path: string, options?: RequestInit): Promise<T> {
 
   if (!res.ok) {
     const err = await res.json().catch(() => ({ error: res.statusText }))
-    throw new Error(err.error ?? 'Error desconocido')
+    const msg = typeof err.error === 'string'
+      ? err.error
+      : err.message ?? JSON.stringify(err)
+    throw new Error(msg || `Error ${res.status}`)
   }
 
   return res.json() as Promise<T>
