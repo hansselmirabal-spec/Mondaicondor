@@ -1,6 +1,6 @@
 #!/bin/bash
 # TaskFlow AI — server setup script
-# Sets up DEV and QAS environments from scratch on a fresh server.
+# Sets up PROD, DEV and QAS environments from scratch on a fresh server.
 #
 # Usage (on the server):
 #   bash setup.sh
@@ -22,17 +22,17 @@ warn()    { echo -e "${YELLOW}!${NC} $1"; }
 error()   { echo -e "${RED}ERROR:${NC} $1"; exit 1; }
 
 echo ""
-echo -e "${CYAN}TaskFlow AI — Setup DEV + QAS${NC}"
+echo -e "${CYAN}TaskFlow AI — Setup PROD + DEV + QAS${NC}"
 echo "================================================"
 echo ""
 
-# ── Prerequisites ────────────────────────────────────────────────────────────
+# ── Prerequisites ─────────────────────────────────────────────────────────────
 
-command -v docker >/dev/null 2>&1  || error "Docker no está instalado."
-command -v git    >/dev/null 2>&1  || error "Git no está instalado."
+command -v docker >/dev/null 2>&1 || error "Docker no está instalado."
+command -v git    >/dev/null 2>&1 || error "Git no está instalado."
 success "Docker y Git disponibles."
 
-# ── GitHub token ─────────────────────────────────────────────────────────────
+# ── GitHub token ──────────────────────────────────────────────────────────────
 
 if [[ -z "${GITHUB_TOKEN:-}" ]]; then
   echo ""
@@ -56,82 +56,117 @@ else
 fi
 
 cd "$INSTALL_DIR"
+chmod +x deploy-prod.sh deploy-dev.sh deploy-qas.sh
 success "Código listo en $INSTALL_DIR"
 
-# ── Generate secrets ──────────────────────────────────────────────────────────
+# ── SMTP (shared across environments) ─────────────────────────────────────────
 
-gen_secret() { openssl rand -hex 32; }
-
-# ── DEV .env ──────────────────────────────────────────────────────────────────
-
-if [[ -f .env.dev ]]; then
-  warn ".env.dev ya existe — se omite (borralo manualmente si querés regenerarlo)."
+echo ""
+info "Configuración SMTP (opcional — dejá en blanco para saltar)"
+read -rp "  SMTP host (ej: smtp.gmail.com): " SMTP_HOST
+if [[ -n "$SMTP_HOST" ]]; then
+  read -rp "  SMTP puerto (587): " SMTP_PORT
+  SMTP_PORT="${SMTP_PORT:-587}"
+  read -rp "  SMTP usuario (email): " SMTP_USER
+  read -rsp "  SMTP password: " SMTP_PASSWORD; echo ""
 else
-  echo ""
-  info "Configurando ambiente DEV (puerto 5301)"
-  read -rsp "  DB password para DEV: " DEV_DB_PASS; echo ""
-  [[ -z "$DEV_DB_PASS" ]] && error "DB password vacía."
-
-  DEV_JWT=$(gen_secret)
-  DEV_REFRESH=$(gen_secret)
-
-  cat > .env.dev <<EOF
-DB_PASSWORD=${DEV_DB_PASS}
-JWT_SECRET=${DEV_JWT}
-JWT_REFRESH_SECRET=${DEV_REFRESH}
-APP_URL=http://$(hostname -I | awk '{print $1}'):5301
-SMTP_HOST=
-SMTP_PORT=587
-SMTP_USER=
-SMTP_PASSWORD=
-EOF
-  success ".env.dev creado (JWT secrets generados automáticamente)."
+  SMTP_PORT=587; SMTP_USER=""; SMTP_PASSWORD=""
 fi
 
-# ── QAS .env ──────────────────────────────────────────────────────────────────
+gen_secret() { openssl rand -hex 32; }
+SERVER_IP=$(hostname -I | awk '{print $1}')
+
+write_env() {
+  local file=$1 db_pass=$2 jwt=$3 refresh=$4 app_url=$5 db_name=$6
+  cat > "$file" <<EOF
+DB_PASSWORD=${db_pass}
+JWT_SECRET=${jwt}
+JWT_REFRESH_SECRET=${refresh}
+APP_URL=${app_url}
+PORT=3000
+SMTP_HOST=${SMTP_HOST}
+SMTP_PORT=${SMTP_PORT}
+SMTP_USER=${SMTP_USER}
+SMTP_PASSWORD=${SMTP_PASSWORD}
+EOF
+}
+
+# ── PROD .env (port 5300) ─────────────────────────────────────────────────────
+
+echo ""
+if [[ -f .env.prod ]]; then
+  warn ".env.prod ya existe — se omite (borralo manualmente si querés regenerarlo)."
+else
+  info "Configurando PROD (puerto 5300)"
+  read -rsp "  DB password para PROD: " PROD_DB_PASS; echo ""
+  [[ -z "$PROD_DB_PASS" ]] && error "DB password vacía."
+  write_env .env.prod "$PROD_DB_PASS" "$(gen_secret)" "$(gen_secret)" \
+    "http://${SERVER_IP}:5300" "taskflow_prod"
+  success ".env.prod creado."
+fi
+
+# ── DEV .env (port 5301) ──────────────────────────────────────────────────────
+
+if [[ -f .env.dev ]]; then
+  warn ".env.dev ya existe — se omite."
+else
+  info "Configurando DEV (puerto 5301)"
+  read -rsp "  DB password para DEV: " DEV_DB_PASS; echo ""
+  [[ -z "$DEV_DB_PASS" ]] && error "DB password vacía."
+  write_env .env.dev "$DEV_DB_PASS" "$(gen_secret)" "$(gen_secret)" \
+    "http://${SERVER_IP}:5301" "taskflow_dev"
+  success ".env.dev creado."
+fi
+
+# ── QAS .env (port 5302) ──────────────────────────────────────────────────────
 
 if [[ -f .env.qas ]]; then
   warn ".env.qas ya existe — se omite."
 else
-  echo ""
-  info "Configurando ambiente QAS (puerto 5302)"
+  info "Configurando QAS (puerto 5302)"
   read -rsp "  DB password para QAS: " QAS_DB_PASS; echo ""
   [[ -z "$QAS_DB_PASS" ]] && error "DB password vacía."
-
-  QAS_JWT=$(gen_secret)
-  QAS_REFRESH=$(gen_secret)
-
-  cat > .env.qas <<EOF
-DB_PASSWORD=${QAS_DB_PASS}
-JWT_SECRET=${QAS_JWT}
-JWT_REFRESH_SECRET=${QAS_REFRESH}
-APP_URL=http://$(hostname -I | awk '{print $1}'):5302
-SMTP_HOST=
-SMTP_PORT=587
-SMTP_USER=
-SMTP_PASSWORD=
-EOF
-  success ".env.qas creado (JWT secrets generados automáticamente)."
+  write_env .env.qas "$QAS_DB_PASS" "$(gen_secret)" "$(gen_secret)" \
+    "http://${SERVER_IP}:5302" "taskflow_qas"
+  success ".env.qas creado."
 fi
 
-# ── Deploy ────────────────────────────────────────────────────────────────────
+# ── Stop existing containers on conflicting ports ─────────────────────────────
 
 echo ""
-info "Lanzando DEV y QAS..."
-chmod +x deploy-dev.sh deploy-qas.sh
+info "Verificando puertos en uso..."
+for port in 5300 5301 5302; do
+  cid=$(docker ps --filter "publish=${port}" -q 2>/dev/null)
+  if [[ -n "$cid" ]]; then
+    warn "Puerto ${port} ocupado — deteniendo contenedor ${cid}..."
+    docker stop "$cid" >/dev/null
+  fi
+done
+success "Puertos libres."
+
+# ── Deploy all three environments ─────────────────────────────────────────────
+
+echo ""
+info "Deployando PROD (5300)..."
+./deploy-prod.sh
+
+echo ""
+info "Deployando DEV (5301) y promoviendo a QAS (5302)..."
 ./deploy-dev.sh
 
 # ── Summary ───────────────────────────────────────────────────────────────────
 
-SERVER_IP=$(hostname -I | awk '{print $1}')
 echo ""
 echo "================================================"
 echo -e "${GREEN}Setup completado.${NC}"
 echo ""
-echo -e "  Producción  →  http://${SERVER_IP}:5300"
-echo -e "  DEV         →  http://${SERVER_IP}:5301"
-echo -e "  QAS         →  http://${SERVER_IP}:5302"
+echo -e "  PROD  →  http://${SERVER_IP}:5300"
+echo -e "  DEV   →  http://${SERVER_IP}:5301"
+echo -e "  QAS   →  http://${SERVER_IP}:5302"
 echo ""
-echo "Para deployar cambios futuros:"
+echo "Para deployar cambios futuros a PROD:"
+echo "  cd $INSTALL_DIR && git pull && ./deploy-prod.sh"
+echo ""
+echo "Para deployar a DEV + QAS:"
 echo "  cd $INSTALL_DIR && git pull && ./deploy-dev.sh"
 echo "================================================"
