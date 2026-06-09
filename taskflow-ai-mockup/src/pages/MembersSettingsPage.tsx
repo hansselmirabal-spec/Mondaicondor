@@ -18,6 +18,7 @@ import { useBoardStore } from '@/store/boardStore'
 import { useAuthStore } from '@/store/authStore'
 import { api, type ApiUser, type ApiWorkspaceMember } from '@/lib/api'
 import { toast } from '@/components/ui/Toast'
+import { copyToClipboard } from '@/lib/utils'
 
 type Role = 'ADMIN' | 'MEMBER' | 'VIEWER'
 
@@ -250,12 +251,11 @@ function InviteNewUserTab({
     }
   }
 
-  function handleCopy() {
+  async function handleCopy() {
     if (!inviteLink) return
-    navigator.clipboard.writeText(inviteLink).then(() => {
-      setCopied(true)
-      setTimeout(() => setCopied(false), 2000)
-    })
+    await copyToClipboard(inviteLink)
+    setCopied(true)
+    setTimeout(() => setCopied(false), 2000)
   }
 
   function handleReset() {

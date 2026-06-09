@@ -7,6 +7,7 @@ import { AssigneeAvatar } from '@/components/ui/AssigneeAvatar'
 import { useBoardStore } from '@/store/boardStore'
 import { toast } from '@/components/ui/Toast'
 import { api } from '@/lib/api'
+import { copyToClipboard } from '@/lib/utils'
 
 interface BoardHeaderProps { board: MockBoard }
 
@@ -64,9 +65,9 @@ export function BoardHeader({ board }: BoardHeaderProps) {
     }
   }
 
-  function copyInviteLink() {
+  async function copyInviteLink() {
     if (!inviteLink) return
-    navigator.clipboard.writeText(inviteLink)
+    await copyToClipboard(inviteLink)
     setLinkCopied(true)
     setTimeout(() => setLinkCopied(false), 2000)
   }

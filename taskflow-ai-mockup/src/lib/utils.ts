@@ -6,6 +6,24 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
 }
 
+export async function copyToClipboard(text: string): Promise<void> {
+  if (navigator.clipboard) {
+    try {
+      await navigator.clipboard.writeText(text)
+      return
+    } catch {}
+  }
+  // Fallback for HTTP (non-secure) contexts
+  const el = document.createElement('textarea')
+  el.value = text
+  el.style.cssText = 'position:fixed;opacity:0;pointer-events:none'
+  document.body.appendChild(el)
+  el.focus()
+  el.select()
+  document.execCommand('copy')
+  document.body.removeChild(el)
+}
+
 export function getInitials(name: string): string {
   return name
     .split(' ')
