@@ -3,6 +3,7 @@
 .env.qas
 .env.prod
 .env.local
+.env.prod.example
 
 # OS
 .DS_Store
