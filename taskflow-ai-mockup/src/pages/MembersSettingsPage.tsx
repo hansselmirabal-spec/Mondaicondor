@@ -251,9 +251,9 @@ function InviteNewUserTab({
     }
   }
 
-  async function handleCopy() {
+  function handleCopy() {
     if (!inviteLink) return
-    await copyToClipboard(inviteLink)
+    copyToClipboard(inviteLink)
     setCopied(true)
     setTimeout(() => setCopied(false), 2000)
   }

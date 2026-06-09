@@ -4,6 +4,8 @@ import { z } from 'zod'
 import { prisma } from '../lib/prisma.js'
 import { authMiddleware } from '../middleware/auth.js'
 import { sendInviteEmail } from '../lib/email.js'
+import bcrypt from 'bcryptjs'
+import crypto from 'crypto'
 import type { AppEnv } from '../lib/types.js'
 
 export const workspaceRoutes = new Hono<AppEnv>()
@@ -178,11 +180,29 @@ workspaceRoutes.post('/:id/invite', zValidator('json', inviteSchema), async (c) 
   })
 
   const appUrl = process.env.APP_URL ?? 'http://localhost:5173'
-  const fullInviteUrl = `${appUrl}/workspaces/accept/${invite.token}`
+  const loginUrl = `${appUrl}/login`
+
+  // If the user doesn't exist yet, create the account with a temp password
+  let tempPassword: string | undefined
+  const existingUser = await prisma.user.findUnique({ where: { email } })
+  if (!existingUser) {
+    tempPassword = crypto.randomBytes(5).toString('hex') // e.g. "a3f8c1d2e5"
+    const passwordHash = await bcrypt.hash(tempPassword, 12)
+    const name = email.split('@')[0]
+    const initials = name.slice(0, 2).toUpperCase()
+    const newUser = await prisma.user.create({
+      data: { email, name, initials, passwordHash },
+    })
+    await prisma.workspaceMember.upsert({
+      where: { workspaceId_userId: { workspaceId: id, userId: newUser.id } },
+      update: { role },
+      create: { workspaceId: id, userId: newUser.id, role },
+    })
+  }
 
   if (sendEmail) {
     try {
-      await sendInviteEmail(email, workspace?.name ?? 'TaskFlow AI', fullInviteUrl, role)
+      await sendInviteEmail(email, workspace?.name ?? 'TaskFlow AI', loginUrl, role, tempPassword)
     } catch (emailErr) {
       console.error('Failed to send invite email:', emailErr)
     }

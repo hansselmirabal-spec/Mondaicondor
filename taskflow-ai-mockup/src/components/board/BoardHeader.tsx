@@ -65,9 +65,9 @@ export function BoardHeader({ board }: BoardHeaderProps) {
     }
   }
 
-  async function copyInviteLink() {
+  function copyInviteLink() {
     if (!inviteLink) return
-    await copyToClipboard(inviteLink)
+    copyToClipboard(inviteLink)
     setLinkCopied(true)
     setTimeout(() => setLinkCopied(false), 2000)
   }

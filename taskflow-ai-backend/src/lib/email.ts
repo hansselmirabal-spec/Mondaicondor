@@ -83,6 +83,7 @@ export async function sendInviteEmail(
   workspaceName: string,
   loginUrl: string,
   role: string,
+  tempPassword?: string,
 ) {
   const roleLabel = role === 'ADMIN' ? 'Administrador' : role === 'VIEWER' ? 'Visualizador' : 'Miembro'
   await transporter.sendMail({
@@ -101,7 +102,6 @@ export async function sendInviteEmail(
     <tr>
       <td align="center">
         <table width="100%" cellpadding="0" cellspacing="0" style="max-width:520px;background:#ffffff;border-radius:12px;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,0.08);">
-          <!-- Header -->
           <tr>
             <td style="background:linear-gradient(135deg,#1a1a2e,#292944);padding:32px 40px;text-align:center;">
               <div style="display:inline-flex;align-items:center;gap:10px;">
@@ -112,31 +112,29 @@ export async function sendInviteEmail(
               </div>
             </td>
           </tr>
-          <!-- Body -->
           <tr>
             <td style="padding:40px;">
               <h1 style="margin:0 0 16px;font-size:22px;font-weight:700;color:#111827;">Tu cuenta está lista</h1>
               <p style="margin:0 0 24px;font-size:15px;color:#374151;line-height:1.6;">
                 Fuiste agregado al workspace <strong>${workspaceName}</strong> como <strong>${roleLabel}</strong>.
-                Podés ingresar con el siguiente correo:
               </p>
-              <!-- Credentials box -->
-              <div style="background:#f0f9ff;border:1px solid #bae6fd;border-radius:8px;padding:16px 20px;margin:0 0 28px;">
-                <p style="margin:0 0 6px;font-size:12px;font-weight:600;color:#0369a1;text-transform:uppercase;letter-spacing:0.05em;">Email de acceso</p>
+              <div style="background:#f0f9ff;border:1px solid #bae6fd;border-radius:8px;padding:16px 20px;margin:0 0 ${tempPassword ? '16px' : '28px'};">
+                <p style="margin:0 0 6px;font-size:12px;font-weight:600;color:#0369a1;text-transform:uppercase;letter-spacing:0.05em;">Correo electrónico</p>
                 <p style="margin:0;font-size:15px;font-weight:600;color:#0c4a6e;">${to}</p>
               </div>
-              <p style="margin:0 0 28px;font-size:14px;color:#6b7280;line-height:1.5;">
-                Usá la contraseña que el administrador te proporcionó. Podés cambiarla desde tu perfil una vez que ingreses.
-              </p>
+              ${tempPassword ? `
+              <div style="background:#f0fdf4;border:1px solid #86efac;border-radius:8px;padding:16px 20px;margin:0 0 28px;">
+                <p style="margin:0 0 6px;font-size:12px;font-weight:600;color:#166534;text-transform:uppercase;letter-spacing:0.05em;">Contraseña temporal</p>
+                <p style="margin:0;font-size:18px;font-weight:700;color:#14532d;letter-spacing:0.08em;font-family:monospace;">${tempPassword}</p>
+                <p style="margin:6px 0 0;font-size:12px;color:#4ade80;">Cambiala desde tu perfil una vez que ingreses.</p>
+              </div>` : ''}
               <div style="text-align:center;">
-                <a href="${loginUrl}"
-                   style="display:inline-block;background:#2563eb;color:#ffffff;font-size:15px;font-weight:600;text-decoration:none;padding:14px 32px;border-radius:8px;">
+                <a href="${loginUrl}" style="display:inline-block;background:#2563eb;color:#ffffff;font-size:15px;font-weight:600;text-decoration:none;padding:14px 32px;border-radius:8px;">
                   Ingresar a TaskFlow AI
                 </a>
               </div>
             </td>
           </tr>
-          <!-- Footer -->
           <tr>
             <td style="background:#f9fafb;padding:20px 40px;border-top:1px solid #e5e7eb;text-align:center;">
               <p style="margin:0;font-size:12px;color:#9ca3af;">

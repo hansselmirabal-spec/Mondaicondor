@@ -6,17 +6,21 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
 }
 
-export async function copyToClipboard(text: string): Promise<void> {
-  if (navigator.clipboard) {
-    try {
-      await navigator.clipboard.writeText(text)
-      return
-    } catch {}
+export function copyToClipboard(text: string): void {
+  // navigator.clipboard requires a secure context (HTTPS or localhost).
+  // On plain HTTP we skip it entirely — the async await would consume the
+  // user-gesture context and leave execCommand without permission to run.
+  if (window.isSecureContext && navigator.clipboard) {
+    navigator.clipboard.writeText(text).catch(() => execCommandCopy(text))
+    return
   }
-  // Fallback for HTTP (non-secure) contexts
+  execCommandCopy(text)
+}
+
+function execCommandCopy(text: string): void {
   const el = document.createElement('textarea')
   el.value = text
-  el.style.cssText = 'position:fixed;opacity:0;pointer-events:none'
+  el.style.cssText = 'position:fixed;top:0;left:0;width:1px;height:1px;opacity:0.01'
   document.body.appendChild(el)
   el.focus()
   el.select()
