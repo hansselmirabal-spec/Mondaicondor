@@ -11,10 +11,10 @@ import { useBoardStore } from '@/store/boardStore'
 import { useFilterStore } from '@/store/filterStore'
 import { api } from '@/lib/api'
 
-const PRIORITIES: PriorityType[] = ['Crítica', 'Alta', 'Media', 'Baja', 'Always On']
+const PRIORITIES: PriorityType[] = ['Crítica', 'Alta', 'Media', 'Baja', 'Siempre activo']
 
 const PRIORITY_TO_API: Record<PriorityType, string> = {
-  'Baja': 'Baja', 'Media': 'Media', 'Alta': 'Alta', 'Crítica': 'Critica', 'Always On': 'AlwaysOn',
+  'Baja': 'Baja', 'Media': 'Media', 'Alta': 'Alta', 'Crítica': 'Critica', 'Siempre activo': 'AlwaysOn',
 }
 
 interface TaskRowProps {
@@ -170,7 +170,7 @@ export function TaskRow({ task }: TaskRowProps) {
         </td>
       )}
 
-      {isColumnVisible('Deadline') && (
+      {isColumnVisible('Fecha límite') && (
         <td className="py-2 px-3 w-32">
           <DeadlineCell deadline={currentDeadline} />
         </td>

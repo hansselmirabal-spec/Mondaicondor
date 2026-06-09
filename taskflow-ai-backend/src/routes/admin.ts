@@ -19,10 +19,10 @@ async function assertAdmin(workspaceId: string, userId: string) {
 }
 
 const createUserSchema = z.object({
-  name: z.string().min(2),
   email: z.string().email(),
-  password: z.string().min(8),
   role: z.enum(['ADMIN', 'MEMBER', 'VIEWER']).default('MEMBER'),
+  name: z.string().min(2).optional(),
+  password: z.string().min(8).optional(),
 })
 
 const updateUserSchema = z.object({
@@ -56,10 +56,10 @@ adminRoutes.get('/workspaces/:workspaceId/users', async (c) => {
 adminRoutes.post('/workspaces/:workspaceId/users', zValidator('json', createUserSchema), async (c) => {
   const { userId } = c.get('user')
   const { workspaceId } = c.req.param()
-  const { name, email, password, role } = c.req.valid('json')
+  const { email, role, name, password } = c.req.valid('json')
 
   if (!await assertAdmin(workspaceId, userId)) {
-    return c.json({ error: 'Solo admins pueden crear usuarios' }, 403)
+    return c.json({ error: 'Solo admins pueden agregar usuarios' }, 403)
   }
 
   const workspace = await prisma.workspace.findUnique({ where: { id: workspaceId }, select: { name: true } })
@@ -82,6 +82,10 @@ adminRoutes.post('/workspaces/:workspaceId/users', zValidator('json', createUser
       console.error('[email] invite send failed:', err?.message ?? err)
     })
     return c.json({ member }, 201)
+  }
+
+  if (!name || !password) {
+    return c.json({ error: 'Usuario no encontrado. Usá el flujo de invitación para usuarios nuevos.' }, 404)
   }
 
   const initials = name.split(' ').slice(0, 2).map((w: string) => w[0]?.toUpperCase() ?? '').join('')

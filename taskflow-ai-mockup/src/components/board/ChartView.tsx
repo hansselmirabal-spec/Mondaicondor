@@ -2,7 +2,7 @@ import type { MockBoard, PriorityType } from '@/types'
 import { useBoardStore } from '@/store/boardStore'
 import { getStatusInfo, getPriorityStyle } from '@/lib/utils'
 
-const PRIORITIES: PriorityType[] = ['Always On', 'Crítica', 'Alta', 'Media', 'Baja']
+const PRIORITIES: PriorityType[] = ['Siempre activo', 'Crítica', 'Alta', 'Media', 'Baja']
 
 interface BarProps {
   label: string

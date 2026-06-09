@@ -6,7 +6,7 @@ const PRIORITY_MAP: Record<string, PriorityType> = {
   Media: 'Media',
   Alta: 'Alta',
   Critica: 'Crítica',
-  AlwaysOn: 'Always On',
+  AlwaysOn: 'Siempre activo',
 }
 
 export function toMockUser(u: ApiUser): MockUser {

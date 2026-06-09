@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { Camera, Loader2, Check, Eye, EyeOff } from 'lucide-react'
 import { Modal } from './Modal'
 import { api } from '@/lib/api'
@@ -31,6 +31,16 @@ export function ProfileModal({ isOpen, onClose }: ProfileModalProps) {
   const [pwdSuccess, setPwdSuccess] = useState(false)
 
   const fileRef = useRef<HTMLInputElement>(null)
+
+  useEffect(() => {
+    if (isOpen) {
+      setName(user?.name ?? '')
+      setColor(user?.color ?? '#6366f1')
+      setAvatarPreview(null)
+      setAvatarFile(null)
+      setProfileError(null)
+    }
+  }, [isOpen])
 
   function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0]

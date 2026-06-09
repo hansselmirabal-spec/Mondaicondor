@@ -1,5 +1,5 @@
 export type StatusType = string
-export type PriorityType = 'Baja' | 'Media' | 'Alta' | 'Crítica' | 'Always On'
+export type PriorityType = 'Baja' | 'Media' | 'Alta' | 'Crítica' | 'Siempre activo'
 
 export interface WorkspaceStatus {
   id: string

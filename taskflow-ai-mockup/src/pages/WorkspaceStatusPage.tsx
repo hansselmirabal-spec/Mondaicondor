@@ -214,7 +214,7 @@ export function WorkspaceStatusPage() {
                     >
                       {status.label}
                       {status.isDefault && (
-                        <span className="ml-2 text-[10px] font-normal text-gray-400 bg-gray-100 rounded px-1 py-0.5">default</span>
+                        <span className="ml-2 text-[10px] font-normal text-gray-400 bg-gray-100 rounded px-1 py-0.5">predeterminado</span>
                       )}
                     </button>
                     <button

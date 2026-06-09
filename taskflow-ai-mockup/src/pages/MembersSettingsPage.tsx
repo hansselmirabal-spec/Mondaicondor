@@ -9,6 +9,10 @@ import {
   ChevronDown,
   Search,
   Check,
+  Copy,
+  Mail,
+  Link2,
+  CheckCheck,
 } from 'lucide-react'
 import { useBoardStore } from '@/store/boardStore'
 import { useAuthStore } from '@/store/authStore'
@@ -99,7 +103,10 @@ function InviteRegisteredTab({
   const [query, setQuery] = useState('')
   const [selected, setSelected] = useState<ApiUser | null>(null)
   const [role, setRole] = useState<Role>('MEMBER')
+  const [method, setMethod] = useState<'link' | 'email'>('link')
   const [inviting, setInviting] = useState(false)
+  const [inviteLink, setInviteLink] = useState<string | null>(null)
+  const [copied, setCopied] = useState(false)
 
   const memberIds = new Set(members.map(m => m.userId))
 
@@ -112,18 +119,15 @@ function InviteRegisteredTab({
 
   const filtered = allUsers.filter(u => {
     const q = query.toLowerCase()
-    return (
-      u.name.toLowerCase().includes(q) ||
-      u.email.toLowerCase().includes(q)
-    )
+    return u.name.toLowerCase().includes(q) || u.email.toLowerCase().includes(q)
   })
 
   async function handleInvite() {
     if (!selected) return
     setInviting(true)
     try {
-      await api.workspaces.addMember(workspaceId, { email: selected.email, role })
-      toast(`Invitación enviada a ${selected.name}`, 'success')
+      await api.admin.createUser(workspaceId, { email: selected.email, role })
+      toast(`${selected.name} fue agregado al workspace y notificado por correo.`, 'success')
       setSelected(null)
       setQuery('')
       onInvited()
@@ -147,7 +151,10 @@ function InviteRegisteredTab({
 
   return (
     <div className="space-y-4">
-      {/* Search input */}
+      <p className="text-xs text-gray-500">
+        El usuario será agregado al workspace y recibirá un email de notificación.
+      </p>
+
       <div className="relative">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400" />
         <input
@@ -159,12 +166,10 @@ function InviteRegisteredTab({
         />
       </div>
 
-      {/* User list */}
       <div className="border border-gray-200 rounded-lg overflow-hidden max-h-56 overflow-y-auto divide-y divide-gray-50">
         {available.length === 0 && alreadyIn.length === 0 && (
           <p className="text-xs text-gray-400 text-center py-6">Sin resultados</p>
         )}
-
         {available.map(u => {
           const isSelected = selected?.id === u.id
           return (
@@ -185,8 +190,6 @@ function InviteRegisteredTab({
             </button>
           )
         })}
-
-        {/* Already members — shown dimmed at the bottom */}
         {alreadyIn.map(u => (
           <div key={u.id} className="flex items-center gap-3 px-3 py-2.5 opacity-40 cursor-not-allowed">
             <UserAvatar user={u} size="sm" />
@@ -201,7 +204,6 @@ function InviteRegisteredTab({
         ))}
       </div>
 
-      {/* Role + invite button */}
       <div className="flex items-center gap-3">
         <RoleDropdown value={role} onChange={setRole} />
         <button
@@ -210,67 +212,100 @@ function InviteRegisteredTab({
           className="flex-1 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-200 text-white text-sm font-medium rounded-lg transition-colors flex items-center justify-center gap-2"
         >
           {inviting && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
-          {selected ? `Invitar a ${selected.name}` : 'Seleccioná un usuario'}
+          {selected ? `Agregar a ${selected.name}` : 'Seleccioná un usuario'}
         </button>
       </div>
     </div>
   )
 }
 
-// ── Tab B: create new user ────────────────────────────────────────────────────
-function CreateUserTab({
+// ── Tab B: invite new user via link + email ───────────────────────────────────
+function InviteNewUserTab({
   workspaceId,
-  onCreated,
 }: {
   workspaceId: string
-  onCreated: (member: ApiWorkspaceMember) => void
 }) {
-  const [name, setName] = useState('')
   const [email, setEmail] = useState('')
-  const [password, setPassword] = useState('')
   const [role, setRole] = useState<Role>('MEMBER')
   const [submitting, setSubmitting] = useState(false)
-  const [error, setError] = useState<string | null>(null)
+  const [inviteLink, setInviteLink] = useState<string | null>(null)
+  const [copied, setCopied] = useState(false)
 
-  const isValid = name.trim().length >= 2 && email.includes('@') && password.length >= 8
+  const isValid = email.includes('@') && email.includes('.')
 
-  async function handleCreate() {
+  async function handleInvite() {
     if (!isValid) return
     setSubmitting(true)
-    setError(null)
     try {
-      const { member } = await api.admin.createUser(workspaceId, {
-        name: name.trim(),
+      const { inviteUrl } = await api.workspaces.addMember(workspaceId, {
         email: email.trim(),
-        password,
         role,
+        sendEmail: true,
       })
-      onCreated(member)
-      setName('')
-      setEmail('')
-      setPassword('')
-      setRole('MEMBER')
-      toast('Usuario creado y agregado al workspace.', 'success')
+      setInviteLink(`${window.location.origin}${inviteUrl}`)
     } catch (err) {
-      setError((err as Error).message)
+      toast((err as Error).message, 'error')
     } finally {
       setSubmitting(false)
     }
   }
 
+  function handleCopy() {
+    if (!inviteLink) return
+    navigator.clipboard.writeText(inviteLink).then(() => {
+      setCopied(true)
+      setTimeout(() => setCopied(false), 2000)
+    })
+  }
+
+  function handleReset() {
+    setInviteLink(null)
+    setEmail('')
+    setCopied(false)
+  }
+
+  if (inviteLink) {
+    return (
+      <div className="space-y-4">
+        <div className="p-4 bg-green-50 border border-green-200 rounded-xl space-y-3">
+          <div className="flex items-center gap-2">
+            <CheckCheck className="w-4 h-4 text-green-600" />
+            <p className="text-sm font-semibold text-green-700">Invitación generada</p>
+          </div>
+          <p className="text-xs text-green-600">
+            Se envió un email a <span className="font-medium">{email}</span> con el link de acceso. También podés compartirlo directamente:
+          </p>
+          <div className="flex gap-2">
+            <input
+              readOnly
+              value={inviteLink}
+              className="flex-1 px-3 py-2 bg-white border border-green-300 rounded-lg text-xs text-gray-700 focus:outline-none"
+              onFocus={e => e.target.select()}
+            />
+            <button
+              onClick={handleCopy}
+              className="px-3 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg text-xs font-medium flex items-center gap-1.5 transition-colors shrink-0"
+            >
+              {copied ? <CheckCheck className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
+              {copied ? 'Copiado' : 'Copiar'}
+            </button>
+          </div>
+        </div>
+        <button
+          onClick={handleReset}
+          className="w-full py-2 border border-gray-200 hover:bg-gray-50 text-gray-600 text-sm rounded-lg transition-colors"
+        >
+          Invitar otro usuario
+        </button>
+      </div>
+    )
+  }
+
   return (
     <div className="space-y-4">
-      <div>
-        <label className="block text-xs font-semibold text-gray-700 mb-1">
-          Nombre completo <span className="text-red-500">*</span>
-        </label>
-        <input
-          value={name}
-          onChange={e => setName(e.target.value)}
-          placeholder="Ana García"
-          className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-orange-400"
-        />
-      </div>
+      <p className="text-xs text-gray-500">
+        Se generará un link de invitación y se enviará un email. El usuario deberá registrarse con ese email para unirse.
+      </p>
       <div>
         <label className="block text-xs font-semibold text-gray-700 mb-1">
           Email <span className="text-red-500">*</span>
@@ -279,37 +314,22 @@ function CreateUserTab({
           type="email"
           value={email}
           onChange={e => setEmail(e.target.value)}
-          placeholder="ana@empresa.com"
+          placeholder="nuevo@empresa.com"
           className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-orange-400"
+          autoFocus
         />
-      </div>
-      <div>
-        <label className="block text-xs font-semibold text-gray-700 mb-1">
-          Contraseña <span className="text-red-500">*</span>
-        </label>
-        <input
-          type="password"
-          value={password}
-          onChange={e => setPassword(e.target.value)}
-          placeholder="Mínimo 8 caracteres"
-          className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-orange-400"
-        />
-        {password.length > 0 && password.length < 8 && (
-          <p className="mt-1 text-xs text-red-500">Mínimo 8 caracteres</p>
-        )}
       </div>
       <div>
         <label className="block text-xs font-semibold text-gray-700 mb-1">Rol</label>
         <RoleDropdown value={role} onChange={setRole} />
       </div>
-      {error && <p className="text-xs text-red-600">{error}</p>}
       <button
-        onClick={handleCreate}
+        onClick={handleInvite}
         disabled={!isValid || submitting}
         className="w-full py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-200 text-white text-sm font-medium rounded-lg transition-colors flex items-center justify-center gap-2"
       >
         {submitting && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
-        Crear y agregar
+        Generar invitación y enviar correo
       </button>
     </div>
   )
@@ -525,10 +545,7 @@ export function MembersSettingsPage() {
                   }}
                 />
               ) : (
-                <CreateUserTab
-                  workspaceId={workspace.id}
-                  onCreated={handleMemberCreated}
-                />
+                <InviteNewUserTab workspaceId={workspace.id} />
               )}
             </div>
           </div>

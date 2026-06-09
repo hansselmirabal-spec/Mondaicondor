@@ -132,7 +132,7 @@ export function BoardHeader({ board }: BoardHeaderProps) {
         <div className="flex items-center gap-1">
           <button onClick={() => openPanel('automations')} className="flex items-center gap-1 px-2 py-1.5 text-sm text-gray-600 hover:bg-gray-50 rounded-md transition-colors">
             <Zap className="w-3.5 h-3.5 text-orange-500" />
-            <span>Automatizar / 6</span>
+            <span>Automatizaciones</span>
           </button>
           <div className="w-px h-5 bg-gray-200 mx-1" />
           <button
@@ -237,7 +237,7 @@ export function BoardHeader({ board }: BoardHeaderProps) {
               className="flex items-center gap-1.5 px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-200 text-white text-sm font-medium rounded-lg transition-colors shrink-0"
             >
               {inviting ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Send className="w-3.5 h-3.5" />}
-              Generar link
+              Generar enlace
             </button>
           </div>
 
@@ -246,7 +246,7 @@ export function BoardHeader({ board }: BoardHeaderProps) {
           {/* Generated invite link */}
           {inviteLink && (
             <div className="bg-green-50 border border-green-200 rounded-lg p-3 space-y-2">
-              <p className="text-xs font-semibold text-green-700">Link de invitación generado — válido 7 días</p>
+              <p className="text-xs font-semibold text-green-700">Enlace de invitación generado — válido 7 días</p>
               <div className="flex items-center gap-2">
                 <p className="flex-1 text-xs text-gray-600 bg-white border border-gray-200 rounded px-2 py-1.5 font-mono truncate">{inviteLink}</p>
                 <button

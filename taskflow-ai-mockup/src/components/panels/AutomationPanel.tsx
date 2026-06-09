@@ -22,7 +22,13 @@ const ACTION_OPTIONS: { value: string; label: string; fields: string[] }[] = [
   { value: 'alert_users',   label: 'Alertar a usuarios', fields: ['userIds'] },
 ]
 
-const PRIORITY_OPTIONS = ['Baja', 'Media', 'Alta', 'Critica', 'AlwaysOn']
+const PRIORITY_OPTIONS: { value: string; label: string }[] = [
+  { value: 'Baja', label: 'Baja' },
+  { value: 'Media', label: 'Media' },
+  { value: 'Alta', label: 'Alta' },
+  { value: 'Critica', label: 'Crítica' },
+  { value: 'AlwaysOn', label: 'Siempre activo' },
+]
 
 const TRIGGER_LABEL: Record<string, string> = Object.fromEntries(TRIGGER_OPTIONS.map(t => [t.value, t.label]))
 const ACTION_LABEL: Record<string, string> = Object.fromEntries(ACTION_OPTIONS.map(a => [a.value, a.label]))
@@ -335,7 +341,7 @@ export function AutomationPanel() {
                 className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-orange-400"
               >
                 <option value="">Seleccioná...</option>
-                {PRIORITY_OPTIONS.map(p => <option key={p} value={p}>{p}</option>)}
+                {PRIORITY_OPTIONS.map(p => <option key={p.value} value={p.value}>{p.label}</option>)}
               </select>
             </div>
           )}

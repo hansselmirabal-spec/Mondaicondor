@@ -160,8 +160,8 @@ export function BoardGroup({ group, tasks, label, onAddTask }: BoardGroupProps) 
       </div>
 
       {!collapsed && (
-        <div className="rounded-sm border border-gray-100" style={{ borderLeft: `4px solid ${group.color}` }}>
-          <table className="w-full border-collapse">
+        <div className="rounded-sm border border-gray-100 overflow-x-auto" style={{ borderLeft: `4px solid ${group.color}` }}>
+          <table className="w-full min-w-[600px] border-collapse">
             <thead>
               <tr className="bg-gray-50 border-b border-gray-200">
                 <th className="w-8 px-2" />
@@ -169,7 +169,7 @@ export function BoardGroup({ group, tasks, label, onAddTask }: BoardGroupProps) 
                 {isColumnVisible('Responsable') && <th className="py-2 px-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide w-28">Responsable</th>}
                 {isColumnVisible('Estado')      && <th className="py-2 px-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide w-32">Estado</th>}
                 {isColumnVisible('Prioridad')   && <th className="py-2 px-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide w-28">Prioridad</th>}
-                {isColumnVisible('Deadline')    && <th className="py-2 px-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide w-32">Deadline</th>}
+                {isColumnVisible('Fecha límite') && <th className="py-2 px-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide w-32">Fecha límite</th>}
                 {isColumnVisible('Archivo')     && <th className="py-2 px-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide w-24">Archivo</th>}
                 {isColumnVisible('Texto')       && <th className="py-2 px-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">Texto</th>}
               </tr>
@@ -216,8 +216,8 @@ export function BoardGroup({ group, tasks, label, onAddTask }: BoardGroupProps) 
                   {isColumnVisible('Estado') && <td className="w-32" />}
                   {/* Prioridad — empty on creation */}
                   {isColumnVisible('Prioridad') && <td className="w-28" />}
-                  {/* Deadline — input aligned with column */}
-                  {isColumnVisible('Deadline') && (
+                  {/* Fecha límite — input aligned with column */}
+                  {isColumnVisible('Fecha límite') && (
                     <td className="py-1.5 px-2 w-32">
                       <input
                         type="date"
@@ -250,6 +250,7 @@ export function BoardGroup({ group, tasks, label, onAddTask }: BoardGroupProps) 
             <div className="flex-1" />
             {isColumnVisible('Estado') && <div className="w-32 px-1"><div className="h-2 mt-1 rounded" style={{ backgroundColor: group.color, opacity: 0.35 }} /></div>}
             {isColumnVisible('Prioridad') && <div className="w-28 px-1"><div className="h-2 mt-1 rounded bg-rose-400/30" /></div>}
+            {isColumnVisible('Fecha límite') && <div className="w-32" />}
           </div>
         </div>
       )}

@@ -121,7 +121,7 @@ export function EmailAlertsPage() {
                       ? 'bg-blue-50 text-blue-600'
                       : 'bg-gray-100 text-gray-500'
                   }`}>
-                    {member.role}
+                    {member.role === 'ADMIN' ? 'Admin' : member.role === 'MEMBER' ? 'Miembro' : 'Visualizador'}
                   </span>
 
                   {/* Toggle */}

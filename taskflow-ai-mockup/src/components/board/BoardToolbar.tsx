@@ -14,10 +14,10 @@ import { toMockTask } from '@/lib/adapters'
 import type { PriorityType } from '@/types'
 
 const PRIORITY_TO_API: Record<PriorityType, string> = {
-  'Crítica': 'Critica', 'Alta': 'Alta', 'Media': 'Media', 'Baja': 'Baja', 'Always On': 'AlwaysOn',
+  'Crítica': 'Critica', 'Alta': 'Alta', 'Media': 'Media', 'Baja': 'Baja', 'Siempre activo': 'AlwaysOn',
 }
 
-const PRIORITIES: PriorityType[] = ['Crítica', 'Alta', 'Media', 'Baja', 'Always On']
+const PRIORITIES: PriorityType[] = ['Crítica', 'Alta', 'Media', 'Baja', 'Siempre activo']
 const SORT_OPTIONS = [
   { label: 'Nombre A→Z',    field: 'title' as const, dir: 'asc' as const },
   { label: 'Nombre Z→A',    field: 'title' as const, dir: 'desc' as const },
@@ -323,7 +323,7 @@ export function BoardToolbar() {
 
       <button onClick={() => openPanel('automations')} className="flex items-center gap-1 px-2 py-1.5 text-sm text-gray-600 hover:bg-gray-100 rounded-md transition-colors">
         <Zap className="w-3.5 h-3.5 text-orange-500" />
-        <span>Automatizar</span>
+        <span>Automatizaciones</span>
       </button>
       <button className="p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-md transition-colors">
         <MoreHorizontal className="w-4 h-4" />
@@ -376,7 +376,7 @@ export function BoardToolbar() {
           </div>
           <div>
             <label className="block text-xs font-semibold text-gray-700 mb-1 flex items-center gap-1">
-              <Calendar className="w-3 h-3" /> Deadline
+              <Calendar className="w-3 h-3" /> Fecha límite
             </label>
             <input
               type="date"
@@ -443,7 +443,7 @@ export function BoardToolbar() {
             disabled={!newTaskTitle.trim() || saving}
             className="flex-1 py-2 text-sm bg-blue-600 hover:bg-blue-700 disabled:bg-blue-200 text-white font-medium rounded-lg transition-colors"
           >
-            {saving ? 'Creando...' : 'Crear tarea'}
+            {saving ? 'Creando...' : 'Crear elemento'}
           </button>
         </div>
       </div>

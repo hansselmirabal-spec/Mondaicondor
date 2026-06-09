@@ -8,8 +8,8 @@ import { useState, useRef, useEffect } from 'react'
 import { Plus, Check, X, FolderOpen } from 'lucide-react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 
-const PRIORITY_ORDER: Record<PriorityType, number> = { 'Crítica': 0, 'Always On': 1, 'Alta': 2, 'Media': 3, 'Baja': 4 }
-const STATUS_ORDER: Record<StatusType, number> = { 'Bloqueado': 0, 'En revisión': 1, 'En progreso': 2, 'Asignado': 3, 'Nuevo': 4, 'Always On': 5, 'Completado': 6 }
+const PRIORITY_ORDER: Record<PriorityType, number> = { 'Crítica': 0, 'Siempre activo': 1, 'Alta': 2, 'Media': 3, 'Baja': 4 }
+const STATUS_ORDER: Record<StatusType, number> = { 'Bloqueado': 0, 'En revisión': 1, 'En progreso': 2, 'Asignado': 3, 'Nuevo': 4, 'Siempre activo': 5, 'Completado': 6 }
 
 interface BoardTableProps { board: MockBoard }
 

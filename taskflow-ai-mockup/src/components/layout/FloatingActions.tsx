@@ -1,13 +1,17 @@
 import { FileText, Trophy, HelpCircle } from 'lucide-react'
 import { useState } from 'react'
-import { useSearchParams } from 'react-router-dom'
+import { useSearchParams, useParams } from 'react-router-dom'
 import { Modal } from '@/components/ui/Modal'
 import { useBoardStore } from '@/store/boardStore'
 
 function SummaryModal({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) {
+  const { boardId } = useParams<{ boardId: string }>()
+  const boards = useBoardStore(state => state.boards)
   const apiTasks = useBoardStore(state => state.apiTasks)
-  const tasks = apiTasks
+  const board = boards.find(b => b.id === boardId)
+  const tasks = boardId ? apiTasks.filter(t => t.boardId === boardId) : apiTasks
   const total = tasks.length
+  const groupCount = board?.groups.length ?? 0
   const byStatus: Record<string, number> = {}
   tasks.forEach(t => { byStatus[t.status] = (byStatus[t.status] ?? 0) + 1 })
 
@@ -15,7 +19,7 @@ function SummaryModal({ isOpen, onClose }: { isOpen: boolean; onClose: () => voi
     <Modal isOpen={isOpen} onClose={onClose} title="Resumen del tablero" size="md">
       <div className="p-5 space-y-4">
         <p className="text-sm text-gray-600">
-          El tablero <strong>Pendientes - Digital</strong> tiene <strong>{total} tareas</strong> distribuidas en 5 grupos.
+          El tablero <strong>{board?.name ?? 'actual'}</strong> tiene <strong>{total} {total === 1 ? 'tarea' : 'tareas'}</strong>{groupCount > 0 ? ` distribuidas en ${groupCount} ${groupCount === 1 ? 'grupo' : 'grupos'}` : ''}.
         </p>
         <div className="space-y-2">
           {Object.entries(byStatus).map(([status, count]) => (
@@ -25,10 +29,12 @@ function SummaryModal({ isOpen, onClose }: { isOpen: boolean; onClose: () => voi
             </div>
           ))}
         </div>
-        <div className="bg-blue-50 rounded-lg p-3">
-          <p className="text-xs font-semibold text-blue-700 mb-1">Recomendación IA</p>
-          <p className="text-xs text-blue-600">Hay 2 tareas bloqueadas que requieren atención inmediata. Priorizá el desbloqueo antes del viernes para no afectar el flujo del equipo.</p>
-        </div>
+        {byStatus['Bloqueado'] > 0 && (
+          <div className="bg-blue-50 rounded-lg p-3">
+            <p className="text-xs font-semibold text-blue-700 mb-1">Recomendación IA</p>
+            <p className="text-xs text-blue-600">Hay {byStatus['Bloqueado']} {byStatus['Bloqueado'] === 1 ? 'tarea bloqueada que requiere' : 'tareas bloqueadas que requieren'} atención inmediata.</p>
+          </div>
+        )}
       </div>
     </Modal>
   )
@@ -38,6 +44,9 @@ function GamifyModal({ isOpen, onClose }: { isOpen: boolean; onClose: () => void
   return (
     <Modal isOpen={isOpen} onClose={onClose} title="Gamificación del tablero" size="md">
       <div className="p-5 space-y-4">
+        <div className="bg-amber-50 border border-amber-200 rounded-lg px-3 py-2 text-xs text-amber-700">
+          Datos de ejemplo — esta función está en desarrollo.
+        </div>
         <div className="flex items-center gap-4 bg-gradient-to-r from-purple-50 to-blue-50 rounded-xl p-4">
           <div className="text-4xl">🏆</div>
           <div>

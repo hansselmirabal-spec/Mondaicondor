@@ -237,12 +237,12 @@ export function MembersPage() {
                   <div className="min-w-0">
                     <div className="flex items-center gap-1.5">
                       <span className="text-sm font-medium text-gray-900 truncate">{member.user.name}</span>
-                      {isMe && <span className="text-xs text-gray-400 shrink-0">(vos)</span>}
+                      {isMe && <span className="text-[10px] text-gray-400 bg-gray-100 px-2 py-0.5 rounded-full shrink-0">vos</span>}
                     </div>
                   </div>
 
                   {/* Email */}
-                  <div className="text-sm text-gray-500 truncate">{member.user.email}</div>
+                  <div className="text-sm text-gray-500 truncate" title={member.user.email}>{member.user.email}</div>
 
                   {/* Role badge */}
                   <div>

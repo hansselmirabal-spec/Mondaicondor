@@ -5,7 +5,7 @@ export type ViewTab = 'table' | 'chart' | 'kanban'
 export type SortField = 'title' | 'priority' | 'deadline' | 'status'
 export type GroupBy = 'default' | 'status' | 'priority' | 'assignee'
 
-export const ALL_COLUMNS = ['Responsable', 'Estado', 'Prioridad', 'Deadline', 'Archivo', 'Texto'] as const
+export const ALL_COLUMNS = ['Responsable', 'Estado', 'Prioridad', 'Fecha límite', 'Archivo', 'Texto'] as const
 export type ColumnName = typeof ALL_COLUMNS[number]
 
 interface FilterStore {

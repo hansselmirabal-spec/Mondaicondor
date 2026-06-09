@@ -35,7 +35,7 @@ const FALLBACK_STATUS: Record<string, { label: string; color: string }> = {
   EnRevision: { label: 'En revisión', color: '#a25ddc' },
   Bloqueado:  { label: 'Bloqueado',   color: '#bb3354' },
   Completado: { label: 'Completado',  color: '#00c875' },
-  AlwaysOn:   { label: 'Always On',   color: '#00c2cd' },
+  AlwaysOn:   { label: 'Siempre activo', color: '#00c2cd' },
 }
 
 export function getStatusInfo(slug: string, statuses: WorkspaceStatus[]): { label: string; bg: string; text: string } {
@@ -52,7 +52,7 @@ export function getStatusInfo(slug: string, statuses: WorkspaceStatus[]): { labe
 
 export function getPriorityStyle(priority: PriorityType): { bg: string; text: string } {
   const map: Record<PriorityType, { bg: string; text: string }> = {
-    'Always On': { bg: '#e2445c', text: '#ffffff' },
+    'Siempre activo': { bg: '#e2445c', text: '#ffffff' },
     'Crítica':   { bg: '#333333', text: '#ffffff' },
     'Alta':      { bg: '#e2445c', text: '#ffffff' },
     'Media':     { bg: '#fdab3d', text: '#ffffff' },

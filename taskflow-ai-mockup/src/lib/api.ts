@@ -38,6 +38,12 @@ async function request<T>(path: string, options?: RequestInit): Promise<T> {
   })
 
   if (res.status === 401) {
+    // Auth endpoints handle their own 401s — don't attempt token refresh
+    if (path.startsWith('/auth/')) {
+      const err = await res.json().catch(() => ({ error: res.statusText }))
+      throw new Error(err.error ?? 'Credenciales inválidas')
+    }
+
     if (!isRefreshing) {
       isRefreshing = true
       const newToken = await refreshAccessToken()
@@ -208,7 +214,7 @@ export const api = {
         body: JSON.stringify({ email, role }),
       }),
 
-    addMember: (workspaceId: string, data: { email: string; role: 'ADMIN' | 'MEMBER' | 'VIEWER' }) =>
+    addMember: (workspaceId: string, data: { email: string; role: 'ADMIN' | 'MEMBER' | 'VIEWER'; sendEmail?: boolean }) =>
       request<{ invite: { token: string }; inviteUrl: string }>(`/workspaces/${workspaceId}/invite`, {
         method: 'POST',
         body: JSON.stringify(data),
@@ -294,7 +300,7 @@ export const api = {
     listUsers: (workspaceId: string) =>
       request<{ members: ApiWorkspaceMember[] }>(`/admin/workspaces/${workspaceId}/users`),
 
-    createUser: (workspaceId: string, data: { name: string; email: string; password: string; role: 'ADMIN' | 'MEMBER' | 'VIEWER' }) =>
+    createUser: (workspaceId: string, data: { email: string; role: 'ADMIN' | 'MEMBER' | 'VIEWER'; name?: string; password?: string }) =>
       request<{ member: ApiWorkspaceMember }>(`/admin/workspaces/${workspaceId}/users`, {
         method: 'POST',
         body: JSON.stringify(data),

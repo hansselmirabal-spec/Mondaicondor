@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useNavigate, Link, useLocation } from 'react-router-dom'
-import { Zap, CheckCircle } from 'lucide-react'
+import { Zap, CheckCircle, AlertCircle } from 'lucide-react'
 import { useAuthStore } from '@/store/authStore'
 
 export function LoginPage() {
@@ -19,6 +19,16 @@ export function LoginPage() {
     if (localStorage.getItem('access_token')) {
       navigate(redirectTo, { replace: true })
     }
+  }
+
+  function handleEmailChange(e: React.ChangeEvent<HTMLInputElement>) {
+    if (error) clearError()
+    setEmail(e.target.value)
+  }
+
+  function handlePasswordChange(e: React.ChangeEvent<HTMLInputElement>) {
+    if (error) clearError()
+    setPassword(e.target.value)
   }
 
   return (
@@ -43,21 +53,28 @@ export function LoginPage() {
           )}
 
           {error && (
-            <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-600 flex items-center justify-between">
-              <span>{error}</span>
-              <button onClick={clearError} className="text-red-400 hover:text-red-600 ml-2">✕</button>
+            <div className="mb-4 p-4 bg-red-50 border-2 border-red-300 rounded-xl text-sm text-red-700 flex items-start gap-3">
+              <AlertCircle className="w-5 h-5 flex-shrink-0 mt-0.5 text-red-500" />
+              <div>
+                <p className="font-semibold">Acceso denegado</p>
+                <p className="text-red-600 mt-0.5">Email o contraseña incorrectos. Verificá tus datos e intentá de nuevo.</p>
+              </div>
             </div>
           )}
 
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
-              <label className="block text-xs font-semibold text-gray-700 mb-1.5">Email</label>
+              <label className="block text-xs font-semibold text-gray-700 mb-1.5">Correo electrónico</label>
               <input
                 type="email"
                 value={email}
-                onChange={e => setEmail(e.target.value)}
+                onChange={handleEmailChange}
                 disabled={isLoading}
-                className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:opacity-50"
+                className={`w-full px-3 py-2.5 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:border-transparent disabled:opacity-50 ${
+                  error
+                    ? 'border-red-400 focus:ring-red-400 bg-red-50'
+                    : 'border-gray-200 focus:ring-blue-500'
+                }`}
               />
             </div>
             <div>
@@ -65,9 +82,13 @@ export function LoginPage() {
               <input
                 type="password"
                 value={password}
-                onChange={e => setPassword(e.target.value)}
+                onChange={handlePasswordChange}
                 disabled={isLoading}
-                className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:opacity-50"
+                className={`w-full px-3 py-2.5 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:border-transparent disabled:opacity-50 ${
+                  error
+                    ? 'border-red-400 focus:ring-red-400 bg-red-50'
+                    : 'border-gray-200 focus:ring-blue-500'
+                }`}
               />
             </div>
             <button

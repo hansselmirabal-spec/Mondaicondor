@@ -19,7 +19,7 @@ const STATUS_TO_API: Record<StatusType, string> = {
   'En revisión': 'EnRevision',
   'Bloqueado': 'Bloqueado',
   'Completado': 'Completado',
-  'Always On': 'AlwaysOn',
+  'Siempre activo': 'AlwaysOn',
 }
 
 const PRIORITY_TO_API: Record<PriorityType, string> = {
@@ -27,11 +27,11 @@ const PRIORITY_TO_API: Record<PriorityType, string> = {
   'Media': 'Media',
   'Alta': 'Alta',
   'Crítica': 'Critica',
-  'Always On': 'AlwaysOn',
+  'Siempre activo': 'AlwaysOn',
 }
 
-const STATUSES: StatusType[] = ['Nuevo', 'Asignado', 'En progreso', 'En revisión', 'Bloqueado', 'Completado', 'Always On']
-const PRIORITIES: PriorityType[] = ['Crítica', 'Alta', 'Media', 'Baja', 'Always On']
+const STATUSES: StatusType[] = ['Nuevo', 'Asignado', 'En progreso', 'En revisión', 'Bloqueado', 'Completado', 'Siempre activo']
+const PRIORITIES: PriorityType[] = ['Crítica', 'Alta', 'Media', 'Baja', 'Siempre activo']
 
 interface SelectDropdownProps<T extends string> {
   value: T
@@ -383,7 +383,7 @@ export function TaskDetailDrawer() {
 
             <div>
               <p className="text-xs text-gray-400 font-medium mb-1 flex items-center gap-1">
-                <Calendar className="w-3 h-3" /> Deadline
+                <Calendar className="w-3 h-3" /> Fecha límite
                 {deadlineHistory.length > 0 && (
                   <button
                     onClick={() => setShowDeadlineHistory(o => !o)}

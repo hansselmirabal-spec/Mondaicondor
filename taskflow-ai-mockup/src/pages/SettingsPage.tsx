@@ -14,7 +14,7 @@ type Section = 'general' | 'notifications' | 'members' | 'permissions' | 'appear
 
 const SECTIONS: { id: Section; icon: React.ReactNode; label: string; description: string }[] = [
   { id: 'general',       icon: <Settings className="w-4 h-4" />,  label: 'General',         description: 'Nombre y descripción del tablero' },
-  { id: 'notifications', icon: <Bell className="w-4 h-4" />,      label: 'Notificaciones',  description: 'Alertas por email y en la app' },
+  { id: 'notifications', icon: <Bell className="w-4 h-4" />,      label: 'Notificaciones',  description: 'Alertas por correo y en la app' },
   { id: 'members',       icon: <Users className="w-4 h-4" />,     label: 'Miembros',        description: 'Roles y accesos' },
   { id: 'permissions',   icon: <Shield className="w-4 h-4" />,    label: 'Permisos',        description: 'Qué puede hacer cada rol' },
   { id: 'appearance',    icon: <Palette className="w-4 h-4" />,   label: 'Apariencia',      description: 'Color de perfil y preferencias' },
@@ -286,25 +286,12 @@ export function SettingsPage() {
               ) : prefs ? (
                 <div className="space-y-4">
                   <ToggleRow
-                    label="Notificaciones por email"
+                    label="Notificaciones por correo"
                     description="Recibí un resumen diario de actividad en tu casilla."
                     checked={prefs.emailNotifications}
                     loading={savingPrefs}
                     onChange={v => togglePref('emailNotifications', v)}
                   />
-                  <div className="border-t border-gray-100" />
-                  <div>
-                    <p className="text-xs font-semibold text-gray-700 mb-2">Idioma de la interfaz</p>
-                    <select
-                      value={prefs.language}
-                      onChange={e => togglePref('language', e.target.value)}
-                      className="px-3 py-2 border border-gray-200 rounded-lg text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    >
-                      <option value="es">Español</option>
-                      <option value="en">English</option>
-                      <option value="pt">Português</option>
-                    </select>
-                  </div>
                 </div>
               ) : (
                 <p className="text-sm text-gray-400">No se pudieron cargar las preferencias.</p>
@@ -345,7 +332,7 @@ export function SettingsPage() {
                       <p className="text-xs text-gray-400 truncate">{u.email}</p>
                     </div>
                     {u.id === currentUser?.id && (
-                      <span className="text-[10px] text-gray-400 bg-gray-100 px-2 py-0.5 rounded-full">vos</span>
+                      <span className="text-xs text-gray-400 shrink-0">(vos)</span>
                     )}
                   </div>
                 ))}
@@ -375,7 +362,7 @@ export function SettingsPage() {
                       <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Acción</th>
                       <th className="px-4 py-3 text-center text-xs font-semibold text-purple-600 uppercase tracking-wide">Admin</th>
                       <th className="px-4 py-3 text-center text-xs font-semibold text-blue-600 uppercase tracking-wide">Miembro</th>
-                      <th className="px-4 py-3 text-center text-xs font-semibold text-gray-500 uppercase tracking-wide">Viewer</th>
+                      <th className="px-4 py-3 text-center text-xs font-semibold text-gray-500 uppercase tracking-wide">Visualizador</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-100">
@@ -419,6 +406,20 @@ export function SettingsPage() {
                   <p className="text-sm font-semibold text-gray-800">{currentUser?.name}</p>
                   <p className="text-xs text-gray-400">{currentUser?.email}</p>
                 </div>
+              </div>
+
+              {/* Language */}
+              <div>
+                <p className="text-xs font-semibold text-gray-700 mb-2">Idioma de la interfaz</p>
+                <select
+                  value={prefs?.language ?? 'es'}
+                  onChange={e => togglePref('language', e.target.value)}
+                  className="px-3 py-2 border border-gray-200 rounded-lg text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                  <option value="es">Español</option>
+                  <option value="en">English</option>
+                  <option value="pt">Português</option>
+                </select>
               </div>
 
               {/* Color picker */}

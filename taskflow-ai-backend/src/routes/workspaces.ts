@@ -40,6 +40,7 @@ const updateWorkspaceSchema = z.object({
 const inviteSchema = z.object({
   email: z.string().email(),
   role: z.enum(['ADMIN', 'MEMBER', 'VIEWER']).default('MEMBER'),
+  sendEmail: z.boolean().optional().default(false),
 })
 
 const updateSettingsSchema = z.object({
@@ -154,7 +155,7 @@ workspaceRoutes.delete('/:id', async (c) => {
 workspaceRoutes.post('/:id/invite', zValidator('json', inviteSchema), async (c) => {
   const { userId } = c.get('user')
   const { id } = c.req.param()
-  const { email, role } = c.req.valid('json')
+  const { email, role, sendEmail } = c.req.valid('json')
 
   const membership = await prisma.workspaceMember.findUnique({
     where: { workspaceId_userId: { workspaceId: id, userId } },
@@ -176,12 +177,15 @@ workspaceRoutes.post('/:id/invite', zValidator('json', inviteSchema), async (c) 
     },
   })
 
-  const fullInviteUrl = `${process.env.APP_URL ?? 'http://localhost:5173'}/workspaces/accept/${invite.token}`
+  const appUrl = process.env.APP_URL ?? 'http://localhost:5173'
+  const fullInviteUrl = `${appUrl}/workspaces/accept/${invite.token}`
 
-  try {
-    await sendInviteEmail(email, workspace?.name ?? 'TaskFlow AI', fullInviteUrl, role)
-  } catch (emailErr) {
-    console.error('Failed to send invite email:', emailErr)
+  if (sendEmail) {
+    try {
+      await sendInviteEmail(email, workspace?.name ?? 'TaskFlow AI', fullInviteUrl, role)
+    } catch (emailErr) {
+      console.error('Failed to send invite email:', emailErr)
+    }
   }
 
   return c.json({ invite, inviteUrl: `/workspaces/accept/${invite.token}` }, 201)

@@ -1,5 +1,5 @@
 import {
-  LayoutGrid, Users, Star, MoreHorizontal, Home, Sidebar as SidebarIcon,
+  LayoutGrid, Users, Star, MoreHorizontal, Sidebar as SidebarIcon,
   LogOut, Settings, User as UserIcon, Bell, X, Check
 } from 'lucide-react'
 import { useState, useRef, useEffect, useCallback } from 'react'
@@ -136,7 +136,6 @@ export function Sidebar() {
           )}
         </div>
 
-        <NavIcon icon={<Home className="w-4 h-4" />} label="Inicio" onClick={() => navigate('/boards')} />
         <NavIcon icon={<LayoutGrid className="w-4 h-4" />} label="Espacio" active={!location.pathname.startsWith('/settings')} onClick={() => navigate('/boards')} />
         <NavIcon icon={<Users className="w-4 h-4" />} label="Equipo" onClick={() => navigate('/members')} />
         <NavIcon icon={<Settings className="w-4 h-4" />} label="Config." active={location.pathname.startsWith('/settings')} onClick={() => navigate('/settings')} />
@@ -150,7 +149,7 @@ export function Sidebar() {
             className={`relative flex flex-col items-center gap-0.5 py-2 px-1 rounded-lg transition-colors w-full ${bellOpen ? 'bg-white/20 text-white' : 'text-white/50 hover:text-white hover:bg-white/10'}`}
           >
             <Bell className="w-4 h-4" />
-            <span className="text-[10px] leading-none">Alertas</span>
+            <span className="text-[10px] leading-none">Notific.</span>
             {unreadCount > 0 && (
               <span className="absolute top-1 right-1.5 w-4 h-4 bg-red-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center leading-none">
                 {unreadCount > 9 ? '9+' : unreadCount}
@@ -202,7 +201,6 @@ export function Sidebar() {
         </div>
 
         <NavIcon icon={<Star className="w-4 h-4" />} label="Favoritos" onClick={() => navigate('/boards')} />
-        <NavIcon icon={<MoreHorizontal className="w-4 h-4" />} label="Más" onClick={() => toast('Más opciones próximamente.')} />
       </div>
 
       {/* Main sidebar panel */}
