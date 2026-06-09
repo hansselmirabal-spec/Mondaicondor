@@ -9,13 +9,15 @@ export function LoginPage() {
   const { login, isLoading, error, clearError } = useAuthStore()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
-  const resetSuccess = (location.state as { resetSuccess?: boolean } | null)?.resetSuccess
+  const state = location.state as { resetSuccess?: boolean; from?: string } | null
+  const resetSuccess = state?.resetSuccess
+  const redirectTo = state?.from ?? '/boards'
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     await login(email, password)
     if (localStorage.getItem('access_token')) {
-      navigate('/boards', { replace: true })
+      navigate(redirectTo, { replace: true })
     }
   }
 

@@ -78,7 +78,9 @@ adminRoutes.post('/workspaces/:workspaceId/users', zValidator('json', createUser
       data: { workspaceId, userId: existing.id, role },
       include: { user: { select: { id: true, name: true, email: true, initials: true, color: true, createdAt: true } } },
     })
-    sendInviteEmail(email, workspaceName, loginUrl, role).catch(() => {})
+    sendInviteEmail(email, workspaceName, loginUrl, role).catch((err) => {
+      console.error('[email] invite send failed:', err?.message ?? err)
+    })
     return c.json({ member }, 201)
   }
 
@@ -97,7 +99,9 @@ adminRoutes.post('/workspaces/:workspaceId/users', zValidator('json', createUser
     })
   })
 
-  sendInviteEmail(email, workspaceName, loginUrl, role).catch(() => {})
+  sendInviteEmail(email, workspaceName, loginUrl, role).catch((err) => {
+    console.error('[email] invite send failed:', err?.message ?? err)
+  })
   return c.json({ member }, 201)
 })
 

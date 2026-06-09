@@ -252,6 +252,9 @@ export const api = {
         `/workspaces/${workspaceId}/members/${memberId}/email-notifications`,
         { method: 'PUT', body: JSON.stringify({ enabled }) }
       ),
+
+    acceptInvite: (token: string) =>
+      request<{ message: string }>(`/workspaces/accept/${token}`, { method: 'POST' }),
   },
 
   boards: {
