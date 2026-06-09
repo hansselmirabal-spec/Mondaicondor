@@ -154,6 +154,64 @@ export async function sendInviteEmail(
   })
 }
 
+export async function sendTaskNotificationEmail(
+  to: string,
+  name: string,
+  subject: string,
+  message: string,
+  taskUrl?: string,
+) {
+  await transporter.sendMail({
+    from: `"TaskFlow AI" <${process.env.SMTP_USER}>`,
+    to,
+    subject: `${subject} — TaskFlow AI`,
+    html: `
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+</head>
+<body style="margin:0;padding:0;background-color:#f4f4f7;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background-color:#f4f4f7;padding:40px 20px;">
+    <tr>
+      <td align="center">
+        <table width="100%" cellpadding="0" cellspacing="0" style="max-width:520px;background:#ffffff;border-radius:12px;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,0.08);">
+          <tr>
+            <td style="background:linear-gradient(135deg,#1a1a2e,#292944);padding:32px 40px;text-align:center;">
+              <div style="display:inline-block;">
+                <div style="width:40px;height:40px;background:#2563eb;border-radius:10px;display:inline-block;vertical-align:middle;line-height:40px;text-align:center;">
+                  <span style="color:#fff;font-size:20px;font-weight:bold;">⚡</span>
+                </div>
+                <span style="color:#ffffff;font-size:22px;font-weight:700;vertical-align:middle;margin-left:8px;">TaskFlow AI</span>
+              </div>
+            </td>
+          </tr>
+          <tr>
+            <td style="padding:36px 40px;">
+              <p style="margin:0 0 16px;font-size:15px;color:#6b7280;">Hola <strong style="color:#374151;">${name}</strong>,</p>
+              <p style="margin:0 0 28px;font-size:15px;color:#374151;line-height:1.6;">${message}</p>
+              ${taskUrl ? `
+              <div style="text-align:center;">
+                <a href="${taskUrl}" style="display:inline-block;background:#2563eb;color:#ffffff;font-size:14px;font-weight:600;text-decoration:none;padding:13px 32px;border-radius:8px;">Ver tarea →</a>
+              </div>` : ''}
+            </td>
+          </tr>
+          <tr>
+            <td style="background:#f9fafb;padding:18px 40px;border-top:1px solid #e5e7eb;text-align:center;">
+              <p style="margin:0;font-size:11px;color:#9ca3af;">© ${new Date().getFullYear()} TaskFlow AI · Mensaje automático.</p>
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>
+    `.trim(),
+  })
+}
+
 export async function sendAlertEmail(
   to: string,
   name: string,

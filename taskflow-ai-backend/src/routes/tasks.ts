@@ -4,7 +4,7 @@ import { z } from 'zod'
 import { prisma } from '../lib/prisma.js'
 import { authMiddleware } from '../middleware/auth.js'
 import type { AppEnv } from '../lib/types.js'
-import { sendAlertEmail } from '../lib/email.js'
+import { sendAlertEmail, sendTaskNotificationEmail } from '../lib/email.js'
 
 export const taskRoutes = new Hono<AppEnv>()
 
@@ -39,6 +39,33 @@ const taskInclude = {
     },
   },
   group: { select: { id: true, name: true, boardId: true } },
+}
+
+async function notifyUsers(opts: {
+  userIds: string[]
+  actorId: string
+  title: string
+  body: string
+  taskId: string
+  boardId: string
+  workspaceId: string
+}) {
+  const { userIds, actorId, title, body, taskId, boardId, workspaceId } = opts
+  const targets = userIds.filter(id => id !== actorId)
+  if (targets.length === 0) return
+
+  await prisma.notification.createMany({
+    data: targets.map(uid => ({ userId: uid, title, body, taskId, boardId })),
+  })
+
+  const taskUrl = `${process.env.APP_URL ?? 'http://localhost:5173'}/boards/${boardId}?task=${taskId}`
+  const members = await prisma.workspaceMember.findMany({
+    where: { workspaceId, userId: { in: targets }, emailNotifications: true },
+    include: { user: { select: { email: true, name: true } } },
+  })
+  await Promise.allSettled(
+    members.map(m => sendTaskNotificationEmail(m.user.email, m.user.name, title, body, taskUrl)),
+  )
 }
 
 taskRoutes.get('/board/:boardId', async (c) => {
@@ -110,6 +137,19 @@ taskRoutes.post('/', zValidator('json', createTaskSchema), async (c) => {
     data: { taskId: task.id, userId, action: `Creó la tarea "${title}"` },
   })
 
+  if (assigneeIds?.length) {
+    const actor = await prisma.user.findUnique({ where: { id: userId }, select: { name: true } })
+    await notifyUsers({
+      userIds: assigneeIds,
+      actorId: userId,
+      title: 'Te asignaron a una tarea',
+      body: `${actor?.name ?? 'Alguien'} te asignó a "${title}"`,
+      taskId: task.id,
+      boardId: group.board.id,
+      workspaceId: group.board.workspaceId,
+    })
+  }
+
   return c.json({ task }, 201)
 })
 
@@ -150,7 +190,10 @@ taskRoutes.put('/:id', zValidator('json', updateTaskSchema), async (c) => {
 
   const existing = await prisma.task.findUnique({
     where: { id },
-    include: { group: { include: { board: true } } },
+    include: {
+      group: { include: { board: true } },
+      assignees: { select: { userId: true } },
+    },
   })
   if (!existing) return c.json({ error: 'Tarea no encontrada' }, 404)
 
@@ -184,6 +227,55 @@ taskRoutes.put('/:id', zValidator('json', updateTaskSchema), async (c) => {
   if (changes.length > 0) {
     await prisma.activity.create({
       data: { taskId: id, userId, action: changes.join(' | ') },
+    })
+  }
+
+  const boardId = existing.group.board.id
+  const workspaceId = existing.group.board.workspaceId
+  const actor = await prisma.user.findUnique({ where: { id: userId }, select: { name: true } })
+  const actorName = actor?.name ?? 'Alguien'
+
+  // Notify newly assigned users
+  if (assigneeIds) {
+    const previousIds = existing.assignees?.map((a: any) => a.userId) ?? []
+    const newlyAssigned = assigneeIds.filter((uid: string) => !previousIds.includes(uid))
+    if (newlyAssigned.length > 0) {
+      await notifyUsers({
+        userIds: newlyAssigned,
+        actorId: userId,
+        title: 'Te asignaron a una tarea',
+        body: `${actorName} te asignó a "${existing.title}"`,
+        taskId: id,
+        boardId,
+        workspaceId,
+      })
+    }
+  }
+
+  // Notify current assignees when status or priority changes
+  if (rest.status && rest.status !== existing.status) {
+    const currentAssignees = (task as any).assignees?.map((a: any) => a.userId) ?? []
+    await notifyUsers({
+      userIds: currentAssignees,
+      actorId: userId,
+      title: 'Estado de tarea actualizado',
+      body: `${actorName} cambió "${existing.title}": ${existing.status} → ${rest.status}`,
+      taskId: id,
+      boardId,
+      workspaceId,
+    })
+  }
+
+  if (rest.priority && rest.priority !== existing.priority) {
+    const currentAssignees = (task as any).assignees?.map((a: any) => a.userId) ?? []
+    await notifyUsers({
+      userIds: currentAssignees,
+      actorId: userId,
+      title: 'Prioridad de tarea actualizada',
+      body: `${actorName} cambió la prioridad de "${existing.title}": ${existing.priority} → ${rest.priority}`,
+      taskId: id,
+      boardId,
+      workspaceId,
     })
   }
 
@@ -350,7 +442,10 @@ taskRoutes.post('/:id/comments', async (c) => {
 
   const task = await prisma.task.findUnique({
     where: { id },
-    include: { group: { include: { board: true } } },
+    include: {
+      group: { include: { board: true } },
+      assignees: { select: { userId: true } },
+    },
   })
   if (!task) return c.json({ error: 'Tarea no encontrada' }, 404)
 
@@ -368,6 +463,18 @@ taskRoutes.post('/:id/comments', async (c) => {
       data: { taskId: id, userId, action: 'Agregó un comentario' },
     }),
   ])
+
+  const actor = await prisma.user.findUnique({ where: { id: userId }, select: { name: true } })
+  const assigneeIds = task.assignees.map(a => a.userId)
+  await notifyUsers({
+    userIds: assigneeIds,
+    actorId: userId,
+    title: 'Nuevo comentario en tu tarea',
+    body: `${actor?.name ?? 'Alguien'} comentó en "${task.title}"`,
+    taskId: id,
+    boardId: task.group.board.id,
+    workspaceId: task.group.board.workspaceId,
+  })
 
   return c.json({ comment }, 201)
 })
