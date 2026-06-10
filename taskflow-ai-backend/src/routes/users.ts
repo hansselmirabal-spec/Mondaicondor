@@ -30,7 +30,20 @@ const updatePreferencesSchema = z.object({
 })
 
 userRoutes.get('/list', async (c) => {
+  const { userId } = c.get('user')
+
+  const memberOf = await prisma.workspaceMember.findMany({
+    where: { userId },
+    select: { workspaceId: true },
+  })
+  const workspaceIds = memberOf.map(m => m.workspaceId)
+
   const users = await prisma.user.findMany({
+    where: {
+      memberships: {
+        some: { workspaceId: { in: workspaceIds } },
+      },
+    },
     select: { id: true, name: true, email: true, initials: true, color: true, avatarUrl: true },
     orderBy: { name: 'asc' },
   })
@@ -38,11 +51,23 @@ userRoutes.get('/list', async (c) => {
 })
 
 userRoutes.get('/search', async (c) => {
+  const { userId } = c.get('user')
   const email = c.req.query('email')
   if (!email) return c.json({ user: null })
 
-  const user = await prisma.user.findUnique({
-    where: { email },
+  const memberOf = await prisma.workspaceMember.findMany({
+    where: { userId },
+    select: { workspaceId: true },
+  })
+  const workspaceIds = memberOf.map(m => m.workspaceId)
+
+  const user = await prisma.user.findFirst({
+    where: {
+      email,
+      memberships: {
+        some: { workspaceId: { in: workspaceIds } },
+      },
+    },
     select: { id: true, name: true, email: true, initials: true, color: true, avatarUrl: true },
   })
 

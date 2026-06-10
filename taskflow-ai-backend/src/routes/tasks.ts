@@ -118,6 +118,18 @@ taskRoutes.post('/', zValidator('json', createTaskSchema), async (c) => {
     return c.json({ error: 'Sin permisos para crear tareas' }, 403)
   }
 
+  if (assigneeIds && assigneeIds.length > 0) {
+    const validMembers = await prisma.workspaceMember.findMany({
+      where: { workspaceId: group.board.workspaceId, userId: { in: assigneeIds } },
+      select: { userId: true },
+    })
+    const validIds = new Set(validMembers.map(m => m.userId))
+    const invalid = assigneeIds.filter(id => !validIds.has(id))
+    if (invalid.length > 0) {
+      return c.json({ error: 'One or more assignees are not members of this workspace' }, 400)
+    }
+  }
+
   const task = await prisma.task.create({
     data: {
       groupId,
@@ -202,6 +214,33 @@ taskRoutes.put('/:id', zValidator('json', updateTaskSchema), async (c) => {
   })
   if (!membership || membership.role === 'VIEWER') {
     return c.json({ error: 'Sin permisos' }, 403)
+  }
+
+  if (assigneeIds && assigneeIds.length > 0) {
+    const validMembers = await prisma.workspaceMember.findMany({
+      where: { workspaceId: existing.group.board.workspaceId, userId: { in: assigneeIds } },
+      select: { userId: true },
+    })
+    const validIds = new Set(validMembers.map(m => m.userId))
+    const invalid = assigneeIds.filter(id => !validIds.has(id))
+    if (invalid.length > 0) {
+      return c.json({ error: 'One or more assignees are not members of this workspace' }, 400)
+    }
+  }
+
+  if (rest.groupId) {
+    const targetGroup = await prisma.group.findUnique({
+      where: { id: rest.groupId },
+      include: { board: { select: { workspaceId: true } } },
+    })
+    if (!targetGroup) return c.json({ error: 'Group not found' }, 404)
+    if (targetGroup.board.workspaceId !== existing.group.board.workspaceId) {
+      return c.json({ error: 'Cannot move task to a group in a different workspace' }, 403)
+    }
+    const targetMembership = await prisma.workspaceMember.findUnique({
+      where: { workspaceId_userId: { workspaceId: targetGroup.board.workspaceId, userId } },
+    })
+    if (!targetMembership) return c.json({ error: 'Sin acceso al workspace destino' }, 403)
   }
 
   const changes: string[] = []
