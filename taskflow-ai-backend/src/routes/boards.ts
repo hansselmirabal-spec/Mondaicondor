@@ -86,14 +86,6 @@ boardRoutes.get('/:id', async (c) => {
     where: { id },
     include: {
       groups: {
-        include: {
-          tasks: {
-            include: {
-              assignees: { include: { user: { select: { id: true, name: true, initials: true, color: true } } } },
-            },
-            orderBy: { createdAt: 'asc' },
-          },
-        },
         orderBy: { order: 'asc' },
       },
       settings: true,

@@ -54,7 +54,8 @@ export function BoardPage() {
           }
           return [...prev, mockBoard]
         })
-        setApiTasks(extractTasks(apiBoard))
+        const { tasks } = await api.tasks.listByBoard(boardId!)
+        if (activeBoardId.current === boardId) setApiTasks(tasks.map(t => toMockTask(t)))
         api.workspaces.listStatuses(apiBoard.workspaceId)
           .then(({ statuses }) => {
             if (activeBoardId.current === boardId) setWorkspaceStatuses(statuses as WorkspaceStatus[])

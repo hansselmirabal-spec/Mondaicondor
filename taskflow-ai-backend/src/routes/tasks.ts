@@ -342,13 +342,23 @@ async function evaluateAutomations(
   task: Awaited<ReturnType<typeof prisma.task.update>>,
   before: { status: string; priority: string; groupId: string },
   triggeredBy: string,
+  depth: number = 0,
+  firedIds: Set<string> = new Set(),
 ) {
+  if (depth >= 3) {
+    console.warn(`[automations] depth limit reached for task ${task.id}`)
+    return
+  }
+
   const boardId = (task as any).group.boardId
   const automations = await prisma.automation.findMany({ where: { boardId, enabled: true } })
 
   for (const auto of automations) {
     const fired = checkTrigger(auto.triggerEvent, task as any, before)
     if (!fired) continue
+
+    if (firedIds.has(auto.id)) continue
+    firedIds.add(auto.id)
 
     const cfg = auto.config as Record<string, string>
     let applied = false
