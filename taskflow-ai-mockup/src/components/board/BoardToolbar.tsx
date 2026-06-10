@@ -56,6 +56,7 @@ export function BoardToolbar() {
   } = useFilterStore()
 
   const [saving, setSaving] = useState(false)
+  const [saveError, setSaveError] = useState<string | null>(null)
   const [showSearch, setShowSearch] = useState(false)
   const [openDropdown, setOpenDropdown] = useState<string | null>(null)
   const [showAddModal, setShowAddModal] = useState(false)
@@ -79,6 +80,7 @@ export function BoardToolbar() {
     setNewTaskPriority('Baja')
     setNewTaskDeadline('')
     setNewTaskDescription('')
+    setSaveError(null)
   }
 
   async function handleAddTask() {
@@ -86,15 +88,17 @@ export function BoardToolbar() {
     const groupId = newTaskGroupId || board.groups[0]?.id
     if (!groupId) return
     setSaving(true)
+    setSaveError(null)
     try {
+      const deadlineIso = newTaskDeadline ? new Date(newTaskDeadline + 'T00:00:00').toISOString() : undefined
       const { task: apiTask } = await api.tasks.create({
         groupId,
         title: newTaskTitle.trim(),
         priority: PRIORITY_TO_API[newTaskPriority] ?? 'Media',
+        ...(deadlineIso && { deadline: deadlineIso }),
       })
-      const updates: { assigneeIds?: string[]; deadline?: string; description?: string } = {}
+      const updates: { assigneeIds?: string[]; description?: string } = {}
       if (newTaskAssigneeIds.length > 0) updates.assigneeIds = newTaskAssigneeIds
-      if (newTaskDeadline) updates.deadline = newTaskDeadline
       if (newTaskDescription.trim()) updates.description = newTaskDescription.trim()
       if (Object.keys(updates).length > 0) {
         await api.tasks.update(apiTask.id, updates)
@@ -113,7 +117,7 @@ export function BoardToolbar() {
       resetForm()
       setShowAddModal(false)
     } catch (err) {
-      console.error('Error creando elemento:', err)
+      setSaveError((err as Error).message ?? 'Error al crear el elemento')
     } finally {
       setSaving(false)
     }
@@ -429,6 +433,10 @@ export function BoardToolbar() {
             className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
           />
         </div>
+
+        {saveError && (
+          <p className="text-xs text-red-600 bg-red-50 border border-red-200 rounded-lg px-3 py-2">{saveError}</p>
+        )}
 
         {/* Buttons */}
         <div className="flex gap-2 pt-1">

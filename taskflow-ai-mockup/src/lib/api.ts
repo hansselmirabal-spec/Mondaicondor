@@ -326,7 +326,7 @@ export const api = {
   },
 
   tasks: {
-    create: (data: { groupId: string; title: string; status?: string; priority?: string }) =>
+    create: (data: { groupId: string; title: string; status?: string; priority?: string; deadline?: string }) =>
       request<{ task: ApiTask }>('/tasks', { method: 'POST', body: JSON.stringify(data) }),
 
     listByBoard: (boardId: string, filters?: Record<string, string>) => {
