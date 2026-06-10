@@ -51,6 +51,8 @@ model RefreshToken {
   createdAt DateTime @default(now())
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
 }
 
 model Workspace {
@@ -95,6 +97,7 @@ model WorkspaceMember {
   user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([workspaceId, userId])
+  @@index([userId])
 }
 
 model WorkspaceInvite {
@@ -135,6 +138,8 @@ model Board {
   groups      Group[]
   automations Automation[]
   settings    BoardSettings?
+
+  @@index([workspaceId])
 }
 
 model BoardSettings {
@@ -156,6 +161,8 @@ model Group {
 
   board Board  @relation(fields: [boardId], references: [id], onDelete: Cascade)
   tasks Task[]
+
+  @@index([boardId])
 }
 
 model Task {
@@ -174,6 +181,10 @@ model Task {
   assignees  TaskAssignee[]
   comments   Comment[]
   activities Activity[]
+
+  @@index([groupId])
+  @@index([status])
+  @@index([deadline])
 }
 
 model TaskAssignee {
@@ -196,6 +207,8 @@ model Comment {
 
   task   Task @relation(fields: [taskId], references: [id], onDelete: Cascade)
   author User @relation(fields: [authorId], references: [id], onDelete: Cascade)
+
+  @@index([taskId])
 }
 
 model Activity {
@@ -208,6 +221,9 @@ model Activity {
 
   task Task @relation(fields: [taskId], references: [id], onDelete: Cascade)
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([taskId])
+  @@index([userId])
 }
 
 model Automation {
@@ -223,6 +239,9 @@ model Automation {
   updatedAt    DateTime @updatedAt
 
   board Board @relation(fields: [boardId], references: [id], onDelete: Cascade)
+
+  @@index([boardId])
+  @@index([enabled])
 }
 
 model Notification {
@@ -236,6 +255,9 @@ model Notification {
   createdAt DateTime @default(now())
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([read])
 }
 
 model PasswordResetToken {

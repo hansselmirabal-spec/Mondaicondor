@@ -15,11 +15,14 @@ if [[ ! -f .env.prod ]]; then
   exit 1
 fi
 
+echo "==> [PROD] Stopping existing stack..."
+docker-compose -f docker-compose.prod.yml --env-file .env.prod down
+
 echo "==> [PROD] Building images..."
-docker compose -f docker-compose.prod.yml --env-file .env.prod build --no-cache
+docker-compose -f docker-compose.prod.yml --env-file .env.prod build
 
 echo "==> [PROD] Starting stack..."
-docker compose -f docker-compose.prod.yml --env-file .env.prod up -d
+docker-compose -f docker-compose.prod.yml --env-file .env.prod up -d
 
 echo "==> [PROD] Running at http://$(hostname -I | awk '{print $1}'):5300"
 echo "Done."
