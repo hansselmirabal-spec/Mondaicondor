@@ -69,6 +69,7 @@ export function BoardHeader({ board }: BoardHeaderProps) {
   function copyInviteLink() {
     const input = linkInputRef.current
     if (!input) return
+    input.focus()
     input.select()
     input.setSelectionRange(0, 99999)
     document.execCommand('copy')
