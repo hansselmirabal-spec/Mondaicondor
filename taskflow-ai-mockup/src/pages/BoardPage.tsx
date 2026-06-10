@@ -1,5 +1,5 @@
 import { useParams, Navigate } from 'react-router-dom'
-import { useEffect, useState, useRef } from 'react'
+import { useEffect, useState, useRef, useCallback } from 'react'
 import { useBoardStore } from '@/store/boardStore'
 import { useFilterStore } from '@/store/filterStore'
 import { BoardHeader } from '@/components/board/BoardHeader'
@@ -9,8 +9,10 @@ import { BoardTable } from '@/components/board/BoardTable'
 import { KanbanView } from '@/components/board/KanbanView'
 import { ChartView } from '@/components/board/ChartView'
 import { api } from '@/lib/api'
-import { toMockBoard, extractTasks } from '@/lib/adapters'
+import { toMockBoard, extractTasks, toMockTask } from '@/lib/adapters'
 import type { MockBoard, WorkspaceStatus } from '@/types'
+
+const POLL_INTERVAL_MS = 30_000
 
 export function BoardPage() {
   const { boardId } = useParams<{ boardId: string }>()
@@ -21,6 +23,16 @@ export function BoardPage() {
   const [loading, setLoading] = useState(true)
   const [notFound, setNotFound] = useState(false)
   const activeBoardId = useRef(boardId)
+
+  const refreshTasks = useCallback(async (id: string) => {
+    try {
+      const { tasks } = await api.tasks.listByBoard(id)
+      if (activeBoardId.current !== id) return
+      setApiTasks(tasks.map(t => toMockTask(t)))
+    } catch {
+      // silent — poll failures shouldn't break the UI
+    }
+  }, [setApiTasks])
 
   useEffect(() => {
     if (!boardId) return
@@ -55,7 +67,10 @@ export function BoardPage() {
       }
     }
     load()
-  }, [boardId])
+
+    const poll = setInterval(() => refreshTasks(boardId), POLL_INTERVAL_MS)
+    return () => clearInterval(poll)
+  }, [boardId, refreshTasks])
 
   const board: MockBoard | null = boardId ? (boards.find(b => b.id === boardId) ?? null) : null
 
