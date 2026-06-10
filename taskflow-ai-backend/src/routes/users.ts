@@ -87,6 +87,7 @@ userRoutes.get('/me', async (c) => {
       color: true,
       avatarUrl: true,
       mustChangePassword: true,
+      isAppAdmin: true,
       createdAt: true,
       preferences: true,
     },

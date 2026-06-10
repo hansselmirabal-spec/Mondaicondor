@@ -325,6 +325,24 @@ export const api = {
       request<{ message: string }>(`/admin/workspaces/${workspaceId}/users/${userId}`, { method: 'DELETE' }),
   },
 
+  systemAdmin: {
+    listUsers: () =>
+      request<{ users: SystemAdminUser[] }>('/system-admin/users'),
+
+    createUser: (data: { email: string; name: string; password: string }) =>
+      request<{ user: SystemAdminUser }>('/system-admin/users', {
+        method: 'POST', body: JSON.stringify(data),
+      }),
+
+    updateUser: (id: string, data: { name?: string; email?: string; password?: string }) =>
+      request<{ user: SystemAdminUser }>(`/system-admin/users/${id}`, {
+        method: 'PUT', body: JSON.stringify(data),
+      }),
+
+    deleteUser: (id: string) =>
+      request<{ message: string }>(`/system-admin/users/${id}`, { method: 'DELETE' }),
+  },
+
   tasks: {
     create: (data: { groupId: string; title: string; status?: string; priority?: string; deadline?: string }) =>
       request<{ task: ApiTask }>('/tasks', { method: 'POST', body: JSON.stringify(data) }),
@@ -381,6 +399,17 @@ export const api = {
   },
 }
 
+export interface SystemAdminUser {
+  id: string
+  name: string
+  email: string
+  initials: string
+  color: string
+  isAppAdmin: boolean
+  mustChangePassword: boolean
+  createdAt: string
+}
+
 export interface ApiUser {
   id: string
   email: string
@@ -389,6 +418,7 @@ export interface ApiUser {
   color: string
   avatarUrl?: string | null
   mustChangePassword?: boolean
+  isAppAdmin?: boolean
 }
 
 export interface ApiWorkspace {

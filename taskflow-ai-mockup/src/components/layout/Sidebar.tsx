@@ -1,6 +1,6 @@
 import {
   LayoutGrid, Users, Star, MoreHorizontal, Sidebar as SidebarIcon,
-  LogOut, Settings, User as UserIcon, Bell, X, Check
+  LogOut, Settings, User as UserIcon, Bell, X, Check, ShieldCheck
 } from 'lucide-react'
 import { useState, useRef, useEffect, useCallback } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
@@ -139,6 +139,14 @@ export function Sidebar() {
         <NavIcon icon={<LayoutGrid className="w-4 h-4" />} label="Espacio" active={!location.pathname.startsWith('/settings')} onClick={() => navigate('/boards')} />
         <NavIcon icon={<Users className="w-4 h-4" />} label="Equipo" onClick={() => navigate('/members')} />
         <NavIcon icon={<Settings className="w-4 h-4" />} label="Config." active={location.pathname.startsWith('/settings')} onClick={() => navigate('/settings')} />
+        {user?.isAppAdmin && (
+          <NavIcon
+            icon={<ShieldCheck className="w-5 h-5" />}
+            label="Admin"
+            active={location.pathname.startsWith('/system-admin')}
+            onClick={() => navigate('/system-admin/users')}
+          />
+        )}
         <div className="flex-1" />
 
         {/* Notification bell */}

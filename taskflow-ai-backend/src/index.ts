@@ -10,6 +10,7 @@ import { workspaceRoutes } from './routes/workspaces.js'
 import { boardRoutes } from './routes/boards.js'
 import { taskRoutes } from './routes/tasks.js'
 import { adminRoutes } from './routes/admin.js'
+import { systemAdminRoutes } from './routes/systemAdmin.js'
 import { automationRoutes } from './routes/automations.js'
 import { notificationRoutes } from './routes/notifications.js'
 
@@ -74,6 +75,7 @@ app.route('/api/workspaces', workspaceRoutes)
 app.route('/api/boards', boardRoutes)
 app.route('/api/tasks', taskRoutes)
 app.route('/api/admin', adminRoutes)
+app.route('/api/system-admin', systemAdminRoutes)
 app.route('/api', automationRoutes)
 app.route('/api/notifications', notificationRoutes)
 
