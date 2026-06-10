@@ -1,5 +1,3 @@
-name: taskflow-prod
-
 services:
   frontend:
     build:
