@@ -20,6 +20,7 @@ const createTaskSchema = z.object({
   priority: z.enum(priorityValues).optional(),
   deadline: z.string().datetime().nullable().optional(),
   assigneeIds: z.array(z.string()).optional(),
+  uenId: z.string().optional().nullable(),
 })
 
 const updateTaskSchema = z.object({
@@ -30,6 +31,7 @@ const updateTaskSchema = z.object({
   deadline: z.string().datetime().nullable().optional(),
   groupId: z.string().optional(),
   assigneeIds: z.array(z.string()).optional(),
+  uenId: z.string().optional().nullable(),
 })
 
 const taskInclude = {
@@ -39,6 +41,7 @@ const taskInclude = {
     },
   },
   group: { select: { id: true, name: true, boardId: true } },
+  uen: { select: { id: true, name: true, color: true } },
 }
 
 async function notifyUsers(opts: {
@@ -103,7 +106,7 @@ taskRoutes.get('/board/:boardId', async (c) => {
 
 taskRoutes.post('/', zValidator('json', createTaskSchema), async (c) => {
   const { userId } = c.get('user')
-  const { groupId, title, description, status, priority, deadline, assigneeIds } = c.req.valid('json')
+  const { groupId, title, description, status, priority, deadline, assigneeIds, uenId } = c.req.valid('json')
 
   const group = await prisma.group.findUnique({
     where: { id: groupId },
@@ -138,6 +141,7 @@ taskRoutes.post('/', zValidator('json', createTaskSchema), async (c) => {
       status: status ?? 'Nuevo',
       priority: priority ?? 'Media',
       deadline: deadline ? new Date(deadline) : null,
+      uenId: uenId ?? null,
       assignees: assigneeIds?.length
         ? { create: assigneeIds.map((uid) => ({ userId: uid })) }
         : undefined,
@@ -197,7 +201,7 @@ taskRoutes.get('/:id', async (c) => {
 taskRoutes.put('/:id', zValidator('json', updateTaskSchema), async (c) => {
   const { userId } = c.get('user')
   const { id } = c.req.param()
-  const { assigneeIds, deadline, ...rest } = c.req.valid('json')
+  const { assigneeIds, deadline, uenId, ...rest } = c.req.valid('json')
 
   const existing = await prisma.task.findUnique({
     where: { id },
@@ -252,6 +256,7 @@ taskRoutes.put('/:id', zValidator('json', updateTaskSchema), async (c) => {
     data: {
       ...rest,
       ...(deadline !== undefined && { deadline: deadline ? new Date(deadline) : null }),
+      ...(uenId !== undefined && { uenId }),
       ...(assigneeIds && {
         assignees: {
           deleteMany: {},

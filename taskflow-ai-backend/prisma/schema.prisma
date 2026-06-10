@@ -69,6 +69,7 @@ model Workspace {
   invites  WorkspaceInvite[]
   settings WorkspaceSettings?
   statuses WorkspaceStatus[]
+  uens     WorkspaceUen[]
 }
 
 model WorkspaceStatus {
@@ -127,6 +128,19 @@ model WorkspaceSettings {
   workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
 }
 
+model WorkspaceUen {
+  id          String   @id @default(cuid())
+  workspaceId String
+  name        String
+  color       String   @default("#6366f1")
+  createdAt   DateTime @default(now())
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  tasks     Task[]
+
+  @@index([workspaceId])
+}
+
 model Board {
   id          String   @id @default(cuid())
   workspaceId String
@@ -175,6 +189,7 @@ model Task {
   priority    TaskPriority @default(Media)
   deadline    DateTime?
   fileUrl     String?
+  uenId       String?
   createdAt   DateTime     @default(now())
   updatedAt   DateTime     @updatedAt
 
@@ -182,10 +197,12 @@ model Task {
   assignees  TaskAssignee[]
   comments   Comment[]
   activities Activity[]
+  uen        WorkspaceUen?  @relation(fields: [uenId], references: [id], onDelete: SetNull)
 
   @@index([groupId])
   @@index([status])
   @@index([deadline])
+  @@index([uenId])
 }
 
 model TaskAssignee {

@@ -415,6 +415,67 @@ workspaceRoutes.delete('/:id/statuses/:statusId', async (c) => {
   return c.json({ message: 'Estado eliminado' })
 })
 
+// ── Workspace UENs ────────────────────────────────────────────────────────────
+
+const createUenSchema = z.object({
+  name: z.string().min(1).max(60),
+  color: z.string().regex(/^#[0-9a-fA-F]{6}$/).optional(),
+})
+const updateUenSchema = createUenSchema.partial()
+
+workspaceRoutes.get('/:id/uens', async (c) => {
+  const { userId } = c.get('user')
+  const { id } = c.req.param()
+  const membership = await prisma.workspaceMember.findUnique({
+    where: { workspaceId_userId: { workspaceId: id, userId } },
+  })
+  if (!membership) return c.json({ error: 'Sin acceso al workspace' }, 403)
+  const uens = await prisma.workspaceUen.findMany({
+    where: { workspaceId: id },
+    orderBy: { createdAt: 'asc' },
+  })
+  return c.json({ uens })
+})
+
+workspaceRoutes.post('/:id/uens', zValidator('json', createUenSchema), async (c) => {
+  const { userId } = c.get('user')
+  const { id } = c.req.param()
+  const { name, color } = c.req.valid('json')
+  const membership = await prisma.workspaceMember.findUnique({
+    where: { workspaceId_userId: { workspaceId: id, userId } },
+  })
+  if (!membership || membership.role === 'VIEWER') return c.json({ error: 'Sin permisos' }, 403)
+  const uen = await prisma.workspaceUen.create({
+    data: { workspaceId: id, name, color: color ?? '#6366f1' },
+  })
+  return c.json({ uen }, 201)
+})
+
+workspaceRoutes.put('/:id/uens/:uenId', zValidator('json', updateUenSchema), async (c) => {
+  const { userId } = c.get('user')
+  const { id, uenId } = c.req.param()
+  const membership = await prisma.workspaceMember.findUnique({
+    where: { workspaceId_userId: { workspaceId: id, userId } },
+  })
+  if (!membership || membership.role === 'VIEWER') return c.json({ error: 'Sin permisos' }, 403)
+  const uen = await prisma.workspaceUen.update({
+    where: { id: uenId },
+    data: c.req.valid('json'),
+  })
+  return c.json({ uen })
+})
+
+workspaceRoutes.delete('/:id/uens/:uenId', async (c) => {
+  const { userId } = c.get('user')
+  const { id, uenId } = c.req.param()
+  const membership = await prisma.workspaceMember.findUnique({
+    where: { workspaceId_userId: { workspaceId: id, userId } },
+  })
+  if (!membership || membership.role === 'VIEWER') return c.json({ error: 'Sin permisos' }, 403)
+  await prisma.workspaceUen.delete({ where: { id: uenId } })
+  return c.json({ message: 'UEN eliminada' })
+})
+
 // ── Email Notifications ──────────────────────────────────────────────────────
 
 workspaceRoutes.put('/:id/members/:memberId/email-notifications',

@@ -11,6 +11,14 @@ export interface WorkspaceStatus {
   isDefault: boolean
 }
 
+export interface WorkspaceUen {
+  id: string
+  workspaceId: string
+  name: string
+  color: string
+  createdAt: string
+}
+
 export interface MockUser {
   id: string
   name: string
@@ -56,6 +64,9 @@ export interface MockTask {
   description: string
   createdAt: string
   updatedAt: string
+  uenId: string | null
+  uenName: string | null
+  uenColor: string | null
 }
 
 export interface MockComment {

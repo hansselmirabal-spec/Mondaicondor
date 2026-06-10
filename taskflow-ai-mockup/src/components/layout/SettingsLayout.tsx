@@ -1,5 +1,5 @@
 import { NavLink, Outlet } from 'react-router-dom'
-import { LayoutList, Mail, Users, ChevronDown } from 'lucide-react'
+import { LayoutList, Mail, Users, Building2, ChevronDown } from 'lucide-react'
 import { useBoardStore } from '@/store/boardStore'
 
 export function SettingsLayout() {
@@ -45,6 +45,17 @@ export function SettingsLayout() {
           >
             <LayoutList className="w-4 h-4 shrink-0" />
             Estados
+          </NavLink>
+          <NavLink
+            to="/settings/uens"
+            className={({ isActive }) =>
+              `flex items-center gap-2.5 px-3 py-2 text-sm rounded-lg transition-colors ${
+                isActive ? 'bg-orange-50 text-orange-600 font-medium' : 'text-gray-600 hover:bg-gray-50'
+              }`
+            }
+          >
+            <Building2 className="w-4 h-4 shrink-0" />
+            UENs
           </NavLink>
           <NavLink
             to="/settings/email-alerts"

@@ -2,10 +2,10 @@ import { create } from 'zustand'
 import type { PriorityType } from '@/types'
 
 export type ViewTab = 'table' | 'chart' | 'kanban'
-export type SortField = 'title' | 'priority' | 'deadline' | 'status'
+export type SortField = 'title' | 'priority' | 'deadline' | 'status' | 'uen'
 export type GroupBy = 'default' | 'status' | 'priority' | 'assignee'
 
-export const ALL_COLUMNS = ['Responsable', 'Estado', 'Prioridad', 'Fecha límite', 'Archivo', 'Texto'] as const
+export const ALL_COLUMNS = ['Responsable', 'Estado', 'Prioridad', 'UEN', 'Fecha límite', 'Archivo', 'Texto'] as const
 export type ColumnName = typeof ALL_COLUMNS[number]
 
 interface FilterStore {
@@ -20,6 +20,9 @@ interface FilterStore {
 
   filterPriority: PriorityType | null
   setFilterPriority: (p: PriorityType | null) => void
+
+  filterUenId: string | null
+  setFilterUenId: (id: string | null) => void
 
   sortField: SortField | null
   sortDir: 'asc' | 'desc'
@@ -51,6 +54,9 @@ export const useFilterStore = create<FilterStore>((set, get) => ({
   filterPriority: null,
   setFilterPriority: p => set({ filterPriority: p }),
 
+  filterUenId: null,
+  setFilterUenId: id => set({ filterUenId: id }),
+
   sortField: null,
   sortDir: 'asc',
   setSortBy: (field, dir = 'asc') => set({ sortField: field, sortDir: dir }),
@@ -71,5 +77,5 @@ export const useFilterStore = create<FilterStore>((set, get) => ({
   setActiveView: v => set({ activeView: v }),
 
   clearFilters: () =>
-    set({ searchQuery: '', selectedPersonaId: null, filterStatus: null, filterPriority: null, sortField: null, sortDir: 'asc', groupBy: 'default' }),
+    set({ searchQuery: '', selectedPersonaId: null, filterStatus: null, filterPriority: null, filterUenId: null, sortField: null, sortDir: 'asc', groupBy: 'default' }),
 }))

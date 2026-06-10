@@ -169,6 +169,7 @@ export function BoardGroup({ group, tasks, label, onAddTask }: BoardGroupProps) 
                 {isColumnVisible('Responsable') && <th className="py-2 px-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide w-28">Responsable</th>}
                 {isColumnVisible('Estado')      && <th className="py-2 px-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide w-32">Estado</th>}
                 {isColumnVisible('Prioridad')   && <th className="py-2 px-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide w-28">Prioridad</th>}
+                {isColumnVisible('UEN')         && <th className="py-1.5 px-2 text-xs font-medium text-gray-400 uppercase tracking-wide text-left w-28">UEN</th>}
                 {isColumnVisible('Fecha límite') && <th className="py-2 px-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide w-32">Fecha límite</th>}
                 {isColumnVisible('Archivo')     && <th className="py-2 px-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide w-24">Archivo</th>}
                 {isColumnVisible('Texto')       && <th className="py-2 px-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">Texto</th>}
@@ -216,6 +217,8 @@ export function BoardGroup({ group, tasks, label, onAddTask }: BoardGroupProps) 
                   {isColumnVisible('Estado') && <td className="w-32" />}
                   {/* Prioridad — empty on creation */}
                   {isColumnVisible('Prioridad') && <td className="w-28" />}
+                  {/* UEN — empty on creation */}
+                  {isColumnVisible('UEN') && <td className="w-28" />}
                   {/* Fecha límite — input aligned with column */}
                   {isColumnVisible('Fecha límite') && (
                     <td className="py-1.5 px-2 w-32">

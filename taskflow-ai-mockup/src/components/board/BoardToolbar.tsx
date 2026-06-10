@@ -42,6 +42,7 @@ export function BoardToolbar() {
   const boards = useBoardStore(state => state.boards)
   const apiUsers = useBoardStore(state => state.apiUsers)
   const workspaceStatuses = useBoardStore(state => state.workspaceStatuses)
+  const workspaceUens = useBoardStore(state => state.workspaceUens)
   const board = boards.find(b => b.id === boardId)
 
   const {
@@ -49,6 +50,7 @@ export function BoardToolbar() {
     selectedPersonaId, setSelectedPersonaId,
     filterStatus, setFilterStatus,
     filterPriority, setFilterPriority,
+    filterUenId, setFilterUenId,
     sortField, sortDir, setSortBy,
     hiddenColumns, toggleColumn,
     groupBy, setGroupBy,
@@ -67,6 +69,7 @@ export function BoardToolbar() {
   const today = new Date().toISOString().slice(0, 10)
   const [newTaskDeadline, setNewTaskDeadline] = useState(today)
   const [newTaskDescription, setNewTaskDescription] = useState('')
+  const [newTaskUenId, setNewTaskUenId] = useState<string | null>(null)
 
   function toggleNewAssignee(userId: string) {
     setNewTaskAssigneeIds(prev =>
@@ -81,6 +84,7 @@ export function BoardToolbar() {
     setNewTaskPriority('Baja')
     setNewTaskDeadline(new Date().toISOString().slice(0, 10))
     setNewTaskDescription('')
+    setNewTaskUenId(null)
     setSaveError(null)
   }
 
@@ -97,6 +101,7 @@ export function BoardToolbar() {
         title: newTaskTitle.trim(),
         priority: PRIORITY_TO_API[newTaskPriority] ?? 'Media',
         ...(deadlineIso && { deadline: deadlineIso }),
+        ...(newTaskUenId && { uenId: newTaskUenId }),
       })
       const updates: { assigneeIds?: string[]; description?: string } = {}
       if (newTaskAssigneeIds.length > 0) updates.assigneeIds = newTaskAssigneeIds
@@ -127,7 +132,7 @@ export function BoardToolbar() {
   const toggle = (name: string) => setOpenDropdown(prev => prev === name ? null : name)
   const close = () => setOpenDropdown(null)
 
-  const hasActiveFilters = !!selectedPersonaId || !!filterStatus || !!filterPriority || !!sortField || hiddenColumns.length > 0
+  const hasActiveFilters = !!selectedPersonaId || !!filterStatus || !!filterPriority || !!filterUenId || !!sortField || hiddenColumns.length > 0
 
   function openPanel(panel: string) {
     const params = new URLSearchParams(searchParams)
@@ -227,8 +232,23 @@ export function BoardToolbar() {
               ))}
             </div>
           </div>
-          {(filterStatus || filterPriority) && (
-            <button onClick={() => { setFilterStatus(null); setFilterPriority(null) }} className="text-xs text-red-600 hover:underline">
+          {workspaceUens.length > 0 && (
+            <div>
+              <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">UEN</p>
+              <div className="flex flex-wrap gap-1">
+                {workspaceUens.map(u => (
+                  <button
+                    key={u.id}
+                    onClick={() => setFilterUenId(filterUenId === u.id ? null : u.id)}
+                    className={`px-2 py-0.5 rounded text-xs font-medium border transition-colors ${filterUenId === u.id ? 'text-white border-transparent' : 'border-gray-200 text-gray-600 hover:border-blue-400'}`}
+                    style={filterUenId === u.id ? { backgroundColor: u.color, borderColor: u.color } : {}}
+                  >{u.name}</button>
+                ))}
+              </div>
+            </div>
+          )}
+          {(filterStatus || filterPriority || filterUenId) && (
+            <button onClick={() => { setFilterStatus(null); setFilterPriority(null); setFilterUenId(null) }} className="text-xs text-red-600 hover:underline">
               Limpiar filtros
             </button>
           )}
@@ -423,6 +443,21 @@ export function BoardToolbar() {
             <p className="text-xs text-blue-600 mt-1">{newTaskAssigneeIds.length} responsable{newTaskAssigneeIds.length > 1 ? 's' : ''} seleccionado{newTaskAssigneeIds.length > 1 ? 's' : ''}</p>
           )}
         </div>
+
+        {/* UEN */}
+        {workspaceUens.length > 0 && (
+          <div>
+            <label className="block text-xs font-semibold text-gray-700 mb-1">UEN</label>
+            <select
+              value={newTaskUenId ?? ''}
+              onChange={e => setNewTaskUenId(e.target.value || null)}
+              className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            >
+              <option value="">Sin UEN</option>
+              {workspaceUens.map(u => <option key={u.id} value={u.id}>{u.name}</option>)}
+            </select>
+          </div>
+        )}
 
         {/* Descripción */}
         <div>

@@ -92,6 +92,7 @@ export function BoardTable({ board }: BoardTableProps) {
         assigneeIds: [], status: 'Nuevo', priority: 'Media',
         deadline, fileUrl: null, text: null, description: '',
         createdAt: now, updatedAt: now,
+        uenId: null, uenName: null, uenColor: null,
       })
       const params = new URLSearchParams(searchParams)
       params.set('task', tempId)

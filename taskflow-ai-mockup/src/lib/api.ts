@@ -262,6 +262,24 @@ export const api = {
         body: JSON.stringify({ order }),
       }),
 
+    listUens: (workspaceId: string) =>
+      request<{ uens: ApiUen[] }>(`/workspaces/${workspaceId}/uens`),
+
+    createUen: (workspaceId: string, data: { name: string; color: string }) =>
+      request<{ uen: ApiUen }>(`/workspaces/${workspaceId}/uens`, {
+        method: 'POST',
+        body: JSON.stringify(data),
+      }),
+
+    updateUen: (workspaceId: string, uenId: string, data: { name?: string; color?: string }) =>
+      request<{ uen: ApiUen }>(`/workspaces/${workspaceId}/uens/${uenId}`, {
+        method: 'PUT',
+        body: JSON.stringify(data),
+      }),
+
+    deleteUen: (workspaceId: string, uenId: string) =>
+      request<{ message: string }>(`/workspaces/${workspaceId}/uens/${uenId}`, { method: 'DELETE' }),
+
     updateMemberEmailNotifications: (workspaceId: string, memberId: string, enabled: boolean) =>
       request<{ member: { userId: string; emailNotifications: boolean } }>(
         `/workspaces/${workspaceId}/members/${memberId}/email-notifications`,
@@ -344,7 +362,7 @@ export const api = {
   },
 
   tasks: {
-    create: (data: { groupId: string; title: string; status?: string; priority?: string; deadline?: string }) =>
+    create: (data: { groupId: string; title: string; status?: string; priority?: string; deadline?: string; uenId?: string | null }) =>
       request<{ task: ApiTask }>('/tasks', { method: 'POST', body: JSON.stringify(data) }),
 
     listByBoard: (boardId: string, filters?: Record<string, string>) => {
@@ -460,6 +478,7 @@ export interface ApiTask {
   updatedAt: string
   assignees: Array<{ user: ApiUser }>
   group: { id: string; name: string; boardId: string }
+  uen: { id: string; name: string; color: string } | null
 }
 
 export interface ApiTaskUpdate {
@@ -470,6 +489,7 @@ export interface ApiTaskUpdate {
   deadline: string | null
   groupId: string
   assigneeIds: string[]
+  uenId?: string | null
 }
 
 export interface ApiWorkspaceMember {
@@ -505,6 +525,14 @@ export interface ApiWorkspaceStatus {
   color: string
   position: number
   isDefault: boolean
+}
+
+export interface ApiUen {
+  id: string
+  workspaceId: string
+  name: string
+  color: string
+  createdAt: string
 }
 
 export interface ApiAutomation {

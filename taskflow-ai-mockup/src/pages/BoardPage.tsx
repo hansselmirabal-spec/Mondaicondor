@@ -16,7 +16,7 @@ const POLL_INTERVAL_MS = 30_000
 
 export function BoardPage() {
   const { boardId } = useParams<{ boardId: string }>()
-  const { setBoards, setApiTasks, setWorkspaceStatuses } = useBoardStore()
+  const { setBoards, setApiTasks, setWorkspaceStatuses, setWorkspaceUens } = useBoardStore()
   const boards = useBoardStore(state => state.boards)
   const activeView = useFilterStore(state => state.activeView)
 
@@ -59,6 +59,11 @@ export function BoardPage() {
         api.workspaces.listStatuses(apiBoard.workspaceId)
           .then(({ statuses }) => {
             if (activeBoardId.current === boardId) setWorkspaceStatuses(statuses as WorkspaceStatus[])
+          })
+          .catch(() => {})
+        api.workspaces.listUens(apiBoard.workspaceId)
+          .then(({ uens }) => {
+            if (activeBoardId.current === boardId) setWorkspaceUens(uens)
           })
           .catch(() => {})
       } catch {

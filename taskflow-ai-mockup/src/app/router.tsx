@@ -10,6 +10,7 @@ import { SettingsPage } from '@/pages/SettingsPage'
 import { MembersPage } from '@/pages/MembersPage'
 import { MembersSettingsPage } from '@/pages/MembersSettingsPage'
 import { WorkspaceStatusPage } from '@/pages/WorkspaceStatusPage'
+import { WorkspaceUenPage } from '@/pages/WorkspaceUenPage'
 import { EmailAlertsPage } from '@/pages/EmailAlertsPage'
 import { SettingsLayout } from '@/components/layout/SettingsLayout'
 import { AuthGuard } from '@/components/auth/AuthGuard'
@@ -54,6 +55,7 @@ export const router = createBrowserRouter([
         children: [
           { index: true, element: <Navigate to="statuses" replace /> },
           { path: 'statuses', element: <WorkspaceStatusPage /> },
+          { path: 'uens', element: <WorkspaceUenPage /> },
           { path: 'email-alerts', element: <EmailAlertsPage /> },
           { path: 'members', element: <MembersSettingsPage /> },
         ],

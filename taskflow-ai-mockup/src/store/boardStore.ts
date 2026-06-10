@@ -1,5 +1,5 @@
 import { create } from 'zustand'
-import type { PriorityType, MockBoard, MockComment, MockTask, MockUser, WorkspaceStatus } from '@/types'
+import type { PriorityType, MockBoard, MockComment, MockTask, MockUser, WorkspaceStatus, WorkspaceUen } from '@/types'
 import { mockComments } from '@/data/mockComments'
 
 interface TaskMutation {
@@ -39,6 +39,9 @@ interface BoardStore {
 
   workspaceStatuses: WorkspaceStatus[]
   setWorkspaceStatuses: (statuses: WorkspaceStatus[]) => void
+
+  workspaceUens: WorkspaceUen[]
+  setWorkspaceUens: (uens: WorkspaceUen[]) => void
 
   comments: MockComment[]
   addComment: (comment: MockComment) => void
@@ -112,6 +115,9 @@ export const useBoardStore = create<BoardStore>((set, get) => ({
   workspaceStatuses: [],
   setWorkspaceStatuses: statuses => set({ workspaceStatuses: statuses }),
 
+  workspaceUens: [],
+  setWorkspaceUens: uens => set({ workspaceUens: uens }),
+
   comments: [...mockComments],
   addComment: comment => set(state => ({ comments: [...state.comments, comment] })),
 
@@ -162,6 +168,7 @@ export const useBoardStore = create<BoardStore>((set, get) => ({
     taskMutations: {},
     deadlineHistory: {},
     workspaceStatuses: [],
+    workspaceUens: [],
     comments: [],
     boards: [],
   }),

@@ -170,6 +170,21 @@ export function TaskRow({ task }: TaskRowProps) {
         </td>
       )}
 
+      {isColumnVisible('UEN') && (
+        <td className="py-1 px-2 w-28">
+          {task.uenId ? (
+            <span
+              className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium text-white truncate max-w-[100px]"
+              style={{ backgroundColor: task.uenColor ?? '#6366f1' }}
+            >
+              {task.uenName}
+            </span>
+          ) : (
+            <span className="text-gray-300 text-xs">—</span>
+          )}
+        </td>
+      )}
+
       {isColumnVisible('Fecha límite') && (
         <td className="py-2 px-3 w-32">
           <DeadlineCell deadline={currentDeadline} />
