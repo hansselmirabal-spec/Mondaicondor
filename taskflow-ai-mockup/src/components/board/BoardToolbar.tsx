@@ -64,7 +64,8 @@ export function BoardToolbar() {
   const [newTaskGroupId, setNewTaskGroupId] = useState('')
   const [newTaskAssigneeIds, setNewTaskAssigneeIds] = useState<string[]>([])
   const [newTaskPriority, setNewTaskPriority] = useState<PriorityType>('Baja')
-  const [newTaskDeadline, setNewTaskDeadline] = useState('')
+  const today = new Date().toISOString().slice(0, 10)
+  const [newTaskDeadline, setNewTaskDeadline] = useState(today)
   const [newTaskDescription, setNewTaskDescription] = useState('')
 
   function toggleNewAssignee(userId: string) {
@@ -78,7 +79,7 @@ export function BoardToolbar() {
     setNewTaskGroupId('')
     setNewTaskAssigneeIds([])
     setNewTaskPriority('Baja')
-    setNewTaskDeadline('')
+    setNewTaskDeadline(new Date().toISOString().slice(0, 10))
     setNewTaskDescription('')
     setSaveError(null)
   }
@@ -385,6 +386,7 @@ export function BoardToolbar() {
             <input
               type="date"
               value={newTaskDeadline}
+              min={today}
               onChange={e => setNewTaskDeadline(e.target.value)}
               className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
