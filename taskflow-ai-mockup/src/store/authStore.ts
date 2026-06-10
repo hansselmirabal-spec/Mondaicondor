@@ -5,6 +5,7 @@ import type { ApiUser } from '@/lib/api'
 interface AuthStore {
   user: ApiUser | null
   isLoading: boolean
+  initialized: boolean
   error: string | null
   initialize: () => Promise<void>
   login: (email: string, password: string) => Promise<void>
@@ -16,16 +17,21 @@ interface AuthStore {
 export const useAuthStore = create<AuthStore>(set => ({
   user: null,
   isLoading: false,
+  initialized: false,
   error: null,
 
   initialize: async () => {
-    if (!localStorage.getItem('access_token')) return
+    if (!localStorage.getItem('access_token')) {
+      set({ initialized: true })
+      return
+    }
     try {
       const { user } = await api.users.me()
-      set({ user })
+      set({ user, initialized: true })
     } catch {
       localStorage.removeItem('access_token')
       localStorage.removeItem('refresh_token')
+      set({ initialized: true })
     }
   },
 

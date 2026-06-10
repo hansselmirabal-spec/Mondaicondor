@@ -101,7 +101,10 @@ export const useBoardStore = create<BoardStore>((set, get) => ({
   })),
 
   apiTasks: [],
-  setApiTasks: tasks => set({ apiTasks: tasks }),
+  setApiTasks: tasks => set(state => ({
+    apiTasks: tasks,
+    newTasks: state.newTasks.filter(t => !tasks.some(at => at.id === t.id)),
+  })),
 
   apiUsers: [],
   setApiUsers: users => set({ apiUsers: users }),

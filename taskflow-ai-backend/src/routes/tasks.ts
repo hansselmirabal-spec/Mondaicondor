@@ -141,12 +141,11 @@ taskRoutes.post('/', zValidator('json', createTaskSchema), async (c) => {
       assignees: assigneeIds?.length
         ? { create: assigneeIds.map((uid) => ({ userId: uid })) }
         : undefined,
+      activities: {
+        create: { userId, action: `Creó la tarea "${title}"` },
+      },
     },
     include: taskInclude,
-  })
-
-  await prisma.activity.create({
-    data: { taskId: task.id, userId, action: `Creó la tarea "${title}"` },
   })
 
   if (assigneeIds?.length) {
@@ -248,7 +247,7 @@ taskRoutes.put('/:id', zValidator('json', updateTaskSchema), async (c) => {
   if (rest.priority && rest.priority !== existing.priority) changes.push(`Prioridad: ${existing.priority} → ${rest.priority}`)
   if (rest.title && rest.title !== existing.title) changes.push(`Título actualizado`)
 
-  const task = await prisma.task.update({
+  const taskUpdateOp = prisma.task.update({
     where: { id },
     data: {
       ...rest,
@@ -263,11 +262,12 @@ taskRoutes.put('/:id', zValidator('json', updateTaskSchema), async (c) => {
     include: taskInclude,
   })
 
-  if (changes.length > 0) {
-    await prisma.activity.create({
-      data: { taskId: id, userId, action: changes.join(' | ') },
-    })
-  }
+  const [task] = changes.length > 0
+    ? await prisma.$transaction([
+        taskUpdateOp,
+        prisma.activity.create({ data: { taskId: id, userId, action: changes.join(' | ') } }),
+      ])
+    : [await taskUpdateOp]
 
   const boardId = existing.group.board.id
   const workspaceId = existing.group.board.workspaceId
