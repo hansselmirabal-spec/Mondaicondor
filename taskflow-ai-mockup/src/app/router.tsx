@@ -13,11 +13,16 @@ import { WorkspaceStatusPage } from '@/pages/WorkspaceStatusPage'
 import { EmailAlertsPage } from '@/pages/EmailAlertsPage'
 import { SettingsLayout } from '@/components/layout/SettingsLayout'
 import { AuthGuard } from '@/components/auth/AuthGuard'
+import { ForceChangePasswordPage } from '@/pages/ForceChangePasswordPage'
 
 export const router = createBrowserRouter([
   {
     path: '/login',
     element: <LoginPage />,
+  },
+  {
+    path: '/force-change-password',
+    element: <ForceChangePasswordPage />,
   },
   {
     path: '/forgot-password',

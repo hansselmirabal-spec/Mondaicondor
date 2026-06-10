@@ -178,6 +178,12 @@ export const api = {
         body: JSON.stringify({ currentPassword, newPassword }),
       }),
 
+    forceChangePassword: (newPassword: string) =>
+      request<{ message: string }>('/users/me/force-change-password', {
+        method: 'PUT',
+        body: JSON.stringify({ newPassword }),
+      }),
+
     getPreferences: () =>
       request<{ preferences: ApiUserPreferences | null }>('/users/me/preferences'),
 
@@ -382,6 +388,7 @@ export interface ApiUser {
   initials: string
   color: string
   avatarUrl?: string | null
+  mustChangePassword?: boolean
 }
 
 export interface ApiWorkspace {

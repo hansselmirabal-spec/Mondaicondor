@@ -61,6 +61,7 @@ userRoutes.get('/me', async (c) => {
       initials: true,
       color: true,
       avatarUrl: true,
+      mustChangePassword: true,
       createdAt: true,
       preferences: true,
     },
@@ -123,6 +124,23 @@ userRoutes.post('/me/avatar', async (c) => {
   })
 
   return c.json({ user })
+})
+
+const forceChangePasswordSchema = z.object({
+  newPassword: z.string().min(8),
+})
+
+userRoutes.put('/me/force-change-password', zValidator('json', forceChangePasswordSchema), async (c) => {
+  const { userId } = c.get('user')
+  const { newPassword } = c.req.valid('json')
+
+  const passwordHash = await bcrypt.hash(newPassword, 12)
+  await prisma.user.update({
+    where: { id: userId },
+    data: { passwordHash, mustChangePassword: false },
+  })
+
+  return c.json({ message: 'Contraseña actualizada.' })
 })
 
 userRoutes.put('/me/password', zValidator('json', changePasswordSchema), async (c) => {

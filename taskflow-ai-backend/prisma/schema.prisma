@@ -28,9 +28,10 @@ model User {
   initials     String   @db.VarChar(2)
   color        String   @default("#6366f1")
   passwordHash String
-  avatarUrl    String?
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  avatarUrl          String?
+  mustChangePassword Boolean  @default(false)
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
 
   refreshTokens RefreshToken[]
   memberships   WorkspaceMember[]
