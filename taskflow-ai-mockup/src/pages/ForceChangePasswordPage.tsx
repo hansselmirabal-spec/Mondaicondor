@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { KeyRound, Loader2, Eye, EyeOff } from 'lucide-react'
 import { api } from '@/lib/api'
@@ -14,10 +14,11 @@ export function ForceChangePasswordPage() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
-  if (!user) {
-    navigate('/login', { replace: true })
-    return null
-  }
+  useEffect(() => {
+    if (!user) navigate('/login', { replace: true })
+  }, [user, navigate])
+
+  if (!user) return null
 
   const mismatch = confirm.length > 0 && newPassword !== confirm
   const valid = newPassword.length >= 8 && newPassword === confirm

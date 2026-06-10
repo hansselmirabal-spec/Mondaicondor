@@ -78,12 +78,18 @@ systemAdminRoutes.put('/users/:id', zValidator('json', updateSchema), async (c) 
   if (email) data.email = email
   if (password) { data.passwordHash = await bcrypt.hash(password, 12); data.mustChangePassword = true }
 
-  const user = await prisma.user.update({
-    where: { id },
-    data,
-    select: { id: true, name: true, email: true, initials: true, color: true, isAppAdmin: true, mustChangePassword: true, createdAt: true },
-  })
-  return c.json({ user })
+  try {
+    const user = await prisma.user.update({
+      where: { id },
+      data,
+      select: { id: true, name: true, email: true, initials: true, color: true, isAppAdmin: true, mustChangePassword: true, createdAt: true },
+    })
+    return c.json({ user })
+  } catch (err: any) {
+    if (err?.code === 'P2025') return c.json({ error: 'Usuario no encontrado' }, 404)
+    if (err?.code === 'P2002') return c.json({ error: 'El email ya está en uso' }, 409)
+    throw err
+  }
 })
 
 // DELETE /system-admin/users/:id — eliminar usuario
@@ -94,6 +100,11 @@ systemAdminRoutes.delete('/users/:id', async (c) => {
   const { id } = c.req.param()
   if (id === userId) return c.json({ error: 'No podés eliminarte a vos mismo' }, 400)
 
-  await prisma.user.delete({ where: { id } })
-  return c.json({ message: 'Usuario eliminado' })
+  try {
+    await prisma.user.delete({ where: { id } })
+    return c.json({ message: 'Usuario eliminado' })
+  } catch (err: any) {
+    if (err?.code === 'P2025') return c.json({ error: 'Usuario no encontrado' }, 404)
+    throw err
+  }
 })

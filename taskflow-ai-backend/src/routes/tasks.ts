@@ -190,8 +190,9 @@ taskRoutes.get('/:id', async (c) => {
   if (!task) return c.json({ error: 'Tarea no encontrada' }, 404)
 
   const board = await prisma.board.findUnique({ where: { id: task.group.boardId } })
+  if (!board) return c.json({ error: 'Tablero no encontrado' }, 404)
   const membership = await prisma.workspaceMember.findUnique({
-    where: { workspaceId_userId: { workspaceId: board!.workspaceId, userId } },
+    where: { workspaceId_userId: { workspaceId: board.workspaceId, userId } },
   })
   if (!membership) return c.json({ error: 'Sin acceso' }, 403)
 
@@ -414,14 +415,14 @@ async function evaluateAutomations(
 
         // Send email only to members with emailNotifications enabled
         const board = await prisma.board.findUnique({ where: { id: boardId }, select: { workspaceId: true } })
-        const members = await prisma.workspaceMember.findMany({
+        const members = board ? await prisma.workspaceMember.findMany({
           where: {
-            workspaceId: board!.workspaceId,
+            workspaceId: board.workspaceId,
             userId: { in: userIds },
             emailNotifications: true,
           },
           include: { user: { select: { email: true, name: true } } },
-        })
+        }) : []
         const taskUrl = `${process.env.APP_URL ?? 'http://localhost:5173'}/boards/${boardId}?task=${task.id}`
         await Promise.allSettled(
           members.map((m) =>
@@ -491,8 +492,10 @@ taskRoutes.delete('/:id', async (c) => {
 taskRoutes.post('/:id/comments', async (c) => {
   const { userId } = c.get('user')
   const { id } = c.req.param()
-  const body = await c.req.json()
-  const content = z.string().min(1).parse(body?.content)
+  const body = await c.req.json().catch(() => null)
+  const result = z.string().min(1).max(4000).safeParse(body?.content)
+  if (!result.success) return c.json({ error: 'Contenido requerido' }, 400)
+  const content = result.data
 
   const task = await prisma.task.findUnique({
     where: { id },

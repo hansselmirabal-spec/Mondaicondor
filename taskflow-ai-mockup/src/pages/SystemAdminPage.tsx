@@ -1,7 +1,9 @@
 import { useEffect, useState } from 'react'
+import { Navigate } from 'react-router-dom'
 import { ShieldCheck, Plus, Pencil, Trash2, X, Loader2, AlertCircle } from 'lucide-react'
 import { api } from '@/lib/api'
 import type { SystemAdminUser } from '@/lib/api'
+import { useAuthStore } from '@/store/authStore'
 
 // ---- helpers ---------------------------------------------------------------
 
@@ -315,17 +317,21 @@ type ModalState =
   | { type: 'delete'; user: SystemAdminUser }
 
 export function SystemAdminPage() {
+  const currentUser = useAuthStore(state => state.user)
   const [users, setUsers] = useState<SystemAdminUser[]>([])
   const [loading, setLoading] = useState(true)
   const [fetchError, setFetchError] = useState('')
   const [modal, setModal] = useState<ModalState>({ type: 'none' })
 
   useEffect(() => {
+    if (!currentUser?.isAppAdmin) return
     api.systemAdmin.listUsers()
       .then(({ users }) => setUsers(users))
       .catch(err => setFetchError(err instanceof Error ? err.message : 'Error al cargar usuarios'))
       .finally(() => setLoading(false))
-  }, [])
+  }, [currentUser?.isAppAdmin])
+
+  if (!currentUser?.isAppAdmin) return <Navigate to="/boards" replace />
 
   function handleCreated(user: SystemAdminUser) {
     setUsers(prev => [...prev, user])

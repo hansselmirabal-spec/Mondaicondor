@@ -384,11 +384,10 @@ workspaceRoutes.put('/:id/statuses/:statusId', zValidator('json', updateStatusSc
   })
   if (!membership || membership.role === 'VIEWER') return c.json({ error: 'Sin permisos' }, 403)
 
-  const status = await prisma.workspaceStatus.update({
-    where: { id: statusId },
-    data,
-  })
+  const target = await prisma.workspaceStatus.findUnique({ where: { id: statusId } })
+  if (!target || target.workspaceId !== id) return c.json({ error: 'Estado no encontrado' }, 404)
 
+  const status = await prisma.workspaceStatus.update({ where: { id: statusId }, data })
   return c.json({ status })
 })
 
@@ -458,10 +457,9 @@ workspaceRoutes.put('/:id/uens/:uenId', zValidator('json', updateUenSchema), asy
     where: { workspaceId_userId: { workspaceId: id, userId } },
   })
   if (!membership || membership.role === 'VIEWER') return c.json({ error: 'Sin permisos' }, 403)
-  const uen = await prisma.workspaceUen.update({
-    where: { id: uenId },
-    data: c.req.valid('json'),
-  })
+  const existing = await prisma.workspaceUen.findUnique({ where: { id: uenId } })
+  if (!existing || existing.workspaceId !== id) return c.json({ error: 'UEN no encontrada' }, 404)
+  const uen = await prisma.workspaceUen.update({ where: { id: uenId }, data: c.req.valid('json') })
   return c.json({ uen })
 })
 
@@ -472,6 +470,8 @@ workspaceRoutes.delete('/:id/uens/:uenId', async (c) => {
     where: { workspaceId_userId: { workspaceId: id, userId } },
   })
   if (!membership || membership.role === 'VIEWER') return c.json({ error: 'Sin permisos' }, 403)
+  const existing = await prisma.workspaceUen.findUnique({ where: { id: uenId } })
+  if (!existing || existing.workspaceId !== id) return c.json({ error: 'UEN no encontrada' }, 404)
   await prisma.workspaceUen.delete({ where: { id: uenId } })
   return c.json({ message: 'UEN eliminada' })
 })
