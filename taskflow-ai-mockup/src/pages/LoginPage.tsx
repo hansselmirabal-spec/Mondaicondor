@@ -116,6 +116,7 @@ export function LoginPage() {
             </Link>
           </div>
         </div>
+        <p className="text-center text-xs text-white/30 mt-6">Mondai v1.0 · QAS</p>
       </div>
     </div>
   )
