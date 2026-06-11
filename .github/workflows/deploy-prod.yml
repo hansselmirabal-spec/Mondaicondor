@@ -6,17 +6,16 @@ on:
 
 jobs:
   deploy:
-    runs-on: ubuntu-latest
-    environment: PROD
+    runs-on: self-hosted
 
     steps:
-      - name: Deploy to PROD server
-        uses: appleboy/ssh-action@v1.0.3
+      - name: Checkout
+        uses: actions/checkout@v4
         with:
-          host: ${{ secrets.SSH_HOST }}
-          username: ${{ secrets.SSH_USER }}
-          key: ${{ secrets.SSH_PRIVATE_KEY }}
-          script: |
-            cd /opt/taskflow
-            git pull origin main
-            bash deploy-prod.sh
+          ref: main
+
+      - name: Deploy PROD
+        run: |
+          cd /opt/taskflow
+          git pull origin main
+          bash deploy-prod.sh

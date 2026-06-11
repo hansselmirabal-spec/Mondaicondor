@@ -6,17 +6,16 @@ on:
 
 jobs:
   deploy:
-    runs-on: ubuntu-latest
-    environment: QAS
+    runs-on: self-hosted
 
     steps:
-      - name: Deploy to QAS server
-        uses: appleboy/ssh-action@v1.0.3
+      - name: Checkout
+        uses: actions/checkout@v4
         with:
-          host: ${{ secrets.SSH_HOST }}
-          username: ${{ secrets.SSH_USER }}
-          key: ${{ secrets.SSH_PRIVATE_KEY }}
-          script: |
-            cd /opt/taskflow-qas
-            git pull origin staging
-            bash deploy-qas.sh
+          ref: staging
+
+      - name: Deploy QAS
+        run: |
+          cd /opt/taskflow-qas
+          git pull origin staging
+          bash deploy-qas.sh
