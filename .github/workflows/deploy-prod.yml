@@ -9,13 +9,9 @@ jobs:
     runs-on: self-hosted
 
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-        with:
-          ref: main
-
       - name: Deploy PROD
         run: |
+          git config --global --add safe.directory /opt/taskflow
           cd /opt/taskflow
           git pull origin main
           bash deploy-prod.sh

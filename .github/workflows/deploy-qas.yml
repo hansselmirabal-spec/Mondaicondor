@@ -9,13 +9,9 @@ jobs:
     runs-on: self-hosted
 
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-        with:
-          ref: staging
-
       - name: Deploy QAS
         run: |
+          git config --global --add safe.directory /opt/taskflow-qas
           cd /opt/taskflow-qas
           git pull origin staging
           bash deploy-qas.sh
