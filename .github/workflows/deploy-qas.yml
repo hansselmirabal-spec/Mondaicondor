@@ -1,0 +1,22 @@
+name: Deploy QAS
+
+on:
+  push:
+    branches: [staging]
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment: QAS
+
+    steps:
+      - name: Deploy to QAS server
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          script: |
+            cd /opt/taskflow-qas
+            git pull origin staging
+            bash deploy-qas.sh

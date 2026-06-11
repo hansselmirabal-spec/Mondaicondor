@@ -1,0 +1,22 @@
+name: Deploy DEV
+
+on:
+  push:
+    branches: [develop]
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment: DEV
+
+    steps:
+      - name: Deploy to DEV server
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          script: |
+            cd /opt/taskflow-dev
+            git pull origin develop
+            bash deploy-dev.sh
