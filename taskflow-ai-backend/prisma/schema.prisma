@@ -36,6 +36,7 @@ model User {
 
   refreshTokens RefreshToken[]
   memberships   WorkspaceMember[]
+  boardMembers  BoardMember[]
   assignedTasks TaskAssignee[]
   comments      Comment[]
   activities    Activity[]
@@ -146,15 +147,30 @@ model Board {
   workspaceId String
   name        String
   description String?
+  isPrivate   Boolean  @default(false)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
-  workspace   Workspace      @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
-  groups      Group[]
-  automations Automation[]
-  settings    BoardSettings?
+  workspace    Workspace      @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  groups       Group[]
+  automations  Automation[]
+  settings     BoardSettings?
+  boardMembers BoardMember[]
 
   @@index([workspaceId])
+}
+
+model BoardMember {
+  id      String @id @default(cuid())
+  boardId String
+  userId  String
+
+  board Board @relation(fields: [boardId], references: [id], onDelete: Cascade)
+  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([boardId, userId])
+  @@index([boardId])
+  @@index([userId])
 }
 
 model BoardSettings {

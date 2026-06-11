@@ -296,10 +296,10 @@ export const api = {
 
     get: (boardId: string) => request<{ board: ApiBoard }>(`/boards/${boardId}`),
 
-    create: (data: { name: string; description?: string; workspaceId: string }) =>
+    create: (data: { name: string; description?: string; workspaceId: string; isPrivate?: boolean }) =>
       request<{ board: ApiBoard }>('/boards', { method: 'POST', body: JSON.stringify(data) }),
 
-    update: (id: string, data: { name?: string; description?: string | null }) =>
+    update: (id: string, data: { name?: string; description?: string | null; isPrivate?: boolean }) =>
       request<{ board: ApiBoard }>(`/boards/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
 
     delete: (id: string) =>
@@ -310,6 +310,18 @@ export const api = {
         method: 'POST',
         body: JSON.stringify(data),
       }),
+
+    listMembers: (boardId: string) =>
+      request<{ members: ApiBoardMember[] }>(`/boards/${boardId}/members`),
+
+    addMember: (boardId: string, userId: string) =>
+      request<{ member: ApiBoardMember }>(`/boards/${boardId}/members`, {
+        method: 'POST',
+        body: JSON.stringify({ userId }),
+      }),
+
+    removeMember: (boardId: string, userId: string) =>
+      request<{ message: string }>(`/boards/${boardId}/members/${userId}`, { method: 'DELETE' }),
   },
 
   groups: {
@@ -448,11 +460,20 @@ export interface ApiWorkspace {
   _count: { boards: number }
 }
 
+export interface ApiBoardMember {
+  id: string
+  boardId: string
+  userId: string
+  user: { id: string; name: string; email: string; initials: string; color: string; avatarUrl: string | null }
+}
+
 export interface ApiBoard {
   id: string
   workspaceId: string
   name: string
   description: string | null
+  isPrivate: boolean
+  boardMembers?: ApiBoardMember[]
   groups: ApiGroup[]
 }
 

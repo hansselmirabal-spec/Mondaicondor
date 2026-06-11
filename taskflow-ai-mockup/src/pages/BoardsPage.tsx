@@ -1,5 +1,5 @@
 import { useNavigate } from 'react-router-dom'
-import { LayoutGrid, Plus, Star, MoreHorizontal, Pencil, Trash2 } from 'lucide-react'
+import { LayoutGrid, Plus, Star, MoreHorizontal, Pencil, Trash2, Lock } from 'lucide-react'
 import { useState, useEffect, useRef } from 'react'
 import { useBoardStore } from '@/store/boardStore'
 import { Modal } from '@/components/ui/Modal'
@@ -17,6 +17,7 @@ export function BoardsPage() {
   const [showModal, setShowModal] = useState(false)
   const [boardName, setBoardName] = useState('')
   const [boardDesc, setBoardDesc] = useState('')
+  const [boardPrivate, setBoardPrivate] = useState(false)
 
   const [editingBoard, setEditingBoard] = useState<MockBoard | null>(null)
   const [editName, setEditName] = useState('')
@@ -57,10 +58,12 @@ export function BoardsPage() {
         name: boardName.trim(),
         description: boardDesc.trim(),
         workspaceId,
+        isPrivate: boardPrivate,
       })
       addBoard(toMockBoard(apiBoard))
       setBoardName('')
       setBoardDesc('')
+      setBoardPrivate(false)
       setShowModal(false)
       toast('Tablero creado.', 'success')
     } catch (e) {
@@ -200,7 +203,10 @@ export function BoardsPage() {
                         </div>
                       </div>
                     </div>
-                    <h3 className="text-sm font-semibold text-gray-900 mb-1 group-hover:text-blue-600 transition-colors">{board.name}</h3>
+                    <div className="flex items-center gap-1.5 mb-1">
+                      <h3 className="text-sm font-semibold text-gray-900 group-hover:text-blue-600 transition-colors">{board.name}</h3>
+                      {board.isPrivate && <Lock className="w-3 h-3 text-gray-400 shrink-0" />}
+                    </div>
                     <p className="text-xs text-gray-500 mb-3 line-clamp-2">{board.description}</p>
                     <div className="flex items-center justify-between text-xs text-gray-400">
                       <span>{board.groups.length} grupos</span>
@@ -244,6 +250,22 @@ export function BoardsPage() {
               placeholder="Descripción opcional"
             />
           </div>
+          <button
+            type="button"
+            onClick={() => setBoardPrivate(p => !p)}
+            className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg border transition-colors text-sm ${
+              boardPrivate ? 'border-indigo-300 bg-indigo-50 text-indigo-700' : 'border-gray-200 text-gray-500 hover:bg-gray-50'
+            }`}
+          >
+            <Lock className="w-4 h-4 shrink-0" />
+            <div className="text-left">
+              <p className="font-medium leading-tight">{boardPrivate ? 'Tablero privado' : 'Tablero público'}</p>
+              <p className="text-xs opacity-70 leading-tight">{boardPrivate ? 'Solo miembros invitados pueden verlo' : 'Todos los miembros del workspace'}</p>
+            </div>
+            <div className={`ml-auto w-8 h-4 rounded-full transition-colors ${boardPrivate ? 'bg-indigo-500' : 'bg-gray-200'}`}>
+              <div className={`w-4 h-4 bg-white rounded-full shadow transition-transform ${boardPrivate ? 'translate-x-4' : 'translate-x-0'}`} />
+            </div>
+          </button>
           <div className="flex gap-2 pt-2">
             <button onClick={() => setShowModal(false)} className="flex-1 py-2 text-sm text-gray-600 border border-gray-200 rounded-lg hover:bg-gray-50">Cancelar</button>
             <button onClick={handleCreate} disabled={!boardName.trim()} className="flex-1 py-2 text-sm bg-blue-600 hover:bg-blue-700 disabled:bg-blue-200 text-white font-medium rounded-lg transition-colors">

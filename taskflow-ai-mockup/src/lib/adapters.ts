@@ -56,6 +56,8 @@ export function toMockBoard(b: ApiBoard): MockBoard {
     workspaceId: b.workspaceId,
     name: b.name,
     description: b.description ?? '',
+    isPrivate: b.isPrivate ?? false,
+    boardMembers: b.boardMembers,
     groups,
   }
 }

@@ -6,6 +6,7 @@ export const mockBoards: MockBoard[] = [
     workspaceId: 'ws-digital',
     name: 'Mi tablero',
     description: '',
+    isPrivate: false,
     groups: [
       { id: 'group-default', boardId: 'board-main', name: 'Sin grupo', color: '#3b82f6' },
     ],

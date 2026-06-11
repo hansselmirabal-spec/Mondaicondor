@@ -35,11 +35,20 @@ export interface MockGroup {
   color: string
 }
 
+export interface BoardMember {
+  id: string
+  boardId: string
+  userId: string
+  user: { id: string; name: string; email: string; initials: string; color: string; avatarUrl: string | null }
+}
+
 export interface MockBoard {
   id: string
   workspaceId: string
   name: string
   description: string
+  isPrivate: boolean
+  boardMembers?: BoardMember[]
   groups: MockGroup[]
 }
 
