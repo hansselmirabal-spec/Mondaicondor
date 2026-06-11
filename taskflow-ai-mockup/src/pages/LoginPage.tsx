@@ -70,7 +70,7 @@ export function LoginPage() {
                 value={email}
                 onChange={handleEmailChange}
                 disabled={isLoading}
-                className={`w-full px-3 py-2.5 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:border-transparent disabled:opacity-50 ${
+                className={`w-full px-3 py-2.5 border rounded-lg text-base md:text-sm focus:outline-none focus:ring-2 focus:border-transparent disabled:opacity-50 ${
                   error
                     ? 'border-red-400 focus:ring-red-400 bg-red-50'
                     : 'border-gray-200 focus:ring-blue-500'
@@ -84,7 +84,7 @@ export function LoginPage() {
                 value={password}
                 onChange={handlePasswordChange}
                 disabled={isLoading}
-                className={`w-full px-3 py-2.5 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:border-transparent disabled:opacity-50 ${
+                className={`w-full px-3 py-2.5 border rounded-lg text-base md:text-sm focus:outline-none focus:ring-2 focus:border-transparent disabled:opacity-50 ${
                   error
                     ? 'border-red-400 focus:ring-red-400 bg-red-50'
                     : 'border-gray-200 focus:ring-blue-500'

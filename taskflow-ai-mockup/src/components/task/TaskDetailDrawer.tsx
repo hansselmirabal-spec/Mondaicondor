@@ -237,7 +237,7 @@ export function TaskDetailDrawer() {
 
   return (
     <>
-      <aside className="fixed right-0 top-0 h-full w-[480px] bg-white shadow-2xl z-50 flex flex-col border-l border-gray-200 overflow-hidden">
+      <aside className="fixed right-0 top-0 h-full w-full md:w-[480px] bg-white shadow-2xl z-50 flex flex-col border-l border-gray-200 overflow-hidden">
         <div className="flex items-start gap-3 px-5 py-4 border-b border-gray-200">
           <button onClick={close} className="p-1.5 bg-red-500 hover:bg-red-600 text-white rounded-lg transition-colors shrink-0">
             <X className="w-5 h-5" />

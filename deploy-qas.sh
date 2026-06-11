@@ -1,7 +1,9 @@
 #!/bin/bash
-# Restart QAS with whatever images are currently tagged taskflow-*:dev.
-# Run this only if you need to restart QAS independently.
-# For a full DEV+QAS deploy, use deploy-dev.sh instead.
+# Deploy QAS environment (port 5302).
+# Run this script on the server after pulling the latest code.
+#
+# Usage:
+#   ./deploy-qas.sh
 
 set -e
 
@@ -13,7 +15,14 @@ if [[ ! -f .env.qas ]]; then
   exit 1
 fi
 
-echo "==> [QAS] Restarting with current taskflow-*:dev images..."
-docker compose -f docker-compose.qas.yml --env-file .env.qas up -d --no-build
+echo "==> [QAS] Stopping existing stack..."
+docker-compose -f docker-compose.qas.yml --env-file .env.qas down
+
+echo "==> [QAS] Building images..."
+docker-compose -f docker-compose.qas.yml --env-file .env.qas build
+
+echo "==> [QAS] Starting stack..."
+docker-compose -f docker-compose.qas.yml --env-file .env.qas up -d
 
 echo "==> [QAS] Running at http://$(hostname -I | awk '{print $1}'):5302"
+echo "Done."

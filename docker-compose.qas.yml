@@ -1,11 +1,9 @@
-name: taskflow-qas
-
-# QAS uses the exact same images built by docker-compose.dev.yml.
-# Never build here — always promote from DEV via deploy-dev.sh.
-
 services:
   frontend:
-    image: taskflow-frontend:dev
+    build:
+      context: ./taskflow-ai-mockup
+      dockerfile: Dockerfile
+    image: taskflow-frontend:qas
     ports:
       - "5302:80"
     networks:
@@ -15,7 +13,10 @@ services:
     restart: unless-stopped
 
   backend:
-    image: taskflow-backend:dev
+    build:
+      context: ./taskflow-ai-backend
+      dockerfile: Dockerfile
+    image: taskflow-backend:qas
     environment:
       DATABASE_URL: postgresql://taskflow:${DB_PASSWORD}@db:5432/taskflow_qas
       JWT_SECRET: ${JWT_SECRET}
@@ -29,7 +30,8 @@ services:
     networks:
       - net
     depends_on:
-      - db
+      db:
+        condition: service_healthy
     restart: unless-stopped
 
   db:
@@ -43,6 +45,11 @@ services:
     networks:
       - net
     restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U taskflow -d taskflow_qas"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
 
 networks:
   net:

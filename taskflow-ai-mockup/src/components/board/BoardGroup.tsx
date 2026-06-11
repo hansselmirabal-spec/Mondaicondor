@@ -1,13 +1,54 @@
 import { ChevronDown, ChevronRight, Plus, Check, X, MoreHorizontal, Pencil, Trash2 } from 'lucide-react'
 import { useState, useRef, useEffect } from 'react'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import type { MockGroup, MockTask } from '@/types'
 import { TaskRow } from './TaskRow'
 import { EmptyState } from '@/components/ui/EmptyState'
+import { StatusBadge } from '@/components/ui/StatusBadge'
+import { PriorityBadge } from '@/components/ui/PriorityBadge'
+import { AssigneeAvatarGroup } from '@/components/ui/AssigneeAvatar'
+import { DeadlineCell } from '@/components/ui/DeadlineCell'
 import { useUIStore } from '@/store/uiStore'
 import { useFilterStore, ALL_COLUMNS } from '@/store/filterStore'
 import { useBoardStore } from '@/store/boardStore'
 import { api } from '@/lib/api'
 import { toast } from '@/components/ui/Toast'
+
+function TaskMobileCard({ task }: { task: MockTask }) {
+  const navigate = useNavigate()
+  const [searchParams] = useSearchParams()
+  function handleClick() {
+    const params = new URLSearchParams(searchParams)
+    params.set('task', task.id)
+    navigate('?' + params.toString())
+  }
+  return (
+    <div
+      onClick={handleClick}
+      className="flex items-start gap-3 p-3 bg-white border-b border-gray-100 active:bg-gray-50 cursor-pointer"
+    >
+      <div className="flex-1 min-w-0">
+        <p className="text-sm font-medium text-gray-900 truncate">{task.title}</p>
+        <div className="flex items-center gap-1.5 mt-1.5 flex-wrap">
+          <StatusBadge status={task.status} />
+          <PriorityBadge priority={task.priority} />
+          {task.uenName && (
+            <span
+              className="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium text-white"
+              style={{ backgroundColor: task.uenColor ?? '#6366f1' }}
+            >
+              {task.uenName}
+            </span>
+          )}
+        </div>
+      </div>
+      <div className="flex flex-col items-end gap-1 shrink-0">
+        {task.assigneeIds.length > 0 && <AssigneeAvatarGroup userIds={task.assigneeIds} max={2} />}
+        {task.deadline && <DeadlineCell deadline={task.deadline} />}
+      </div>
+    </div>
+  )
+}
 
 interface BoardGroupProps {
   group: MockGroup
@@ -160,7 +201,45 @@ export function BoardGroup({ group, tasks, label, onAddTask }: BoardGroupProps) 
       </div>
 
       {!collapsed && (
-        <div className="rounded-sm border border-gray-100 overflow-x-auto" style={{ borderLeft: `4px solid ${group.color}` }}>
+        <>
+        {/* ── Mobile card list ── */}
+        <div className="block md:hidden rounded-sm border border-gray-100" style={{ borderLeft: `4px solid ${group.color}` }}>
+          {tasks.length === 0
+            ? <div className="p-4"><EmptyState /></div>
+            : tasks.map(task => <TaskMobileCard key={task.id} task={task} />)
+          }
+          {adding ? (
+            <div className="p-3 border-t border-gray-100 bg-blue-50/40">
+              <input
+                ref={inputRef}
+                value={newTitle}
+                onChange={e => setNewTitle(e.target.value)}
+                onKeyDown={handleAddKeyDown}
+                placeholder="Nombre del elemento..."
+                className="w-full text-base text-gray-800 bg-white border border-blue-400 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-400 mb-2"
+              />
+              <div className="flex gap-2">
+                <button onClick={commitAdd} disabled={!newTitle.trim()} className="flex-1 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-200 text-white text-sm font-medium rounded-md transition-colors">
+                  Agregar
+                </button>
+                <button onClick={() => { setNewTitle(''); setAdding(false) }} className="px-3 py-2 text-gray-400 hover:bg-gray-200 rounded-md transition-colors">
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+            </div>
+          ) : (
+            <button
+              onClick={() => setAdding(true)}
+              className="flex items-center gap-1 px-4 py-3 text-sm text-gray-400 hover:text-gray-600 hover:bg-gray-50 w-full transition-colors border-t border-gray-100"
+            >
+              <Plus className="w-3.5 h-3.5" />
+              <span>Agregar elemento</span>
+            </button>
+          )}
+        </div>
+
+        {/* ── Desktop table ── */}
+        <div className="hidden md:block rounded-sm border border-gray-100 overflow-x-auto" style={{ borderLeft: `4px solid ${group.color}` }}>
           <table className="w-full min-w-[600px] border-collapse">
             <thead>
               <tr className="bg-gray-50 border-b border-gray-200">
@@ -256,6 +335,7 @@ export function BoardGroup({ group, tasks, label, onAddTask }: BoardGroupProps) 
             {isColumnVisible('Fecha límite') && <div className="w-32" />}
           </div>
         </div>
+        </>
       )}
     </div>
   )

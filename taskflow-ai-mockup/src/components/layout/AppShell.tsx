@@ -1,6 +1,7 @@
 import { Outlet } from 'react-router-dom'
 import { useEffect } from 'react'
 import { Sidebar } from './Sidebar'
+import { BottomNav } from './BottomNav'
 import { FloatingActions } from './FloatingActions'
 import { TaskDetailDrawer } from '@/components/task/TaskDetailDrawer'
 import { AutomationPanel } from '@/components/panels/AutomationPanel'
@@ -47,11 +48,16 @@ export function AppShell() {
   }, [])
 
   return (
-    <div className="flex h-screen overflow-hidden bg-gray-50">
+    <div className="flex h-dvh overflow-hidden bg-gray-50">
+      {/* Sidebar — desktop only */}
       <Sidebar />
-      <main className="flex-1 flex flex-col overflow-hidden">
-        <Outlet />
-      </main>
+      {/* Right column: content + mobile bottom nav */}
+      <div className="flex-1 flex flex-col overflow-hidden min-w-0">
+        <main className="flex-1 flex flex-col overflow-hidden">
+          <Outlet />
+        </main>
+        <BottomNav />
+      </div>
       <TaskDetailDrawer />
       <AutomationPanel />
       <FloatingActions />

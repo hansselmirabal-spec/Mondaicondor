@@ -96,7 +96,7 @@ export function Sidebar() {
 
   return (
     <>
-    <div className="flex h-full shrink-0">
+    <div className="hidden md:flex h-full shrink-0">
       {/* Icon rail — leftmost */}
       <div className="w-14 flex flex-col items-center py-3 gap-1 bg-[#1a1a2e] border-r border-white/10">
         {/* Avatar with profile dropdown */}
