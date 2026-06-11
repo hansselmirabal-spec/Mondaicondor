@@ -115,8 +115,8 @@ export function LoginPage() {
               ¿Olvidaste tu contraseña?
             </Link>
           </div>
+          <p className="text-center text-xs text-gray-300 mt-4">Mondai v1.0 · QAS</p>
         </div>
-        <p className="text-center text-xs text-white/30 mt-6">Mondai v1.0 · QAS</p>
       </div>
     </div>
   )
