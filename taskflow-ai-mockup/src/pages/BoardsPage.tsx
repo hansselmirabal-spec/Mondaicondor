@@ -1,5 +1,5 @@
 import { useNavigate } from 'react-router-dom'
-import { LayoutGrid, Plus, Star, MoreHorizontal, Pencil, Trash2, Lock } from 'lucide-react'
+import { LayoutGrid, Plus, Star, MoreHorizontal, Pencil, Trash2, Lock, Globe, Users, X } from 'lucide-react'
 import { useState, useEffect, useRef } from 'react'
 import { useBoardStore } from '@/store/boardStore'
 import { Modal } from '@/components/ui/Modal'
@@ -7,25 +7,38 @@ import { toast } from '@/components/ui/Toast'
 import { api } from '@/lib/api'
 import { toMockBoard } from '@/lib/adapters'
 import type { MockBoard } from '@/types'
+import type { ApiBoardMember, ApiWorkspaceMember } from '@/lib/api'
 
 export function BoardsPage() {
   const navigate = useNavigate()
-  const { boards, setBoards, addBoard, removeBoard, patchBoard, favorites, toggleFavorite, isFavorite, workspace } = useBoardStore()
+  const { boards, setBoards, addBoard, removeBoard, patchBoard, toggleFavorite, isFavorite, workspace } = useBoardStore()
 
   const workspaceId = workspace?.id ?? null
   const [loading, setLoading] = useState(true)
+
+  // Create modal
   const [showModal, setShowModal] = useState(false)
   const [boardName, setBoardName] = useState('')
   const [boardDesc, setBoardDesc] = useState('')
   const [boardPrivate, setBoardPrivate] = useState(false)
 
+  // Edit modal
   const [editingBoard, setEditingBoard] = useState<MockBoard | null>(null)
   const [editName, setEditName] = useState('')
   const [editDesc, setEditDesc] = useState('')
 
+  // Delete confirm
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null)
+
+  // Card dropdown menu
   const [openMenuId, setOpenMenuId] = useState<string | null>(null)
   const menuRef = useRef<HTMLDivElement>(null)
+
+  // Privacy modal
+  const [privacyBoard, setPrivacyBoard] = useState<MockBoard | null>(null)
+  const [privacyMembers, setPrivacyMembers] = useState<ApiBoardMember[]>([])
+  const [wsMembers, setWsMembers] = useState<ApiWorkspaceMember[]>([])
+  const [privacyLoading, setPrivacyLoading] = useState(false)
 
   useEffect(() => {
     if (!workspaceId) { setLoading(false); return }
@@ -51,6 +64,7 @@ export function BoardsPage() {
     return () => document.removeEventListener('mousedown', handleClickOutside)
   }, [openMenuId])
 
+  // ── Create ────────────────────────────────────────────────────────────────
   async function handleCreate() {
     if (!boardName.trim() || !workspaceId) return
     try {
@@ -66,11 +80,12 @@ export function BoardsPage() {
       setBoardPrivate(false)
       setShowModal(false)
       toast('Tablero creado.', 'success')
-    } catch (e) {
+    } catch {
       toast('Error al crear el tablero.', 'error')
     }
   }
 
+  // ── Edit ──────────────────────────────────────────────────────────────────
   function openEdit(board: MockBoard, e: React.MouseEvent) {
     e.stopPropagation()
     setOpenMenuId(null)
@@ -91,6 +106,7 @@ export function BoardsPage() {
     }
   }
 
+  // ── Delete ────────────────────────────────────────────────────────────────
   async function handleDelete() {
     if (!confirmDeleteId) return
     try {
@@ -102,6 +118,66 @@ export function BoardsPage() {
       toast('Error al eliminar.', 'error')
     }
   }
+
+  // ── Privacy modal ─────────────────────────────────────────────────────────
+  async function openPrivacy(board: MockBoard, e: React.MouseEvent) {
+    e.stopPropagation()
+    setOpenMenuId(null)
+    setPrivacyBoard(board)
+    setPrivacyLoading(true)
+    try {
+      const [{ members }, wsDetail] = await Promise.all([
+        api.boards.listMembers(board.id),
+        workspaceId ? api.workspaces.get(workspaceId) : Promise.resolve(null),
+      ])
+      setPrivacyMembers(members)
+      setWsMembers(wsDetail?.workspace.members ?? [])
+    } catch {
+      toast('Error al cargar miembros.', 'error')
+    } finally {
+      setPrivacyLoading(false)
+    }
+  }
+
+  async function handleTogglePrivacy() {
+    if (!privacyBoard) return
+    const next = !privacyBoard.isPrivate
+    try {
+      await api.boards.update(privacyBoard.id, { isPrivate: next })
+      patchBoard(privacyBoard.id, { isPrivate: next })
+      setPrivacyBoard(b => b ? { ...b, isPrivate: next } : null)
+      toast(next ? 'Tablero marcado como privado.' : 'Tablero marcado como público.', 'success')
+    } catch {
+      toast('Error al actualizar privacidad.', 'error')
+    }
+  }
+
+  async function handleAddBoardMember(userId: string) {
+    if (!privacyBoard) return
+    try {
+      const { member } = await api.boards.addMember(privacyBoard.id, userId)
+      setPrivacyMembers(prev => [...prev, member])
+      toast('Miembro agregado.', 'success')
+    } catch {
+      toast('Error al agregar miembro.', 'error')
+    }
+  }
+
+  async function handleRemoveBoardMember(userId: string) {
+    if (!privacyBoard) return
+    try {
+      await api.boards.removeMember(privacyBoard.id, userId)
+      setPrivacyMembers(prev => prev.filter(m => m.userId !== userId))
+      toast('Miembro eliminado del tablero.', 'success')
+    } catch {
+      toast('Error al eliminar miembro.', 'error')
+    }
+  }
+
+  const memberIds = new Set(privacyMembers.map(m => m.userId))
+  const nonMembers = wsMembers.filter(m => !memberIds.has(m.userId))
+
+  // ─────────────────────────────────────────────────────────────────────────
 
   if (loading) return (
     <div className="flex-1 flex items-center justify-center">
@@ -183,13 +259,20 @@ export function BoardsPage() {
                             <MoreHorizontal className="w-4 h-4" />
                           </button>
                           {isMenuOpen && (
-                            <div className="absolute right-0 top-7 z-20 w-40 bg-white rounded-lg shadow-lg border border-gray-100 py-1">
+                            <div className="absolute right-0 top-7 z-20 w-44 bg-white rounded-lg shadow-lg border border-gray-100 py-1">
                               <button
                                 onClick={e => openEdit(board, e)}
                                 className="flex items-center gap-2 w-full px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
                               >
                                 <Pencil className="w-3.5 h-3.5" />
                                 Editar
+                              </button>
+                              <button
+                                onClick={e => openPrivacy(board, e)}
+                                className="flex items-center gap-2 w-full px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+                              >
+                                <Users className="w-3.5 h-3.5" />
+                                Privacidad y acceso
                               </button>
                               <button
                                 onClick={e => { e.stopPropagation(); setOpenMenuId(null); setConfirmDeleteId(board.id) }}
@@ -210,6 +293,12 @@ export function BoardsPage() {
                     <p className="text-xs text-gray-500 mb-3 line-clamp-2">{board.description}</p>
                     <div className="flex items-center justify-between text-xs text-gray-400">
                       <span>{board.groups.length} grupos</span>
+                      {board.isPrivate && (
+                        <span className="flex items-center gap-1 text-indigo-500 font-medium">
+                          <Lock className="w-3 h-3" />
+                          Privado
+                        </span>
+                      )}
                     </div>
                   </>
                 )}
@@ -227,7 +316,8 @@ export function BoardsPage() {
         </div>
       </div>
 
-      <Modal isOpen={showModal} onClose={() => setShowModal(false)} title="Crear nuevo tablero" size="sm">
+      {/* Create modal */}
+      <Modal isOpen={showModal} onClose={() => { setShowModal(false); setBoardPrivate(false) }} title="Crear nuevo tablero" size="sm">
         <div className="p-5 space-y-4">
           <div>
             <label className="block text-xs font-semibold text-gray-700 mb-1">Nombre <span className="text-red-500">*</span></label>
@@ -250,24 +340,37 @@ export function BoardsPage() {
               placeholder="Descripción opcional"
             />
           </div>
-          <button
-            type="button"
-            onClick={() => setBoardPrivate(p => !p)}
-            className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg border transition-colors text-sm ${
-              boardPrivate ? 'border-indigo-300 bg-indigo-50 text-indigo-700' : 'border-gray-200 text-gray-500 hover:bg-gray-50'
-            }`}
-          >
-            <Lock className="w-4 h-4 shrink-0" />
-            <div className="text-left">
-              <p className="font-medium leading-tight">{boardPrivate ? 'Tablero privado' : 'Tablero público'}</p>
-              <p className="text-xs opacity-70 leading-tight">{boardPrivate ? 'Solo miembros invitados pueden verlo' : 'Todos los miembros del workspace'}</p>
+
+          <div>
+            <label className="block text-xs font-semibold text-gray-700 mb-2">Visibilidad</label>
+            <div className="grid grid-cols-2 gap-2">
+              <button
+                type="button"
+                onClick={() => setBoardPrivate(false)}
+                className={`flex flex-col items-center gap-1.5 py-3 rounded-lg border-2 transition-colors text-sm ${
+                  !boardPrivate ? 'border-blue-500 bg-blue-50 text-blue-700' : 'border-gray-200 text-gray-500 hover:bg-gray-50'
+                }`}
+              >
+                <Globe className="w-5 h-5" />
+                <span className="font-medium text-xs">Público</span>
+                <span className="text-xs opacity-60 leading-tight text-center px-1">Todos los miembros</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setBoardPrivate(true)}
+                className={`flex flex-col items-center gap-1.5 py-3 rounded-lg border-2 transition-colors text-sm ${
+                  boardPrivate ? 'border-indigo-500 bg-indigo-50 text-indigo-700' : 'border-gray-200 text-gray-500 hover:bg-gray-50'
+                }`}
+              >
+                <Lock className="w-5 h-5" />
+                <span className="font-medium text-xs">Privado</span>
+                <span className="text-xs opacity-60 leading-tight text-center px-1">Solo invitados</span>
+              </button>
             </div>
-            <div className={`ml-auto w-8 h-4 rounded-full transition-colors ${boardPrivate ? 'bg-indigo-500' : 'bg-gray-200'}`}>
-              <div className={`w-4 h-4 bg-white rounded-full shadow transition-transform ${boardPrivate ? 'translate-x-4' : 'translate-x-0'}`} />
-            </div>
-          </button>
-          <div className="flex gap-2 pt-2">
-            <button onClick={() => setShowModal(false)} className="flex-1 py-2 text-sm text-gray-600 border border-gray-200 rounded-lg hover:bg-gray-50">Cancelar</button>
+          </div>
+
+          <div className="flex gap-2 pt-1">
+            <button onClick={() => { setShowModal(false); setBoardPrivate(false) }} className="flex-1 py-2 text-sm text-gray-600 border border-gray-200 rounded-lg hover:bg-gray-50">Cancelar</button>
             <button onClick={handleCreate} disabled={!boardName.trim()} className="flex-1 py-2 text-sm bg-blue-600 hover:bg-blue-700 disabled:bg-blue-200 text-white font-medium rounded-lg transition-colors">
               Crear
             </button>
@@ -275,6 +378,7 @@ export function BoardsPage() {
         </div>
       </Modal>
 
+      {/* Edit modal */}
       <Modal isOpen={!!editingBoard} onClose={() => setEditingBoard(null)} title="Editar tablero" size="sm">
         <div className="p-5 space-y-4">
           <div>
@@ -304,6 +408,116 @@ export function BoardsPage() {
             </button>
           </div>
         </div>
+      </Modal>
+
+      {/* Privacy & members modal */}
+      <Modal isOpen={!!privacyBoard} onClose={() => setPrivacyBoard(null)} title="Privacidad y acceso" size="md">
+        {privacyBoard && (
+          <div className="p-5 space-y-5">
+            {/* Visibility toggle */}
+            <div>
+              <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Visibilidad — {privacyBoard.name}</p>
+              <div className="grid grid-cols-2 gap-2">
+                <button
+                  type="button"
+                  onClick={() => !privacyBoard.isPrivate || handleTogglePrivacy()}
+                  className={`flex items-center gap-3 px-4 py-3 rounded-lg border-2 transition-colors text-sm ${
+                    !privacyBoard.isPrivate ? 'border-blue-500 bg-blue-50 text-blue-700' : 'border-gray-200 text-gray-500 hover:bg-gray-50'
+                  }`}
+                >
+                  <Globe className="w-5 h-5 shrink-0" />
+                  <div className="text-left">
+                    <p className="font-semibold text-xs">Público</p>
+                    <p className="text-xs opacity-60">Todos los miembros del workspace</p>
+                  </div>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => privacyBoard.isPrivate || handleTogglePrivacy()}
+                  className={`flex items-center gap-3 px-4 py-3 rounded-lg border-2 transition-colors text-sm ${
+                    privacyBoard.isPrivate ? 'border-indigo-500 bg-indigo-50 text-indigo-700' : 'border-gray-200 text-gray-500 hover:bg-gray-50'
+                  }`}
+                >
+                  <Lock className="w-5 h-5 shrink-0" />
+                  <div className="text-left">
+                    <p className="font-semibold text-xs">Privado</p>
+                    <p className="text-xs opacity-60">Solo miembros invitados</p>
+                  </div>
+                </button>
+              </div>
+            </div>
+
+            {/* Members with access */}
+            <div>
+              <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">
+                Miembros con acceso ({privacyMembers.length})
+              </p>
+              {privacyLoading ? (
+                <p className="text-xs text-gray-400 py-2">Cargando...</p>
+              ) : privacyMembers.length === 0 ? (
+                <p className="text-xs text-gray-400 py-2">Sin miembros explícitos.</p>
+              ) : (
+                <div className="space-y-1.5 max-h-40 overflow-y-auto">
+                  {privacyMembers.map(m => (
+                    <div key={m.userId} className="flex items-center gap-2.5 px-3 py-2 bg-gray-50 rounded-lg">
+                      <div
+                        className="w-7 h-7 rounded-full flex items-center justify-center text-white text-xs font-bold shrink-0"
+                        style={{ backgroundColor: m.user.color }}
+                      >
+                        {m.user.initials}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-xs font-medium text-gray-800 truncate">{m.user.name}</p>
+                        <p className="text-xs text-gray-400 truncate">{m.user.email}</p>
+                      </div>
+                      <button
+                        onClick={() => handleRemoveBoardMember(m.userId)}
+                        className="p-1 text-gray-300 hover:text-red-500 transition-colors shrink-0"
+                        title="Quitar acceso"
+                      >
+                        <X className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Add members */}
+            {nonMembers.length > 0 && (
+              <div>
+                <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Agregar miembro</p>
+                <div className="space-y-1.5 max-h-40 overflow-y-auto">
+                  {nonMembers.map(m => (
+                    <button
+                      key={m.userId}
+                      onClick={() => handleAddBoardMember(m.userId)}
+                      className="w-full flex items-center gap-2.5 px-3 py-2 rounded-lg hover:bg-indigo-50 border border-transparent hover:border-indigo-200 transition-colors text-left"
+                    >
+                      <div
+                        className="w-7 h-7 rounded-full flex items-center justify-center text-white text-xs font-bold shrink-0"
+                        style={{ backgroundColor: m.user.color }}
+                      >
+                        {m.user.initials}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-xs font-medium text-gray-800 truncate">{m.user.name}</p>
+                        <p className="text-xs text-gray-400 truncate">{m.user.email}</p>
+                      </div>
+                      <span className="text-xs text-indigo-500 font-medium shrink-0">+ Agregar</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            <div className="pt-1">
+              <button onClick={() => setPrivacyBoard(null)} className="w-full py-2 text-sm text-gray-600 border border-gray-200 rounded-lg hover:bg-gray-50">
+                Cerrar
+              </button>
+            </div>
+          </div>
+        )}
       </Modal>
     </div>
   )
