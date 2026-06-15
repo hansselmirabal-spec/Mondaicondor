@@ -16,7 +16,7 @@ const POLL_INTERVAL_MS = 30_000
 
 export function BoardPage() {
   const { boardId } = useParams<{ boardId: string }>()
-  const { setBoards, setApiTasks, setWorkspaceStatuses, setWorkspaceUens } = useBoardStore()
+  const { setBoards, setApiTasks, setWorkspaceStatuses, setWorkspaceUens, setApiUsers } = useBoardStore()
   const boards = useBoardStore(state => state.boards)
   const activeView = useFilterStore(state => state.activeView)
 
@@ -64,6 +64,15 @@ export function BoardPage() {
         api.workspaces.listUens(apiBoard.workspaceId)
           .then(({ uens }) => {
             if (activeBoardId.current === boardId) setWorkspaceUens(uens)
+          })
+          .catch(() => {})
+        api.boards.listMembers(boardId!)
+          .then(({ members }) => {
+            if (activeBoardId.current !== boardId) return
+            setApiUsers(members.map(m => ({
+              id: m.user.id, name: m.user.name, initials: m.user.initials,
+              color: m.user.color, email: m.user.email,
+            })))
           })
           .catch(() => {})
       } catch {
