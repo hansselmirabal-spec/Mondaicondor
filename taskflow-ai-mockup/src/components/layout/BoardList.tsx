@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
-import { ChevronDown, ChevronRight, LayoutGrid, Home, Plus } from 'lucide-react'
+import { ChevronDown, ChevronRight, LayoutGrid, Home, Plus, Lock, Globe } from 'lucide-react'
 import { useBoardStore } from '@/store/boardStore'
 import { api } from '@/lib/api'
 import { toMockBoard } from '@/lib/adapters'
@@ -18,6 +18,7 @@ export function BoardList() {
   const [loadingGroups, setLoadingGroups] = useState<Set<string>>(new Set())
   const [adding, setAdding] = useState(false)
   const [newName, setNewName] = useState('')
+  const [newPrivate, setNewPrivate] = useState(false)
   const [saving, setSaving] = useState(false)
 
   async function handleCreate() {
@@ -27,11 +28,13 @@ export function BoardList() {
       const { board: apiBoard } = await api.boards.create({
         name: newName.trim(),
         workspaceId: workspace.id,
+        isPrivate: newPrivate,
       })
       const mock = toMockBoard(apiBoard)
       addBoard(mock)
       toast('Panel creado.', 'success')
       setNewName('')
+      setNewPrivate(false)
       setAdding(false)
       navigate(`/boards/${mock.id}`)
     } catch {
@@ -136,11 +139,23 @@ export function BoardList() {
             onChange={e => setNewName(e.target.value)}
             onKeyDown={e => {
               if (e.key === 'Enter') handleCreate()
-              if (e.key === 'Escape') { setAdding(false); setNewName('') }
+              if (e.key === 'Escape') { setAdding(false); setNewName(''); setNewPrivate(false) }
             }}
             placeholder="Nombre del panel..."
             className="w-full px-2 py-1.5 text-xs text-white bg-white/10 border border-white/20 rounded-md focus:outline-none focus:border-blue-400 placeholder-white/30"
           />
+          <button
+            type="button"
+            onClick={() => setNewPrivate(p => !p)}
+            className={`w-full flex items-center gap-2 px-2 py-1.5 rounded-md border text-xs transition-colors ${
+              newPrivate
+                ? 'border-indigo-400/50 bg-indigo-500/20 text-indigo-300'
+                : 'border-white/10 text-white/40 hover:text-white/60 hover:bg-white/10'
+            }`}
+          >
+            {newPrivate ? <Lock className="w-3 h-3 shrink-0" /> : <Globe className="w-3 h-3 shrink-0" />}
+            <span>{newPrivate ? 'Privado' : 'Público'}</span>
+          </button>
           <div className="flex gap-1.5">
             <button
               onClick={handleCreate}
@@ -150,7 +165,7 @@ export function BoardList() {
               {saving ? '...' : 'Crear'}
             </button>
             <button
-              onClick={() => { setAdding(false); setNewName('') }}
+              onClick={() => { setAdding(false); setNewName(''); setNewPrivate(false) }}
               className="flex-1 py-1 text-xs text-white/60 border border-white/20 hover:bg-white/10 rounded-md transition-colors"
             >
               Cancelar
