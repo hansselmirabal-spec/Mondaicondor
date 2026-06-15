@@ -86,13 +86,11 @@ export function TaskDetailDrawer() {
   const setDeadline = useBoardStore(state => state.setDeadline)
   const deadlineHistory = useBoardStore(state => task ? (state.deadlineHistory[task.id] ?? []) : [])
 
-  // Load workspace members if the store is empty (e.g. direct URL open or navigation from outside board)
+  // Load board members if the store is empty (e.g. direct URL open or navigation from outside board)
   useEffect(() => {
     if (!task || apiUsers.length > 0) return
-    const board = boards.find(b => b.id === task.boardId)
-    if (!board?.workspaceId) return
-    api.workspaces.get(board.workspaceId)
-      .then(({ workspace }) => setApiUsers(workspace.members.map(m => ({
+    api.boards.listMembers(task.boardId)
+      .then(({ members }) => setApiUsers(members.map(m => ({
         id: m.user.id, name: m.user.name, initials: m.user.initials,
         color: m.user.color, email: m.user.email,
       }))))
@@ -206,6 +204,8 @@ export function TaskDetailDrawer() {
         password: newUserForm.password,
         role: newUserForm.role,
       })
+      // Add to board so they appear in future assignee pickers
+      await api.boards.addMember(task.boardId, member.userId)
       const newUser = {
         id: member.userId,
         name: member.user.name,
