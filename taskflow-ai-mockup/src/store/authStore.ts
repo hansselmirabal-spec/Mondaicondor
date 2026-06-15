@@ -1,6 +1,7 @@
 import { create } from 'zustand'
 import { api } from '@/lib/api'
 import type { ApiUser } from '@/lib/api'
+import { useBoardStore } from './boardStore'
 
 interface AuthStore {
   user: ApiUser | null
@@ -52,6 +53,7 @@ export const useAuthStore = create<AuthStore>(set => ({
     if (refreshToken) api.auth.logout(refreshToken).catch(() => {})
     localStorage.removeItem('access_token')
     localStorage.removeItem('refresh_token')
+    useBoardStore.getState().clearBoardData()
     set({ user: null })
   },
 
