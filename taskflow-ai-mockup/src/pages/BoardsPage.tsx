@@ -7,7 +7,7 @@ import { toast } from '@/components/ui/Toast'
 import { api } from '@/lib/api'
 import { toMockBoard } from '@/lib/adapters'
 import type { MockBoard } from '@/types'
-import type { ApiBoardMember, ApiWorkspaceMember } from '@/lib/api'
+import type { ApiBoardMember, ApiUser } from '@/lib/api'
 
 export function BoardsPage() {
   const navigate = useNavigate()
@@ -37,7 +37,7 @@ export function BoardsPage() {
   // Privacy modal
   const [privacyBoard, setPrivacyBoard] = useState<MockBoard | null>(null)
   const [privacyMembers, setPrivacyMembers] = useState<ApiBoardMember[]>([])
-  const [wsMembers, setWsMembers] = useState<ApiWorkspaceMember[]>([])
+  const [allUsers, setAllUsers] = useState<ApiUser[]>([])
   const [privacyLoading, setPrivacyLoading] = useState(false)
 
   useEffect(() => {
@@ -126,12 +126,12 @@ export function BoardsPage() {
     setPrivacyBoard(board)
     setPrivacyLoading(true)
     try {
-      const [{ members }, wsDetail] = await Promise.all([
+      const [{ members }, { users }] = await Promise.all([
         api.boards.listMembers(board.id),
-        workspaceId ? api.workspaces.get(workspaceId) : Promise.resolve(null),
+        api.users.list(),
       ])
       setPrivacyMembers(members)
-      setWsMembers(wsDetail?.workspace.members ?? [])
+      setAllUsers(users)
     } catch {
       toast('Error al cargar miembros.', 'error')
     } finally {
@@ -175,7 +175,7 @@ export function BoardsPage() {
   }
 
   const memberIds = new Set(privacyMembers.map(m => m.userId))
-  const nonMembers = wsMembers.filter(m => !memberIds.has(m.userId))
+  const nonMembers = allUsers.filter(u => !memberIds.has(u.id))
 
   // ─────────────────────────────────────────────────────────────────────────
 
@@ -488,21 +488,21 @@ export function BoardsPage() {
               <div>
                 <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Agregar miembro</p>
                 <div className="space-y-1.5 max-h-40 overflow-y-auto">
-                  {nonMembers.map(m => (
+                  {nonMembers.map(u => (
                     <button
-                      key={m.userId}
-                      onClick={() => handleAddBoardMember(m.userId)}
+                      key={u.id}
+                      onClick={() => handleAddBoardMember(u.id)}
                       className="w-full flex items-center gap-2.5 px-3 py-2 rounded-lg hover:bg-indigo-50 border border-transparent hover:border-indigo-200 transition-colors text-left"
                     >
                       <div
                         className="w-7 h-7 rounded-full flex items-center justify-center text-white text-xs font-bold shrink-0"
-                        style={{ backgroundColor: m.user.color }}
+                        style={{ backgroundColor: u.color }}
                       >
-                        {m.user.initials}
+                        {u.initials}
                       </div>
                       <div className="flex-1 min-w-0">
-                        <p className="text-xs font-medium text-gray-800 truncate">{m.user.name}</p>
-                        <p className="text-xs text-gray-400 truncate">{m.user.email}</p>
+                        <p className="text-xs font-medium text-gray-800 truncate">{u.name}</p>
+                        <p className="text-xs text-gray-400 truncate">{u.email}</p>
                       </div>
                       <span className="text-xs text-indigo-500 font-medium shrink-0">+ Agregar</span>
                     </button>
