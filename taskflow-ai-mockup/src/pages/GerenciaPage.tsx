@@ -1,50 +1,58 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Lock, Users, CheckCircle2, Circle, AlertCircle, Clock, ChevronRight, RefreshCw } from 'lucide-react'
+import {
+  Lock, Users, CheckCircle2, Circle, AlertCircle, Clock,
+  ChevronRight, RefreshCw, ShieldOff,
+} from 'lucide-react'
 import { useBoardStore } from '@/store/boardStore'
+import { useAuthStore } from '@/store/authStore'
 import { api } from '@/lib/api'
-import { toMockBoard, toMockTask } from '@/lib/adapters'
-import type { MockBoard, MockTask, WorkspaceStatus } from '@/types'
+import { toMockBoard } from '@/lib/adapters'
+import type { MockBoard, WorkspaceStatus } from '@/types'
+import type { ApiTask } from '@/lib/api'
+
+// ── Types ─────────────────────────────────────────────────────────────────────
 
 interface BoardSummary {
   board: MockBoard
-  tasks: MockTask[]
+  tasks: ApiTask[]
   memberCount: number
   loading: boolean
 }
 
-const STATUS_DONE_SLUGS = ['Completado', 'Cerrado', 'Done', 'Completada']
+// ── Helpers ───────────────────────────────────────────────────────────────────
 
-function statusColor(slug: string, workspaceStatuses: WorkspaceStatus[]): string {
-  const ws = workspaceStatuses.find(s => s.slug === slug || s.label === slug)
-  if (ws) return ws.color
-  const lower = slug.toLowerCase()
-  if (lower.includes('complet') || lower.includes('done') || lower.includes('cerrad')) return '#22c55e'
-  if (lower.includes('progreso') || lower.includes('progress')) return '#3b82f6'
-  if (lower.includes('bloquead') || lower.includes('block')) return '#ef4444'
-  if (lower.includes('revision') || lower.includes('review')) return '#a855f7'
-  if (lower.includes('asignad') || lower.includes('assign')) return '#f97316'
-  return '#94a3b8'
+const DONE_SLUGS = ['completado', 'cerrado', 'done', 'completada']
+
+function isDone(status: string): boolean {
+  return DONE_SLUGS.some(s => status.toLowerCase().includes(s))
 }
 
-function isDone(slug: string): boolean {
-  return STATUS_DONE_SLUGS.some(s => slug.toLowerCase().includes(s.toLowerCase()))
-}
-
-function progressPct(tasks: MockTask[]): number {
-  if (tasks.length === 0) return 0
+function progressPct(tasks: ApiTask[]): number {
+  if (!tasks.length) return 0
   return Math.round((tasks.filter(t => isDone(t.status)).length / tasks.length) * 100)
 }
 
-function groupByStatus(tasks: MockTask[]): Record<string, number> {
-  return tasks.reduce<Record<string, number>>((acc, t) => {
-    acc[t.status] = (acc[t.status] ?? 0) + 1
-    return acc
-  }, {})
+function groupByStatus(tasks: ApiTask[]): [string, number][] {
+  const map: Record<string, number> = {}
+  tasks.forEach(t => { map[t.status] = (map[t.status] ?? 0) + 1 })
+  return Object.entries(map).sort((a, b) => b[1] - a[1])
+}
+
+function statusColor(slug: string, ws: WorkspaceStatus[]): string {
+  const found = ws.find(s => s.slug === slug || s.label === slug)
+  if (found) return found.color
+  const l = slug.toLowerCase()
+  if (l.includes('complet') || l.includes('done') || l.includes('cerrad')) return '#22c55e'
+  if (l.includes('progreso') || l.includes('progress')) return '#3b82f6'
+  if (l.includes('bloquead') || l.includes('block')) return '#ef4444'
+  if (l.includes('revision') || l.includes('review')) return '#a855f7'
+  if (l.includes('asignad') || l.includes('assign')) return '#f97316'
+  return '#94a3b8'
 }
 
 function priorityColor(p: string): string {
-  if (p === 'Crítica') return '#ef4444'
+  if (p === 'Critica') return '#ef4444'
   if (p === 'Alta') return '#f97316'
   if (p === 'Media') return '#eab308'
   return '#94a3b8'
@@ -52,8 +60,16 @@ function priorityColor(p: string): string {
 
 function daysUntil(deadline: string | null): number | null {
   if (!deadline) return null
-  return Math.ceil((new Date(deadline).getTime() - Date.now()) / 86400000)
+  return Math.ceil((new Date(deadline).getTime() - Date.now()) / 86_400_000)
 }
+
+function fmtDate(deadline: string | null): string {
+  if (!deadline) return ''
+  const d = new Date(deadline)
+  return d.toLocaleDateString('es-PY', { day: '2-digit', month: 'short' })
+}
+
+// ── BoardCard ─────────────────────────────────────────────────────────────────
 
 interface BoardCardProps {
   summary: BoardSummary
@@ -65,8 +81,7 @@ function BoardCard({ summary, workspaceStatuses, onClick }: BoardCardProps) {
   const { board, tasks, memberCount, loading } = summary
   const pct = progressPct(tasks)
   const byStatus = groupByStatus(tasks)
-  const pending = tasks.filter(t => !isDone(t.status)).slice(0, 5)
-  const statusEntries = Object.entries(byStatus).sort((a, b) => b[1] - a[1])
+  const pending = tasks.filter(t => !isDone(t.status)).slice(0, 6)
 
   return (
     <div
@@ -85,7 +100,6 @@ function BoardCard({ summary, workspaceStatuses, onClick }: BoardCardProps) {
           </div>
         </div>
 
-        {/* Members */}
         <div className="flex items-center gap-1 text-xs text-gray-400 mb-3">
           <Users className="w-3 h-3" />
           <span>{memberCount} miembro{memberCount !== 1 ? 's' : ''}</span>
@@ -93,7 +107,7 @@ function BoardCard({ summary, workspaceStatuses, onClick }: BoardCardProps) {
           <span>{tasks.length} tarea{tasks.length !== 1 ? 's' : ''}</span>
         </div>
 
-        {/* Progress bar */}
+        {/* Progress */}
         {loading ? (
           <div className="h-1.5 rounded-full bg-gray-200 animate-pulse mb-3" />
         ) : (
@@ -105,19 +119,16 @@ function BoardCard({ summary, workspaceStatuses, onClick }: BoardCardProps) {
             <div className="h-1.5 rounded-full bg-gray-200 overflow-hidden">
               <div
                 className="h-full rounded-full transition-all duration-500"
-                style={{
-                  width: `${pct}%`,
-                  backgroundColor: pct === 100 ? '#22c55e' : '#6366f1',
-                }}
+                style={{ width: `${pct}%`, backgroundColor: pct === 100 ? '#22c55e' : '#6366f1' }}
               />
             </div>
           </div>
         )}
 
-        {/* Status breakdown */}
-        {!loading && statusEntries.length > 0 && (
+        {/* Status pills */}
+        {!loading && byStatus.length > 0 && (
           <div className="flex flex-wrap gap-1 mb-3">
-            {statusEntries.slice(0, 4).map(([slug, count]) => (
+            {byStatus.slice(0, 4).map(([slug, count]) => (
               <span
                 key={slug}
                 className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-medium text-white"
@@ -131,10 +142,10 @@ function BoardCard({ summary, workspaceStatuses, onClick }: BoardCardProps) {
       </div>
 
       {/* Task list */}
-      <div className="flex-1 px-4 pb-3 space-y-1">
+      <div className="flex-1 px-4 pb-3 space-y-1.5">
         {loading ? (
           Array.from({ length: 3 }).map((_, i) => (
-            <div key={i} className="h-4 rounded bg-gray-200 animate-pulse" style={{ width: `${70 + i * 10}%` }} />
+            <div key={i} className="h-4 rounded bg-gray-200 animate-pulse" style={{ width: `${60 + i * 15}%` }} />
           ))
         ) : pending.length === 0 ? (
           <div className="flex items-center gap-1.5 text-[11px] text-green-600 font-medium py-1">
@@ -143,34 +154,58 @@ function BoardCard({ summary, workspaceStatuses, onClick }: BoardCardProps) {
           </div>
         ) : (
           pending.map(task => {
-            const days = daysUntil(task.deadline)
+            const days = daysUntil(task.deadline ?? null)
             const overdue = days !== null && days < 0
+            const soon = !overdue && days !== null && days <= 3
+            const assigneeNames = task.assignees.map(a => a.user.name.split(' ')[0]).join(', ')
+
             return (
-              <div key={task.id} className="flex items-center gap-1.5 py-0.5">
-                <Circle
-                  className="w-2.5 h-2.5 shrink-0"
-                  style={{ color: statusColor(task.status, workspaceStatuses) }}
-                />
-                <span className="text-[11px] text-gray-700 truncate flex-1 leading-tight">
-                  {task.title}
-                </span>
-                {overdue && (
-                  <AlertCircle className="w-3 h-3 text-red-400 shrink-0" />
+              <div key={task.id} className="flex flex-col gap-0.5 py-0.5 border-b border-[#d4daf5]/50 last:border-0">
+                <div className="flex items-center gap-1.5">
+                  <Circle
+                    className="w-2.5 h-2.5 shrink-0"
+                    style={{ color: statusColor(task.status, workspaceStatuses) }}
+                  />
+                  <span className="text-[11px] text-gray-700 truncate flex-1 font-medium leading-tight">
+                    {task.title}
+                  </span>
+                  <span
+                    className="w-1.5 h-1.5 rounded-full shrink-0"
+                    style={{ backgroundColor: priorityColor(task.priority) }}
+                    title={task.priority}
+                  />
+                </div>
+
+                {/* Assignees + deadline row */}
+                {(assigneeNames || task.deadline) && (
+                  <div className="flex items-center gap-2 pl-4">
+                    {assigneeNames && (
+                      <span className="text-[10px] text-indigo-500 font-medium truncate">
+                        {assigneeNames}
+                      </span>
+                    )}
+                    {task.deadline && (
+                      <span className={`text-[10px] flex items-center gap-0.5 ml-auto shrink-0 font-medium ${
+                        overdue ? 'text-red-500' : soon ? 'text-amber-500' : 'text-gray-400'
+                      }`}>
+                        {overdue
+                          ? <AlertCircle className="w-2.5 h-2.5" />
+                          : soon
+                          ? <Clock className="w-2.5 h-2.5" />
+                          : null
+                        }
+                        {fmtDate(task.deadline ?? null)}
+                      </span>
+                    )}
+                  </div>
                 )}
-                {!overdue && days !== null && days <= 3 && (
-                  <Clock className="w-3 h-3 text-amber-400 shrink-0" />
-                )}
-                <span
-                  className="w-1.5 h-1.5 rounded-full shrink-0"
-                  style={{ backgroundColor: priorityColor(task.priority) }}
-                />
               </div>
             )
           })
         )}
-        {!loading && tasks.filter(t => !isDone(t.status)).length > 5 && (
+        {!loading && tasks.filter(t => !isDone(t.status)).length > 6 && (
           <p className="text-[10px] text-gray-400 pt-0.5">
-            +{tasks.filter(t => !isDone(t.status)).length - 5} más pendientes
+            +{tasks.filter(t => !isDone(t.status)).length - 6} más pendientes
           </p>
         )}
       </div>
@@ -179,42 +214,56 @@ function BoardCard({ summary, workspaceStatuses, onClick }: BoardCardProps) {
       <div className="px-4 py-2 border-t border-[#d4daf5] bg-white/40">
         <div className="flex items-center gap-1.5">
           {board.groups.slice(0, 3).map(g => (
-            <span
-              key={g.id}
-              className="w-2 h-2 rounded-full"
-              style={{ backgroundColor: g.color }}
-            />
+            <span key={g.id} className="w-2 h-2 rounded-full" style={{ backgroundColor: g.color }} />
           ))}
           {board.groups.length > 3 && (
             <span className="text-[10px] text-gray-400">+{board.groups.length - 3}</span>
           )}
-          <span className="text-[10px] text-gray-400 ml-auto">{board.groups.length} grupo{board.groups.length !== 1 ? 's' : ''}</span>
+          <span className="text-[10px] text-gray-400 ml-auto">
+            {board.groups.length} grupo{board.groups.length !== 1 ? 's' : ''}
+          </span>
         </div>
       </div>
     </div>
   )
 }
 
+// ── Page ──────────────────────────────────────────────────────────────────────
+
 export function GerenciaPage() {
   const navigate = useNavigate()
-  const { boards, workspace } = useBoardStore()
+  const { workspace } = useBoardStore()
+  const { user } = useAuthStore()
   const workspaceId = workspace?.id ?? null
 
   const [summaries, setSummaries] = useState<BoardSummary[]>([])
   const [workspaceStatuses, setWorkspaceStatuses] = useState<WorkspaceStatus[]>([])
+  const [userRole, setUserRole] = useState<'ADMIN' | 'MEMBER' | 'VIEWER' | null>(null)
   const [globalLoading, setGlobalLoading] = useState(true)
   const [refreshing, setRefreshing] = useState(false)
 
   async function load(silent = false) {
-    if (!workspaceId) return
+    if (!workspaceId || !user) return
     if (!silent) setGlobalLoading(true)
     else setRefreshing(true)
 
     try {
-      const [{ boards: apiBoards }, { statuses }] = await Promise.all([
+      const [{ boards: apiBoards }, { statuses }, wsDetail] = await Promise.all([
         api.boards.listByWorkspace(workspaceId),
         api.workspaces.listStatuses(workspaceId),
+        api.workspaces.get(workspaceId),
       ])
+
+      // Resolve current user's workspace role
+      const myMembership = wsDetail.workspace.members.find(m => m.userId === user.id)
+      const role = (myMembership?.role ?? 'MEMBER') as 'ADMIN' | 'MEMBER' | 'VIEWER'
+      setUserRole(role)
+
+      // Only ADMIN or app admin can proceed
+      if (role !== 'ADMIN' && !user.isAppAdmin) {
+        setGlobalLoading(false)
+        return
+      }
 
       setWorkspaceStatuses(statuses as WorkspaceStatus[])
 
@@ -227,18 +276,17 @@ export function GerenciaPage() {
       setSummaries(initial)
       setGlobalLoading(false)
 
-      // Load tasks for each board in parallel
+      // Load tasks for all boards in parallel
       const results = await Promise.allSettled(
         apiBoards.map(b => api.tasks.listByBoard(b.id))
       )
 
       setSummaries(prev =>
         prev.map((s, i) => {
-          const result = results[i]
-          if (result.status === 'fulfilled') {
-            return { ...s, tasks: result.value.tasks.map(toMockTask), loading: false }
-          }
-          return { ...s, loading: false }
+          const r = results[i]
+          return r.status === 'fulfilled'
+            ? { ...s, tasks: r.value.tasks, loading: false }
+            : { ...s, loading: false }
         })
       )
     } catch {
@@ -248,11 +296,31 @@ export function GerenciaPage() {
     }
   }
 
-  useEffect(() => { load() }, [workspaceId])
+  useEffect(() => { load() }, [workspaceId, user?.id])
 
-  const totalTasks = summaries.reduce((acc, s) => acc + s.tasks.length, 0)
-  const completedTasks = summaries.reduce((acc, s) => acc + s.tasks.filter(t => isDone(t.status)).length, 0)
-  const overallPct = totalTasks === 0 ? 0 : Math.round((completedTasks / totalTasks) * 100)
+  // ── Access denied ────────────────────────────────────────────────────────────
+
+  if (!globalLoading && userRole !== 'ADMIN' && !user?.isAppAdmin) {
+    return (
+      <div className="flex-1 flex flex-col items-center justify-center gap-4 text-center px-6">
+        <div className="w-14 h-14 rounded-full bg-red-50 flex items-center justify-center">
+          <ShieldOff className="w-7 h-7 text-red-400" />
+        </div>
+        <div>
+          <p className="text-base font-semibold text-gray-800">Acceso restringido</p>
+          <p className="text-sm text-gray-400 mt-1">
+            La vista de gerencia es solo para administradores del workspace.
+          </p>
+        </div>
+        <button
+          onClick={() => navigate('/boards')}
+          className="px-4 py-2 text-sm bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg transition-colors"
+        >
+          Volver a tableros
+        </button>
+      </div>
+    )
+  }
 
   if (globalLoading) {
     return (
@@ -262,16 +330,20 @@ export function GerenciaPage() {
     )
   }
 
+  const totalTasks = summaries.reduce((acc, s) => acc + s.tasks.length, 0)
+  const completedTasks = summaries.reduce((acc, s) => acc + s.tasks.filter(t => isDone(t.status)).length, 0)
+  const overallPct = totalTasks === 0 ? 0 : Math.round((completedTasks / totalTasks) * 100)
+
   return (
     <div className="flex-1 overflow-auto bg-gray-50">
       <div className="max-w-7xl mx-auto px-6 py-6">
-        {/* Page header */}
+        {/* Header */}
         <div className="flex items-center justify-between mb-6">
           <div>
             <h1 className="text-2xl font-bold text-gray-900">Vista Gerencia</h1>
             <p className="text-sm text-gray-500 mt-0.5">
-              Resumen de todos los tableros · {summaries.length} tablero{summaries.length !== 1 ? 's' : ''} ·{' '}
-              <span className="text-indigo-600 font-medium">{overallPct}% completado</span>
+              {summaries.length} tablero{summaries.length !== 1 ? 's' : ''} ·{' '}
+              <span className="text-indigo-600 font-medium">{overallPct}% completado global</span>
             </p>
           </div>
           <button
@@ -284,7 +356,7 @@ export function GerenciaPage() {
           </button>
         </div>
 
-        {/* Global KPI bar */}
+        {/* KPIs */}
         <div className="grid grid-cols-3 gap-4 mb-6">
           <div className="bg-white rounded-xl border border-gray-200 px-4 py-3">
             <p className="text-xs text-gray-400 mb-0.5">Tableros activos</p>
@@ -309,7 +381,7 @@ export function GerenciaPage() {
           </div>
         </div>
 
-        {/* Board grid */}
+        {/* Grid */}
         {summaries.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-20 text-gray-400">
             <p className="text-sm">No hay tableros disponibles.</p>
