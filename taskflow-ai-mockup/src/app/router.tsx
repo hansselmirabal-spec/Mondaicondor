@@ -16,6 +16,7 @@ import { SettingsLayout } from '@/components/layout/SettingsLayout'
 import { AuthGuard } from '@/components/auth/AuthGuard'
 import { ForceChangePasswordPage } from '@/pages/ForceChangePasswordPage'
 import { SystemAdminPage } from '@/pages/SystemAdminPage'
+import { GerenciaPage } from '@/pages/GerenciaPage'
 
 export const router = createBrowserRouter([
   {
@@ -47,6 +48,7 @@ export const router = createBrowserRouter([
       { path: 'boards/:boardId', element: <BoardPage /> },
       { path: 'boards/:boardId/settings', element: <SettingsPage /> },
       { path: 'members', element: <MembersPage /> },
+      { path: 'gerencia', element: <GerenciaPage /> },
       { path: 'workspaces/accept/:token', element: <AcceptInvitePage /> },
       { path: 'system-admin/users', element: <SystemAdminPage /> },
       {
