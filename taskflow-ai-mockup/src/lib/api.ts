@@ -382,6 +382,12 @@ export const api = {
       return request<{ tasks: ApiTask[] }>(`/tasks/board/${boardId}${qs}`)
     },
 
+    get: (taskId: string) =>
+      request<{ task: ApiTaskDetail }>(`/tasks/${taskId}`),
+
+    mine: () =>
+      request<{ tasks: ApiTaskWithBoard[] }>('/tasks/mine'),
+
     update: (taskId: string, data: Partial<ApiTaskUpdate>) =>
       request<{ task: ApiTask }>(`/tasks/${taskId}`, { method: 'PUT', body: JSON.stringify(data) }),
 
@@ -588,4 +594,31 @@ export interface ApiNotification {
   boardId: string | null
   read: boolean
   createdAt: string
+}
+
+// Task returned by GET /tasks/mine — group includes board info
+export interface ApiTaskWithBoard extends Omit<ApiTask, 'group'> {
+  group: {
+    id: string
+    name: string
+    boardId: string
+    board: { id: string; name: string; workspaceId: string }
+  }
+}
+
+// Task returned by GET /tasks/:id — includes comments and activity
+export interface ApiTaskDetail extends ApiTask {
+  comments: Array<{
+    id: string
+    taskId: string
+    content: string
+    createdAt: string
+    author: ApiUser
+  }>
+  activities: Array<{
+    id: string
+    action: string
+    createdAt: string
+    user: { id: string; name: string; initials: string }
+  }>
 }

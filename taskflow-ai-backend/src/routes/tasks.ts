@@ -44,6 +44,18 @@ const taskInclude = {
   uen: { select: { id: true, name: true, color: true } },
 }
 
+// Extended include for /mine — adds board name so the frontend can group by board
+const taskMineInclude = {
+  assignees: taskInclude.assignees,
+  uen: taskInclude.uen,
+  group: {
+    select: {
+      id: true, name: true, boardId: true,
+      board: { select: { id: true, name: true, workspaceId: true } },
+    },
+  },
+}
+
 async function notifyUsers(opts: {
   userIds: string[]
   actorId: string
@@ -70,6 +82,27 @@ async function notifyUsers(opts: {
     members.map(m => sendTaskNotificationEmail(m.user.email, m.user.name, title, body, taskUrl)),
   )
 }
+
+// ── My tasks — all tasks where the current user is an assignee ───────────────
+taskRoutes.get('/mine', async (c) => {
+  const { userId } = c.get('user')
+
+  const assignments = await prisma.taskAssignee.findMany({
+    where: { userId },
+    include: { task: { include: taskMineInclude } },
+  })
+
+  const tasks = assignments
+    .map(a => a.task)
+    .sort((a, b) => {
+      if (!a.deadline && !b.deadline) return 0
+      if (!a.deadline) return 1
+      if (!b.deadline) return -1
+      return new Date(a.deadline).getTime() - new Date(b.deadline).getTime()
+    })
+
+  return c.json({ tasks })
+})
 
 taskRoutes.get('/board/:boardId', async (c) => {
   const { userId } = c.get('user')
@@ -192,10 +225,14 @@ taskRoutes.get('/:id', async (c) => {
 
   const board = await prisma.board.findUnique({ where: { id: task.group.boardId } })
   if (!board) return c.json({ error: 'Tablero no encontrado' }, 404)
-  const membership = await prisma.workspaceMember.findUnique({
-    where: { workspaceId_userId: { workspaceId: board.workspaceId, userId } },
-  })
-  if (!membership) return c.json({ error: 'Sin acceso' }, 403)
+
+  const [membership, assignee] = await Promise.all([
+    prisma.workspaceMember.findUnique({
+      where: { workspaceId_userId: { workspaceId: board.workspaceId, userId } },
+    }),
+    prisma.taskAssignee.findUnique({ where: { taskId_userId: { taskId: task.id, userId } } }),
+  ])
+  if (!membership && !assignee) return c.json({ error: 'Sin acceso' }, 403)
 
   return c.json({ task })
 })
@@ -217,8 +254,14 @@ taskRoutes.put('/:id', zValidator('json', updateTaskSchema), async (c) => {
   const membership = await prisma.workspaceMember.findUnique({
     where: { workspaceId_userId: { workspaceId: existing.group.board.workspaceId, userId } },
   })
-  if (!membership || membership.role === 'VIEWER') {
-    return c.json({ error: 'Sin permisos' }, 403)
+  const isAssignee = existing.assignees.some((a: any) => a.userId === userId)
+
+  if (!membership && !isAssignee) return c.json({ error: 'Sin permisos' }, 403)
+  if (membership?.role === 'VIEWER') return c.json({ error: 'Sin permisos' }, 403)
+
+  // Assignees who are not workspace members can only change status/priority/description/deadline
+  if (!membership && isAssignee && (assigneeIds || rest.groupId || uenId !== undefined)) {
+    return c.json({ error: 'Solo podés actualizar el estado, prioridad, descripción o fecha límite de esta tarea' }, 403)
   }
 
   if (assigneeIds && assigneeIds.length > 0) {
@@ -507,10 +550,13 @@ taskRoutes.post('/:id/comments', async (c) => {
   })
   if (!task) return c.json({ error: 'Tarea no encontrada' }, 404)
 
-  const membership = await prisma.workspaceMember.findUnique({
-    where: { workspaceId_userId: { workspaceId: task.group.board.workspaceId, userId } },
-  })
-  if (!membership) return c.json({ error: 'Sin acceso' }, 403)
+  const [membership, assignee] = await Promise.all([
+    prisma.workspaceMember.findUnique({
+      where: { workspaceId_userId: { workspaceId: task.group.board.workspaceId, userId } },
+    }),
+    prisma.taskAssignee.findUnique({ where: { taskId_userId: { taskId: id, userId } } }),
+  ])
+  if (!membership && !assignee) return c.json({ error: 'Sin acceso' }, 403)
 
   const [comment] = await prisma.$transaction([
     prisma.comment.create({
