@@ -147,8 +147,10 @@ export function TaskDetailDrawer() {
     if (!task) return
     const newDeadline = value || null
     if (newDeadline === currentDeadline) return
+    // Backend expects full ISO datetime; input type="date" gives "YYYY-MM-DD"
+    const isoDeadline = newDeadline ? new Date(newDeadline + 'T00:00:00.000Z').toISOString() : null
     setDeadline(task.id, currentDeadline, newDeadline, currentUser?.id ?? '', currentUser?.name ?? '')
-    api.tasks.update(task.id, { deadline: newDeadline }).catch(console.error)
+    api.tasks.update(task.id, { deadline: isoDeadline }).catch(console.error)
   }
 
   function formatHistoryDate(iso: string) {
