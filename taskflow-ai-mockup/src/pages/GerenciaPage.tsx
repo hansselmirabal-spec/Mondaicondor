@@ -160,7 +160,8 @@ function BoardCard({ summary, workspaceStatuses, onClick }: BoardCardProps) {
             const assigneeNames = task.assignees.map(a => a.user.name.split(' ')[0]).join(', ')
 
             return (
-              <div key={task.id} className="flex flex-col gap-0.5 py-0.5 border-b border-[#d4daf5]/50 last:border-0">
+              <div key={task.id} className="flex flex-col gap-0.5 py-1 border-b border-[#d4daf5]/50 last:border-0">
+                {/* Title row */}
                 <div className="flex items-center gap-1.5">
                   <Circle
                     className="w-2.5 h-2.5 shrink-0"
@@ -176,29 +177,25 @@ function BoardCard({ summary, workspaceStatuses, onClick }: BoardCardProps) {
                   />
                 </div>
 
-                {/* Assignees + deadline row */}
-                {(assigneeNames || task.deadline) && (
-                  <div className="flex items-center gap-2 pl-4">
-                    {assigneeNames && (
-                      <span className="text-[10px] text-indigo-500 font-medium truncate">
-                        {assigneeNames}
-                      </span>
-                    )}
-                    {task.deadline && (
-                      <span className={`text-[10px] flex items-center gap-0.5 ml-auto shrink-0 font-medium ${
-                        overdue ? 'text-red-500' : soon ? 'text-amber-500' : 'text-gray-400'
-                      }`}>
-                        {overdue
-                          ? <AlertCircle className="w-2.5 h-2.5" />
-                          : soon
-                          ? <Clock className="w-2.5 h-2.5" />
-                          : null
-                        }
-                        {fmtDate(task.deadline ?? null)}
-                      </span>
-                    )}
-                  </div>
-                )}
+                {/* Assignee + deadline — always shown */}
+                <div className="flex items-center gap-2 pl-4">
+                  <span className="text-[10px] text-indigo-500 font-medium truncate flex-1">
+                    {assigneeNames || <span className="text-gray-300 italic">Sin asignar</span>}
+                  </span>
+                  <span className={`text-[10px] flex items-center gap-0.5 shrink-0 font-medium px-1.5 py-0.5 rounded ${
+                    overdue
+                      ? 'bg-red-100 text-red-600'
+                      : soon
+                      ? 'bg-amber-100 text-amber-600'
+                      : task.deadline
+                      ? 'bg-gray-100 text-gray-500'
+                      : 'text-gray-300'
+                  }`}>
+                    {overdue && <AlertCircle className="w-2.5 h-2.5" />}
+                    {soon && !overdue && <Clock className="w-2.5 h-2.5" />}
+                    {task.deadline ? fmtDate(task.deadline ?? null) : 'Sin fecha'}
+                  </span>
+                </div>
               </div>
             )
           })
