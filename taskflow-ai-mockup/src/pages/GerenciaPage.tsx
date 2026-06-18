@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
   Lock, Users, CheckCircle2, Circle, AlertCircle, Clock,
-  ChevronRight, RefreshCw, ShieldOff,
+  ChevronRight, RefreshCw, ShieldOff, X, CalendarX, CalendarClock,
 } from 'lucide-react'
 import { useBoardStore } from '@/store/boardStore'
 import { useAuthStore } from '@/store/authStore'
@@ -19,6 +19,13 @@ interface BoardSummary {
   memberCount: number
   loading: boolean
 }
+
+interface TaskWithBoard extends ApiTask {
+  boardName: string
+  boardId: string
+}
+
+type ModalType = 'overdue' | 'today'
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -67,6 +74,97 @@ function fmtDate(deadline: string | null): string {
   if (!deadline) return ''
   const d = new Date(deadline)
   return d.toLocaleDateString('es-PY', { day: '2-digit', month: 'short' })
+}
+
+// ── TaskListModal ─────────────────────────────────────────────────────────────
+
+interface TaskListModalProps {
+  type: ModalType
+  tasks: TaskWithBoard[]
+  workspaceStatuses: WorkspaceStatus[]
+  onClose: () => void
+  onNavigate: (boardId: string) => void
+}
+
+function TaskListModal({ type, tasks, workspaceStatuses, onClose, onNavigate }: TaskListModalProps) {
+  const isOverdue = type === 'overdue'
+  const title = isOverdue ? 'Tareas vencidas' : 'Vencen hoy'
+  const accentColor = isOverdue ? 'text-red-600' : 'text-amber-600'
+  const bgColor = isOverdue ? 'bg-red-50' : 'bg-amber-50'
+  const borderColor = isOverdue ? 'border-red-200' : 'border-amber-200'
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+      <div className="absolute inset-0 bg-black/30 backdrop-blur-sm" onClick={onClose} />
+      <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-lg max-h-[80vh] flex flex-col overflow-hidden">
+        {/* Header */}
+        <div className={`flex items-center justify-between px-5 py-4 border-b ${borderColor} ${bgColor}`}>
+          <div className="flex items-center gap-2">
+            {isOverdue
+              ? <CalendarX className={`w-5 h-5 ${accentColor}`} />
+              : <CalendarClock className={`w-5 h-5 ${accentColor}`} />
+            }
+            <h2 className={`text-base font-bold ${accentColor}`}>{title}</h2>
+            <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${bgColor} border ${borderColor} ${accentColor}`}>
+              {tasks.length}
+            </span>
+          </div>
+          <button onClick={onClose} className="p-1 text-gray-400 hover:text-gray-700 rounded-lg transition-colors">
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+
+        {/* List */}
+        <div className="overflow-y-auto flex-1 divide-y divide-gray-100">
+          {tasks.length === 0 ? (
+            <div className="flex items-center justify-center py-12 text-sm text-gray-400">
+              No hay tareas en esta categoría.
+            </div>
+          ) : (
+            tasks.map(task => {
+              const assigneeNames = task.assignees.map(a => a.user.name.split(' ')[0]).join(', ')
+              const days = daysUntil(task.deadline ?? null)
+              const overdue = days !== null && days < 0
+
+              return (
+                <button
+                  key={task.id}
+                  onClick={() => { onNavigate(task.boardId); onClose() }}
+                  className="w-full flex items-start gap-3 px-5 py-3.5 hover:bg-gray-50 transition-colors text-left"
+                >
+                  <Circle
+                    className="w-3 h-3 mt-1 shrink-0"
+                    style={{ color: statusColor(task.status, workspaceStatuses) }}
+                  />
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium text-gray-800 truncate">{task.title}</p>
+                    <div className="flex items-center gap-2 mt-0.5">
+                      <span className="text-xs text-indigo-500 truncate">{task.boardName}</span>
+                      {assigneeNames && (
+                        <>
+                          <span className="text-gray-300">·</span>
+                          <span className="text-xs text-gray-500 truncate">{assigneeNames}</span>
+                        </>
+                      )}
+                    </div>
+                  </div>
+                  <div className={`shrink-0 flex items-center gap-1 text-xs font-semibold px-2 py-0.5 rounded-full ${
+                    overdue ? 'bg-red-100 text-red-600' : 'bg-amber-100 text-amber-600'
+                  }`}>
+                    {overdue
+                      ? <AlertCircle className="w-3 h-3" />
+                      : <Clock className="w-3 h-3" />
+                    }
+                    {fmtDate(task.deadline ?? null)}
+                  </div>
+                </button>
+              )
+            })
+          )}
+        </div>
+      </div>
+    </div>
+  )
 }
 
 // ── BoardCard ─────────────────────────────────────────────────────────────────
@@ -238,6 +336,7 @@ export function GerenciaPage() {
   const [userRole, setUserRole] = useState<'ADMIN' | 'MEMBER' | 'VIEWER' | null>(null)
   const [globalLoading, setGlobalLoading] = useState(true)
   const [refreshing, setRefreshing] = useState(false)
+  const [taskModal, setTaskModal] = useState<ModalType | null>(null)
 
   async function load(silent = false) {
     if (!workspaceId || !user) return
@@ -331,7 +430,26 @@ export function GerenciaPage() {
   const completedTasks = summaries.reduce((acc, s) => acc + s.tasks.filter(t => isDone(t.status)).length, 0)
   const overallPct = totalTasks === 0 ? 0 : Math.round((completedTasks / totalTasks) * 100)
 
+  const todayStr = new Date().toISOString().slice(0, 10)
+
+  const allTasksWithBoard: TaskWithBoard[] = summaries.flatMap(s =>
+    s.tasks.map(t => ({ ...t, boardName: s.board.name, boardId: s.board.id }))
+  )
+
+  const overdueTasks = allTasksWithBoard.filter(t => {
+    if (!t.deadline || isDone(t.status)) return false
+    return t.deadline.slice(0, 10) < todayStr
+  })
+
+  const todayTasks = allTasksWithBoard.filter(t => {
+    if (!t.deadline || isDone(t.status)) return false
+    return t.deadline.slice(0, 10) === todayStr
+  })
+
+  const modalTasks = taskModal === 'overdue' ? overdueTasks : todayTasks
+
   return (
+    <>
     <div className="flex-1 overflow-auto bg-gray-50">
       <div className="max-w-7xl mx-auto px-6 py-6">
         {/* Header */}
@@ -354,7 +472,7 @@ export function GerenciaPage() {
         </div>
 
         {/* KPIs */}
-        <div className="grid grid-cols-3 gap-4 mb-6">
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4 mb-6">
           <div className="bg-white rounded-xl border border-gray-200 px-4 py-3">
             <p className="text-xs text-gray-400 mb-0.5">Tableros activos</p>
             <p className="text-2xl font-bold text-gray-900">{summaries.length}</p>
@@ -376,6 +494,52 @@ export function GerenciaPage() {
               <span className="text-sm font-bold text-indigo-600">{overallPct}%</span>
             </div>
           </div>
+
+          {/* Vencidas */}
+          <button
+            onClick={() => overdueTasks.length > 0 && setTaskModal('overdue')}
+            className={`rounded-xl border px-4 py-3 text-left transition-all ${
+              overdueTasks.length > 0
+                ? 'bg-red-50 border-red-200 hover:border-red-400 hover:shadow-md cursor-pointer'
+                : 'bg-gray-50 border-gray-200 cursor-default opacity-60'
+            }`}
+          >
+            <div className="flex items-center gap-1.5 mb-0.5">
+              <CalendarX className={`w-3.5 h-3.5 ${overdueTasks.length > 0 ? 'text-red-500' : 'text-gray-400'}`} />
+              <p className={`text-xs font-medium ${overdueTasks.length > 0 ? 'text-red-500' : 'text-gray-400'}`}>
+                Vencidas
+              </p>
+            </div>
+            <p className={`text-2xl font-bold ${overdueTasks.length > 0 ? 'text-red-600' : 'text-gray-400'}`}>
+              {overdueTasks.length}
+            </p>
+            {overdueTasks.length > 0 && (
+              <p className="text-[10px] text-red-400 mt-0.5">Ver listado →</p>
+            )}
+          </button>
+
+          {/* Vencen hoy */}
+          <button
+            onClick={() => todayTasks.length > 0 && setTaskModal('today')}
+            className={`rounded-xl border px-4 py-3 text-left transition-all ${
+              todayTasks.length > 0
+                ? 'bg-amber-50 border-amber-200 hover:border-amber-400 hover:shadow-md cursor-pointer'
+                : 'bg-gray-50 border-gray-200 cursor-default opacity-60'
+            }`}
+          >
+            <div className="flex items-center gap-1.5 mb-0.5">
+              <CalendarClock className={`w-3.5 h-3.5 ${todayTasks.length > 0 ? 'text-amber-500' : 'text-gray-400'}`} />
+              <p className={`text-xs font-medium ${todayTasks.length > 0 ? 'text-amber-500' : 'text-gray-400'}`}>
+                Vencen hoy
+              </p>
+            </div>
+            <p className={`text-2xl font-bold ${todayTasks.length > 0 ? 'text-amber-600' : 'text-gray-400'}`}>
+              {todayTasks.length}
+            </p>
+            {todayTasks.length > 0 && (
+              <p className="text-[10px] text-amber-400 mt-0.5">Ver listado →</p>
+            )}
+          </button>
         </div>
 
         {/* Grid */}
@@ -397,5 +561,16 @@ export function GerenciaPage() {
         )}
       </div>
     </div>
+
+    {taskModal && (
+      <TaskListModal
+        type={taskModal}
+        tasks={modalTasks}
+        workspaceStatuses={workspaceStatuses}
+        onClose={() => setTaskModal(null)}
+        onNavigate={boardId => navigate(`/boards/${boardId}`)}
+      />
+    )}
+    </>
   )
 }
