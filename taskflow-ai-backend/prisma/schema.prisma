@@ -38,6 +38,7 @@ model User {
   memberships   WorkspaceMember[]
   boardMembers  BoardMember[]
   assignedTasks TaskAssignee[]
+  createdTasks  Task[]          @relation("TaskCreator")
   comments      Comment[]
   activities    Activity[]
   preferences   UserPreference?
@@ -206,10 +207,12 @@ model Task {
   deadline    DateTime?
   fileUrl     String?
   uenId       String?
+  createdBy   String?
   createdAt   DateTime     @default(now())
   updatedAt   DateTime     @updatedAt
 
   group      Group          @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  creator    User?          @relation("TaskCreator", fields: [createdBy], references: [id], onDelete: SetNull)
   assignees  TaskAssignee[]
   comments   Comment[]
   activities Activity[]
@@ -219,6 +222,7 @@ model Task {
   @@index([status])
   @@index([deadline])
   @@index([uenId])
+  @@index([createdBy])
 }
 
 model TaskAssignee {

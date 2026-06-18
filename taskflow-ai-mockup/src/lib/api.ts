@@ -388,6 +388,9 @@ export const api = {
     delete: (taskId: string) =>
       request<{ message: string }>(`/tasks/${taskId}`, { method: 'DELETE' }),
 
+    move: (taskId: string, groupId: string) =>
+      request<{ task: ApiTask }>(`/tasks/${taskId}/move`, { method: 'PATCH', body: JSON.stringify({ groupId }) }),
+
     addComment: (taskId: string, content: string) =>
       request<{ comment: ApiComment }>(`/tasks/${taskId}/comments`, {
         method: 'POST',
@@ -495,6 +498,7 @@ export interface ApiTask {
   priority: string
   deadline: string | null
   fileUrl: string | null
+  createdBy: string | null
   createdAt: string
   updatedAt: string
   assignees: Array<{ user: ApiUser }>
