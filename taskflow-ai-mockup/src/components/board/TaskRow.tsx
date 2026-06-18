@@ -1,7 +1,8 @@
 import { useNavigate, useSearchParams } from 'react-router-dom'
-import { MessageSquare, CheckSquare, Square, Plus, UserMinus } from 'lucide-react'
+import { MessageSquare, CheckSquare, Square, Plus, UserMinus, ArrowRightLeft } from 'lucide-react'
 import { useState, useRef, useEffect } from 'react'
 import type { MockTask, PriorityType } from '@/types'
+import { MoveBoardModal } from '@/components/task/MoveBoardModal'
 import { StatusBadge } from '@/components/ui/StatusBadge'
 import { PriorityBadge } from '@/components/ui/PriorityBadge'
 import { AssigneeAvatar, AssigneeAvatarGroup } from '@/components/ui/AssigneeAvatar'
@@ -22,6 +23,8 @@ interface TaskRowProps {
 }
 
 type DropdownType = 'status' | 'priority' | 'assignee' | null
+
+
 
 export function TaskRow({ task }: TaskRowProps) {
   const navigate = useNavigate()
@@ -44,6 +47,7 @@ export function TaskRow({ task }: TaskRowProps) {
 
   const [openDropdown, setOpenDropdown] = useState<DropdownType>(null)
   const [dropdownPos, setDropdownPos] = useState({ top: 0, left: 0 })
+  const [showMoveModal, setShowMoveModal] = useState(false)
   const dropdownRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
@@ -131,6 +135,13 @@ export function TaskRow({ task }: TaskRowProps) {
           <span className={`text-sm truncate max-w-xs ${isCompleted ? 'line-through text-gray-400' : 'text-gray-800'}`}>
             {task.title}
           </span>
+          <button
+            onClick={e => { e.stopPropagation(); setShowMoveModal(true) }}
+            title="Mover a otro tablero"
+            className="p-0.5 text-gray-300 hover:text-indigo-500 opacity-0 group-hover:opacity-100 transition-all shrink-0"
+          >
+            <ArrowRightLeft className="w-3 h-3" />
+          </button>
           {commentCount > 0 && (
             <span className="flex items-center gap-0.5 text-gray-400 shrink-0">
               <MessageSquare className="w-3 h-3" />
@@ -291,6 +302,17 @@ export function TaskRow({ task }: TaskRowProps) {
               </button>
             ))}
           </div>
+        </td>
+      )}
+      {showMoveModal && (
+        <td className="p-0 border-0">
+          <MoveBoardModal
+            taskId={task.id}
+            taskTitle={task.title}
+            currentBoardId={task.boardId}
+            onClose={() => setShowMoveModal(false)}
+            onMoved={() => { setShowMoveModal(false); navigate('/boards') }}
+          />
         </td>
       )}
     </tr>

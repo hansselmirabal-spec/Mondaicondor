@@ -1,4 +1,4 @@
-import { X, Calendar, Flag, User, FileText, MessageSquare, Clock, ChevronDown, Plus, UserMinus, Pencil, History, Trash2, UserPlus, Loader2 } from 'lucide-react'
+import { X, Calendar, Flag, User, FileText, MessageSquare, Clock, ChevronDown, Plus, UserMinus, Pencil, History, Trash2, UserPlus, Loader2, ArrowRightLeft } from 'lucide-react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { useState, useEffect, useRef } from 'react'
 import { useBoardStore } from '@/store/boardStore'
@@ -10,6 +10,7 @@ import { ActivityTimeline } from './ActivityTimeline'
 import { formatDate } from '@/lib/utils'
 import { api } from '@/lib/api'
 import { useAuthStore } from '@/store/authStore'
+import { MoveBoardModal } from './MoveBoardModal'
 import type { StatusType, PriorityType } from '@/types'
 
 const STATUS_TO_API: Record<StatusType, string> = {
@@ -104,6 +105,7 @@ export function TaskDetailDrawer() {
   const [deadlineDraft, setDeadlineDraft] = useState('')
   const [showDeadlineHistory, setShowDeadlineHistory] = useState(false)
   const [confirmDelete, setConfirmDelete] = useState(false)
+  const [showMoveModal, setShowMoveModal] = useState(false)
   const pickerRef = useRef<HTMLDivElement>(null)
 
   const [showNewUserForm, setShowNewUserForm] = useState(false)
@@ -245,21 +247,30 @@ export function TaskDetailDrawer() {
             <X className="w-5 h-5" />
           </button>
           <h2 className="text-base font-semibold text-gray-900 leading-snug pt-0.5 flex-1">{task.title}</h2>
-          {confirmDelete ? (
-            <div className="flex items-center gap-1.5 shrink-0">
-              <span className="text-xs text-gray-500">¿Eliminar?</span>
-              <button onClick={() => setConfirmDelete(false)} className="text-xs px-2 py-1 rounded border border-gray-200 text-gray-600 hover:bg-gray-50">No</button>
-              <button onClick={handleDeleteTask} className="text-xs px-2 py-1 rounded bg-red-600 hover:bg-red-700 text-white">Sí</button>
-            </div>
-          ) : (
+          <div className="flex items-center gap-1 shrink-0">
             <button
-              onClick={() => setConfirmDelete(true)}
-              title="Eliminar tarea"
-              className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors shrink-0"
+              onClick={() => setShowMoveModal(true)}
+              title="Mover a otro tablero"
+              className="p-1.5 text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors"
             >
-              <Trash2 className="w-4 h-4" />
+              <ArrowRightLeft className="w-4 h-4" />
             </button>
-          )}
+            {confirmDelete ? (
+              <div className="flex items-center gap-1.5">
+                <span className="text-xs text-gray-500">¿Eliminar?</span>
+                <button onClick={() => setConfirmDelete(false)} className="text-xs px-2 py-1 rounded border border-gray-200 text-gray-600 hover:bg-gray-50">No</button>
+                <button onClick={handleDeleteTask} className="text-xs px-2 py-1 rounded bg-red-600 hover:bg-red-700 text-white">Sí</button>
+              </div>
+            ) : (
+              <button
+                onClick={() => setConfirmDelete(true)}
+                title="Eliminar tarea"
+                className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+              >
+                <Trash2 className="w-4 h-4" />
+              </button>
+            )}
+          </div>
         </div>
 
         <div className="flex-1 overflow-y-auto px-5 py-4 space-y-5 scrollbar-thin">
@@ -532,6 +543,16 @@ export function TaskDetailDrawer() {
           <ActivityTimeline taskId={task.id} />
         </div>
       </aside>
+
+      {showMoveModal && (
+        <MoveBoardModal
+          taskId={task.id}
+          taskTitle={task.title}
+          currentBoardId={task.boardId}
+          onClose={() => setShowMoveModal(false)}
+          onMoved={() => { close(); navigate('/boards') }}
+        />
+      )}
     </>
   )
 }

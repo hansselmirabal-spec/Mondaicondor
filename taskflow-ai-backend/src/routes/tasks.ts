@@ -142,6 +142,7 @@ taskRoutes.post('/', zValidator('json', createTaskSchema), async (c) => {
       priority: priority ?? 'Media',
       deadline: deadline ? new Date(deadline) : null,
       uenId: uenId ?? null,
+      createdBy: userId,
       assignees: assigneeIds?.length
         ? { create: assigneeIds.map((uid) => ({ userId: uid })) }
         : undefined,
@@ -534,4 +535,95 @@ taskRoutes.post('/:id/comments', async (c) => {
   })
 
   return c.json({ comment }, 201)
+})
+
+// ── Move task to another board ────────────────────────────────────────────────
+taskRoutes.patch('/:id/move', zValidator('json', z.object({ groupId: z.string() })), async (c) => {
+  const { userId } = c.get('user')
+  const { id } = c.req.param()
+  const { groupId: targetGroupId } = c.req.valid('json')
+
+  // Load task with current board info
+  const task = await prisma.task.findUnique({
+    where: { id },
+    include: {
+      group: { include: { board: true } },
+      assignees: { select: { userId: true } },
+    },
+  })
+  if (!task) return c.json({ error: 'Tarea no encontrada' }, 404)
+
+  const sourceBoard = task.group.board
+
+  // Check user is workspace member
+  const membership = await prisma.workspaceMember.findUnique({
+    where: { workspaceId_userId: { workspaceId: sourceBoard.workspaceId, userId } },
+  })
+  if (!membership) return c.json({ error: 'Sin acceso al workspace' }, 403)
+
+  // Only ADMIN or creator can move
+  const isAdmin = membership.role === 'ADMIN'
+  const isCreator = task.createdBy === userId
+  if (!isAdmin && !isCreator) {
+    return c.json({ error: 'Solo el creador o un administrador puede mover esta tarea' }, 403)
+  }
+
+  // Load target group and board
+  const targetGroup = await prisma.group.findUnique({
+    where: { id: targetGroupId },
+    include: { board: true },
+  })
+  if (!targetGroup) return c.json({ error: 'Grupo destino no encontrado' }, 404)
+
+  // Must be same workspace
+  if (targetGroup.board.workspaceId !== sourceBoard.workspaceId) {
+    return c.json({ error: 'No se puede mover entre workspaces distintos' }, 400)
+  }
+
+  // Filter assignees: keep only those who are board members of the target board
+  const currentAssigneeIds = task.assignees.map(a => a.userId)
+  const targetBoardMembers = await prisma.boardMember.findMany({
+    where: { boardId: targetGroup.boardId, userId: { in: currentAssigneeIds } },
+    select: { userId: true },
+  })
+  const validAssigneeIds = new Set(targetBoardMembers.map(m => m.userId))
+  const removedAssigneeIds = currentAssigneeIds.filter(uid => !validAssigneeIds.has(uid))
+
+  // Validate status against target workspace statuses
+  const targetStatuses = await prisma.workspaceStatus.findMany({
+    where: { workspaceId: targetGroup.board.workspaceId },
+    select: { slug: true },
+  })
+  const validSlugs = new Set(targetStatuses.map(s => s.slug))
+  const newStatus = validSlugs.has(task.status) ? task.status : null
+
+  // Execute move in a transaction
+  const updated = await prisma.$transaction(async (tx) => {
+    // Remove assignees not in target board
+    if (removedAssigneeIds.length > 0) {
+      await tx.taskAssignee.deleteMany({
+        where: { taskId: id, userId: { in: removedAssigneeIds } },
+      })
+    }
+
+    // Update task group and status
+    const moved = await tx.task.update({
+      where: { id },
+      data: {
+        groupId: targetGroupId,
+        ...(newStatus !== task.status && { status: newStatus ?? 'Nuevo' }),
+        activities: {
+          create: {
+            userId,
+            action: `Movió la tarea de "${sourceBoard.name}" a "${targetGroup.board.name}"`,
+          },
+        },
+      },
+      include: taskInclude,
+    })
+
+    return moved
+  })
+
+  return c.json({ task: updated })
 })
