@@ -1,10 +1,10 @@
 import { useState, useEffect } from 'react'
-import { X, ArrowRightLeft, ChevronDown } from 'lucide-react'
+import { X, ArrowRightLeft, ChevronDown, Loader2 } from 'lucide-react'
 import { api } from '@/lib/api'
 import { useBoardStore } from '@/store/boardStore'
 import { toast } from '@/components/ui/Toast'
 import { toMockBoard } from '@/lib/adapters'
-import type { MockBoard } from '@/types'
+import type { MockBoard, MockGroup } from '@/types'
 
 interface MoveBoardModalProps {
   taskId: string
@@ -21,7 +21,9 @@ export function MoveBoardModal({ taskId, taskTitle, currentBoardId, onClose, onM
   const [boards, setBoards] = useState<MockBoard[]>([])
   const [selectedBoardId, setSelectedBoardId] = useState('')
   const [selectedGroupId, setSelectedGroupId] = useState('')
-  const [loading, setLoading] = useState(true)
+  const [groups, setGroups] = useState<MockGroup[]>([])
+  const [loadingBoards, setLoadingBoards] = useState(true)
+  const [loadingGroups, setLoadingGroups] = useState(false)
   const [moving, setMoving] = useState(false)
 
   useEffect(() => {
@@ -32,18 +34,24 @@ export function MoveBoardModal({ taskId, taskTitle, currentBoardId, onClose, onM
         setBoards(mapped)
       })
       .catch(() => toast('Error al cargar tableros.', 'error'))
-      .finally(() => setLoading(false))
+      .finally(() => setLoadingBoards(false))
   }, [workspaceId])
 
-  const selectedBoard = boards.find(b => b.id === selectedBoardId)
-
+  // Cuando cambia el tablero seleccionado, cargamos sus grupos via GET /boards/:id
   useEffect(() => {
-    if (selectedBoard?.groups.length) {
-      setSelectedGroupId(selectedBoard.groups[0].id)
-    } else {
-      setSelectedGroupId('')
-    }
+    if (!selectedBoardId) { setGroups([]); setSelectedGroupId(''); return }
+    setLoadingGroups(true)
+    api.boards.get(selectedBoardId)
+      .then(({ board }) => {
+        const g = toMockBoard(board).groups
+        setGroups(g)
+        setSelectedGroupId(g[0]?.id ?? '')
+      })
+      .catch(() => toast('Error al cargar grupos.', 'error'))
+      .finally(() => setLoadingGroups(false))
   }, [selectedBoardId])
+
+  const selectedBoard = boards.find(b => b.id === selectedBoardId)
 
   async function handleMove() {
     if (!selectedGroupId) return
@@ -85,7 +93,7 @@ export function MoveBoardModal({ taskId, taskTitle, currentBoardId, onClose, onM
           {/* Board selector */}
           <div>
             <label className="block text-xs font-semibold text-gray-600 mb-1.5">Tablero destino</label>
-            {loading ? (
+            {loadingBoards ? (
               <div className="h-9 rounded-lg bg-gray-100 animate-pulse" />
             ) : boards.length === 0 ? (
               <p className="text-xs text-gray-400 py-2">No hay otros tableros disponibles.</p>
@@ -107,23 +115,29 @@ export function MoveBoardModal({ taskId, taskTitle, currentBoardId, onClose, onM
           </div>
 
           {/* Group selector */}
-          {selectedBoard && (
+          {selectedBoardId && (
             <div>
               <label className="block text-xs font-semibold text-gray-600 mb-1.5">Grupo destino</label>
-              <div className="relative">
-                <select
-                  value={selectedGroupId}
-                  onChange={e => setSelectedGroupId(e.target.value)}
-                  className="w-full appearance-none px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white pr-8"
-                >
-                  {selectedBoard.groups.map(g => (
-                    <option key={g.id} value={g.id}>{g.name}</option>
-                  ))}
-                </select>
-                <ChevronDown className="absolute right-2.5 top-2.5 w-4 h-4 text-gray-400 pointer-events-none" />
-              </div>
+              {loadingGroups ? (
+                <div className="flex items-center gap-2 h-9 px-3 border border-gray-200 rounded-lg text-sm text-gray-400">
+                  <Loader2 className="w-3.5 h-3.5 animate-spin" /> Cargando grupos...
+                </div>
+              ) : (
+                <div className="relative">
+                  <select
+                    value={selectedGroupId}
+                    onChange={e => setSelectedGroupId(e.target.value)}
+                    className="w-full appearance-none px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white pr-8"
+                  >
+                    {groups.map(g => (
+                      <option key={g.id} value={g.id}>{g.name}</option>
+                    ))}
+                  </select>
+                  <ChevronDown className="absolute right-2.5 top-2.5 w-4 h-4 text-gray-400 pointer-events-none" />
+                </div>
+              )}
               <p className="text-[10px] text-gray-400 mt-1">
-                Los asignados que no pertenezcan a "{selectedBoard.name}" serán removidos.
+                Los asignados que no pertenezcan a "{selectedBoard?.name}" serán removidos.
               </p>
             </div>
           )}
