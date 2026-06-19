@@ -380,10 +380,6 @@ export function GerenciaPage() {
     )
   }
 
-  const totalTasks = summaries.reduce((acc, s) => acc + s.tasks.length, 0)
-  const completedTasks = summaries.reduce((acc, s) => acc + s.tasks.filter(t => isDone(t.status)).length, 0)
-  const overallPct = totalTasks === 0 ? 0 : Math.round((completedTasks / totalTasks) * 100)
-
   const todayStr = new Date().toISOString().slice(0, 10)
 
   const allTasksWithBoard: TaskWithBoard[] = summaries.flatMap(s =>
@@ -411,8 +407,7 @@ export function GerenciaPage() {
           <div>
             <h1 className="text-2xl font-bold text-gray-900">Vista Gerencia</h1>
             <p className="text-sm text-gray-500 mt-0.5">
-              {summaries.length} tablero{summaries.length !== 1 ? 's' : ''} ·{' '}
-              <span className="text-indigo-600 font-medium">{overallPct}% completado global</span>
+              {summaries.length} tablero{summaries.length !== 1 ? 's' : ''}
             </p>
           </div>
           <button
@@ -426,29 +421,7 @@ export function GerenciaPage() {
         </div>
 
         {/* KPIs */}
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4 mb-6">
-          <div className="bg-white rounded-xl border border-gray-200 px-4 py-3">
-            <p className="text-xs text-gray-400 mb-0.5">Tableros activos</p>
-            <p className="text-2xl font-bold text-gray-900">{summaries.length}</p>
-          </div>
-          <div className="bg-white rounded-xl border border-gray-200 px-4 py-3">
-            <p className="text-xs text-gray-400 mb-0.5">Tareas totales</p>
-            <p className="text-2xl font-bold text-gray-900">{totalTasks}</p>
-            <p className="text-xs text-gray-400">{completedTasks} completadas</p>
-          </div>
-          <div className="bg-white rounded-xl border border-gray-200 px-4 py-3">
-            <p className="text-xs text-gray-400 mb-0.5">Progreso global</p>
-            <div className="flex items-center gap-2 mt-1">
-              <div className="flex-1 h-2 rounded-full bg-gray-100 overflow-hidden">
-                <div
-                  className="h-full rounded-full transition-all duration-700"
-                  style={{ width: `${overallPct}%`, backgroundColor: overallPct === 100 ? '#22c55e' : '#6366f1' }}
-                />
-              </div>
-              <span className="text-sm font-bold text-indigo-600">{overallPct}%</span>
-            </div>
-          </div>
-
+        <div className="flex gap-4 mb-6">
           {/* Vencidas */}
           <button
             onClick={() => overdueTasks.length > 0 && setTaskModal('overdue')}
