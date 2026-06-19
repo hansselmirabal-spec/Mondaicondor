@@ -167,11 +167,23 @@ interface BoardCardProps {
 function BoardCard({ summary, workspaceStatuses, onClick }: BoardCardProps) {
   const { board, tasks, loading } = summary
 
-  // Group pending tasks by their groupId, preserving board group order
-  const pendingByGroup = board.groups.map(g => ({
-    group: g,
-    tasks: tasks.filter(t => t.groupId === g.id && !isDone(t.status)).slice(0, 5),
-  })).filter(g => g.tasks.length > 0)
+  // Build group list from tasks (board.groups is empty in workspace listing)
+  const seenGroupIds = new Set<string>()
+  const pendingByGroup: Array<{ group: { id: string; name: string; color: string }; tasks: ApiTask[] }> = []
+  for (const t of tasks) {
+    if (isDone(t.status)) continue
+    const gid = t.groupId
+    if (!seenGroupIds.has(gid)) {
+      seenGroupIds.add(gid)
+      const boardGroup = board.groups.find(g => g.id === gid)
+      pendingByGroup.push({
+        group: { id: gid, name: t.group?.name ?? gid, color: boardGroup?.color ?? '#94a3b8' },
+        tasks: [],
+      })
+    }
+    const entry = pendingByGroup.find(e => e.group.id === gid)!
+    if (entry.tasks.length < 5) entry.tasks.push(t)
+  }
 
   const totalPending = tasks.filter(t => !isDone(t.status)).length
 

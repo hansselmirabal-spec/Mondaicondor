@@ -87,6 +87,7 @@ boardRoutes.get('/workspace/:workspaceId', async (c) => {
     include: {
       _count: { select: { groups: true } },
       boardMembers: { select: { userId: true } },
+      groups: { select: { id: true, name: true, color: true, order: true }, orderBy: { order: 'asc' } },
     },
     orderBy: { createdAt: 'asc' },
   })
