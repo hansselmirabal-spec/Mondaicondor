@@ -1,5 +1,5 @@
 import {
-  Plus, Search, User, Filter, ArrowUpDown, EyeOff, Rows3, Zap, MoreHorizontal, Check, X, Calendar, Flag
+  Plus, Search, User, Filter, ArrowUpDown, EyeOff, Rows3, Zap, MoreHorizontal, Check, X, Calendar, Flag, SlidersHorizontal
 } from 'lucide-react'
 import { useNavigate, useSearchParams, useParams } from 'react-router-dom'
 import { useState } from 'react'
@@ -57,6 +57,7 @@ export function BoardToolbar() {
     clearFilters,
   } = useFilterStore()
 
+  const [showMobileFilters, setShowMobileFilters] = useState(false)
   const [saving, setSaving] = useState(false)
   const [saveError, setSaveError] = useState<string | null>(null)
   const [showSearch, setShowSearch] = useState(false)
@@ -152,6 +153,20 @@ export function BoardToolbar() {
         <Plus className="w-3.5 h-3.5" />
         <span>Agregar elemento</span>
       </button>
+
+      {/* Mobile filter toggle */}
+      <button
+        onClick={() => setShowMobileFilters(v => !v)}
+        className={`md:hidden flex items-center gap-1.5 px-2.5 py-1.5 text-sm rounded-md transition-colors ml-auto ${
+          hasActiveFilters ? 'bg-blue-50 text-blue-700' : 'text-gray-600 hover:bg-gray-100'
+        }`}
+      >
+        <SlidersHorizontal className="w-3.5 h-3.5" />
+        {hasActiveFilters && <span className="w-1.5 h-1.5 rounded-full bg-blue-600" />}
+      </button>
+
+      {/* Secondary controls — hidden on mobile unless showMobileFilters */}
+      <div className={`${showMobileFilters ? 'flex' : 'hidden'} md:flex items-center gap-1 flex-wrap flex-1`}>
 
       {/* Search */}
       {showSearch ? (
@@ -353,6 +368,8 @@ export function BoardToolbar() {
       <button className="p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-md transition-colors">
         <MoreHorizontal className="w-4 h-4" />
       </button>
+
+      </div>{/* end secondary controls */}
     </div>
 
     <Modal isOpen={showAddModal} onClose={() => { resetForm(); setShowAddModal(false) }} title="Nuevo elemento" size="md">

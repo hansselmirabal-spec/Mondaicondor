@@ -1,4 +1,4 @@
-import { ChevronDown, ChevronRight, Plus, Check, X, MoreHorizontal, Pencil, Trash2 } from 'lucide-react'
+import { ChevronDown, ChevronRight, Plus, Check, X, MoreHorizontal, Pencil, Trash2, Eye, EyeOff } from 'lucide-react'
 import { useState, useRef, useEffect } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import type { MockGroup, MockTask } from '@/types'
@@ -13,6 +13,8 @@ import { useFilterStore, ALL_COLUMNS } from '@/store/filterStore'
 import { useBoardStore } from '@/store/boardStore'
 import { api } from '@/lib/api'
 import { toast } from '@/components/ui/Toast'
+
+const DONE_STATUSES = new Set(['Completado', 'AlwaysOn'])
 
 function TaskMobileCard({ task }: { task: MockTask }) {
   const navigate = useNavigate()
@@ -66,7 +68,12 @@ export function BoardGroup({ group, tasks, label, onAddTask }: BoardGroupProps) 
   const [adding, setAdding] = useState(false)
   const [newTitle, setNewTitle] = useState('')
   const [newDeadline, setNewDeadline] = useState('')
+  const [showCompleted, setShowCompleted] = useState(false)
   const inputRef = useRef<HTMLInputElement>(null)
+
+  const activeTasks = tasks.filter(t => !DONE_STATUSES.has(t.status))
+  const completedTasks = tasks.filter(t => DONE_STATUSES.has(t.status))
+  const visibleTasks = showCompleted ? tasks : activeTasks
 
   const [menuOpen, setMenuOpen] = useState(false)
   const menuRef = useRef<HTMLDivElement>(null)
@@ -206,8 +213,17 @@ export function BoardGroup({ group, tasks, label, onAddTask }: BoardGroupProps) 
         <div className="block md:hidden rounded-sm border border-gray-100" style={{ borderLeft: `4px solid ${group.color}` }}>
           {tasks.length === 0
             ? <div className="p-4"><EmptyState /></div>
-            : tasks.map(task => <TaskMobileCard key={task.id} task={task} />)
+            : visibleTasks.map(task => <TaskMobileCard key={task.id} task={task} />)
           }
+          {completedTasks.length > 0 && (
+            <button
+              onClick={() => setShowCompleted(v => !v)}
+              className="flex items-center gap-2 px-4 py-2.5 w-full text-xs text-gray-400 hover:text-gray-600 hover:bg-gray-50 transition-colors border-t border-gray-100"
+            >
+              {showCompleted ? <EyeOff className="w-3.5 h-3.5 shrink-0" /> : <Eye className="w-3.5 h-3.5 shrink-0" />}
+              <span>{showCompleted ? 'Ocultar' : 'Ver'} {completedTasks.length} completada{completedTasks.length !== 1 ? 's' : ''}</span>
+            </button>
+          )}
           {adding ? (
             <div className="p-3 border-t border-gray-100 bg-blue-50/40">
               <input
@@ -257,8 +273,21 @@ export function BoardGroup({ group, tasks, label, onAddTask }: BoardGroupProps) 
             <tbody className="bg-white">
               {tasks.length === 0
                 ? <tr><td colSpan={colSpan}><EmptyState /></td></tr>
-                : tasks.map(task => <TaskRow key={task.id} task={task} />)
+                : visibleTasks.map(task => <TaskRow key={task.id} task={task} />)
               }
+              {completedTasks.length > 0 && (
+                <tr className="border-t border-gray-100">
+                  <td colSpan={colSpan}>
+                    <button
+                      onClick={() => setShowCompleted(v => !v)}
+                      className="flex items-center gap-2 px-4 py-2 w-full text-xs text-gray-400 hover:text-gray-600 hover:bg-gray-50 transition-colors"
+                    >
+                      {showCompleted ? <EyeOff className="w-3.5 h-3.5 shrink-0" /> : <Eye className="w-3.5 h-3.5 shrink-0" />}
+                      <span>{showCompleted ? 'Ocultar' : 'Ver'} {completedTasks.length} completada{completedTasks.length !== 1 ? 's' : ''}</span>
+                    </button>
+                  </td>
+                </tr>
+              )}
               {adding ? (
                 <tr className="border-t border-gray-100 bg-blue-50/40">
                   <td className="w-8 px-2" />
