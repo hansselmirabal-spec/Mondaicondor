@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
-  Lock, Users, CheckCircle2, Circle, AlertCircle, Clock,
+  Lock, CheckCircle2, Circle, AlertCircle, Clock,
   ChevronRight, RefreshCw, ShieldOff, X, CalendarX, CalendarClock,
 } from 'lucide-react'
 import { useBoardStore } from '@/store/boardStore'
@@ -33,17 +33,6 @@ const DONE_SLUGS = ['completado', 'cerrado', 'done', 'completada']
 
 function isDone(status: string): boolean {
   return DONE_SLUGS.some(s => status.toLowerCase().includes(s))
-}
-
-function progressPct(tasks: ApiTask[]): number {
-  if (!tasks.length) return 0
-  return Math.round((tasks.filter(t => isDone(t.status)).length / tasks.length) * 100)
-}
-
-function groupByStatus(tasks: ApiTask[]): [string, number][] {
-  const map: Record<string, number> = {}
-  tasks.forEach(t => { map[t.status] = (map[t.status] ?? 0) + 1 })
-  return Object.entries(map).sort((a, b) => b[1] - a[1])
 }
 
 function statusColor(slug: string, ws: WorkspaceStatus[]): string {
@@ -176,10 +165,15 @@ interface BoardCardProps {
 }
 
 function BoardCard({ summary, workspaceStatuses, onClick }: BoardCardProps) {
-  const { board, tasks, memberCount, loading } = summary
-  const pct = progressPct(tasks)
-  const byStatus = groupByStatus(tasks)
-  const pending = tasks.filter(t => !isDone(t.status)).slice(0, 6)
+  const { board, tasks, loading } = summary
+
+  // Group pending tasks by their groupId, preserving board group order
+  const pendingByGroup = board.groups.map(g => ({
+    group: g,
+    tasks: tasks.filter(t => t.groupId === g.id && !isDone(t.status)).slice(0, 5),
+  })).filter(g => g.tasks.length > 0)
+
+  const totalPending = tasks.filter(t => !isDone(t.status)).length
 
   return (
     <div
@@ -187,8 +181,8 @@ function BoardCard({ summary, workspaceStatuses, onClick }: BoardCardProps) {
       className="bg-[#eef1fb] rounded-xl border border-[#d4daf5] hover:border-indigo-300 hover:shadow-lg cursor-pointer transition-all group flex flex-col overflow-hidden"
     >
       {/* Header */}
-      <div className="px-4 pt-4 pb-2">
-        <div className="flex items-start justify-between gap-2 mb-1">
+      <div className="px-4 pt-4 pb-3">
+        <div className="flex items-start justify-between gap-2">
           <h3 className="text-sm font-bold text-gray-800 group-hover:text-indigo-700 transition-colors leading-tight">
             {board.name}
           </h3>
@@ -197,127 +191,75 @@ function BoardCard({ summary, workspaceStatuses, onClick }: BoardCardProps) {
             <ChevronRight className="w-3.5 h-3.5 text-gray-300 group-hover:text-indigo-400 transition-colors" />
           </div>
         </div>
-
-        <div className="flex items-center gap-1 text-xs text-gray-400 mb-3">
-          <Users className="w-3 h-3" />
-          <span>{memberCount} miembro{memberCount !== 1 ? 's' : ''}</span>
-          <span className="mx-1">·</span>
-          <span>{tasks.length} tarea{tasks.length !== 1 ? 's' : ''}</span>
-        </div>
-
-        {/* Progress */}
-        {loading ? (
-          <div className="h-1.5 rounded-full bg-gray-200 animate-pulse mb-3" />
-        ) : (
-          <div className="mb-3">
-            <div className="flex items-center justify-between mb-1">
-              <span className="text-[10px] text-gray-400">Progreso</span>
-              <span className="text-[10px] font-semibold text-indigo-600">{pct}%</span>
-            </div>
-            <div className="h-1.5 rounded-full bg-gray-200 overflow-hidden">
-              <div
-                className="h-full rounded-full transition-all duration-500"
-                style={{ width: `${pct}%`, backgroundColor: pct === 100 ? '#22c55e' : '#6366f1' }}
-              />
-            </div>
-          </div>
-        )}
-
-        {/* Status pills */}
-        {!loading && byStatus.length > 0 && (
-          <div className="flex flex-wrap gap-1 mb-3">
-            {byStatus.slice(0, 4).map(([slug, count]) => (
-              <span
-                key={slug}
-                className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-medium text-white"
-                style={{ backgroundColor: statusColor(slug, workspaceStatuses) }}
-              >
-                {count} {slug}
-              </span>
-            ))}
-          </div>
-        )}
+        <p className="text-[11px] text-gray-400 mt-0.5">
+          {totalPending} pendiente{totalPending !== 1 ? 's' : ''}
+          {tasks.length > 0 && ` · ${tasks.length} total`}
+        </p>
       </div>
 
-      {/* Task list */}
-      <div className="flex-1 px-4 pb-3 space-y-1.5">
+      {/* Tasks by group */}
+      <div className="flex-1 pb-3 overflow-hidden">
         {loading ? (
-          Array.from({ length: 3 }).map((_, i) => (
-            <div key={i} className="h-4 rounded bg-gray-200 animate-pulse" style={{ width: `${60 + i * 15}%` }} />
-          ))
-        ) : pending.length === 0 ? (
-          <div className="flex items-center gap-1.5 text-[11px] text-green-600 font-medium py-1">
+          <div className="px-4 space-y-2">
+            {Array.from({ length: 4 }).map((_, i) => (
+              <div key={i} className="h-4 rounded bg-gray-200 animate-pulse" style={{ width: `${55 + i * 12}%` }} />
+            ))}
+          </div>
+        ) : pendingByGroup.length === 0 ? (
+          <div className="flex items-center gap-1.5 text-[11px] text-green-600 font-medium px-4 py-1">
             <CheckCircle2 className="w-3.5 h-3.5" />
             Todo completado
           </div>
         ) : (
-          pending.map(task => {
-            const days = daysUntil(task.deadline ?? null)
-            const overdue = days !== null && days < 0
-            const soon = !overdue && days !== null && days <= 3
-            const assigneeNames = task.assignees.map(a => a.user.name.split(' ')[0]).join(', ')
+          pendingByGroup.map((entry, idx) => (
+            <div key={entry.group.id}>
+              {/* Group divider */}
+              {idx > 0 && <div className="border-t border-[#d4daf5] mx-4 my-2" />}
 
-            return (
-              <div key={task.id} className="flex flex-col gap-0.5 py-1 border-b border-[#d4daf5]/50 last:border-0">
-                {/* Title row */}
-                <div className="flex items-center gap-1.5">
-                  <Circle
-                    className="w-2.5 h-2.5 shrink-0"
-                    style={{ color: statusColor(task.status, workspaceStatuses) }}
-                  />
-                  <span className="text-[11px] text-gray-700 truncate flex-1 font-medium leading-tight">
-                    {task.title}
-                  </span>
-                  <span
-                    className="w-1.5 h-1.5 rounded-full shrink-0"
-                    style={{ backgroundColor: priorityColor(task.priority) }}
-                    title={task.priority}
-                  />
-                </div>
-
-                {/* Assignee + deadline — always shown */}
-                <div className="flex items-center gap-2 pl-4">
-                  <span className="text-[10px] text-indigo-500 font-medium truncate flex-1">
-                    {assigneeNames || <span className="text-gray-300 italic">Sin asignar</span>}
-                  </span>
-                  <span className={`text-[10px] flex items-center gap-0.5 shrink-0 font-medium px-1.5 py-0.5 rounded ${
-                    overdue
-                      ? 'bg-red-100 text-red-600'
-                      : soon
-                      ? 'bg-amber-100 text-amber-600'
-                      : task.deadline
-                      ? 'bg-gray-100 text-gray-500'
-                      : 'text-gray-300'
-                  }`}>
-                    {overdue && <AlertCircle className="w-2.5 h-2.5" />}
-                    {soon && !overdue && <Clock className="w-2.5 h-2.5" />}
-                    {task.deadline ? fmtDate(task.deadline ?? null) : 'Sin fecha'}
-                  </span>
-                </div>
+              {/* Group name */}
+              <div className="flex items-center gap-1.5 px-4 mb-1.5">
+                <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ backgroundColor: entry.group.color }} />
+                <span className="text-[10px] font-semibold text-gray-500 uppercase tracking-wide truncate">
+                  {entry.group.name}
+                </span>
               </div>
-            )
-          })
-        )}
-        {!loading && tasks.filter(t => !isDone(t.status)).length > 6 && (
-          <p className="text-[10px] text-gray-400 pt-0.5">
-            +{tasks.filter(t => !isDone(t.status)).length - 6} más pendientes
-          </p>
-        )}
-      </div>
 
-      {/* Footer */}
-      <div className="px-4 py-2 border-t border-[#d4daf5] bg-white/40">
-        <div className="flex items-center gap-1.5">
-          {board.groups.slice(0, 3).map(g => (
-            <span key={g.id} className="w-2 h-2 rounded-full" style={{ backgroundColor: g.color }} />
-          ))}
-          {board.groups.length > 3 && (
-            <span className="text-[10px] text-gray-400">+{board.groups.length - 3}</span>
-          )}
-          <span className="text-[10px] text-gray-400 ml-auto">
-            {board.groups.length} grupo{board.groups.length !== 1 ? 's' : ''}
-          </span>
-        </div>
+              {/* Tasks in group */}
+              <div className="px-4 space-y-1">
+                {entry.tasks.map(task => {
+                  const days = daysUntil(task.deadline ?? null)
+                  const overdue = days !== null && days < 0
+                  const soon = !overdue && days !== null && days <= 3
+
+                  return (
+                    <div key={task.id} className="flex items-center gap-1.5">
+                      <Circle
+                        className="w-2.5 h-2.5 shrink-0"
+                        style={{ color: statusColor(task.status, workspaceStatuses) }}
+                      />
+                      <span className="text-[11px] text-gray-700 truncate flex-1 leading-tight">
+                        {task.title}
+                      </span>
+                      {task.deadline && (
+                        <span className={`text-[10px] flex items-center gap-0.5 shrink-0 font-medium px-1 py-0.5 rounded ${
+                          overdue
+                            ? 'bg-red-100 text-red-600'
+                            : soon
+                            ? 'bg-amber-100 text-amber-600'
+                            : 'bg-gray-100 text-gray-500'
+                        }`}>
+                          {overdue && <AlertCircle className="w-2.5 h-2.5" />}
+                          {soon && !overdue && <Clock className="w-2.5 h-2.5" />}
+                          {fmtDate(task.deadline ?? null)}
+                        </span>
+                      )}
+                    </div>
+                  )
+                })}
+              </div>
+            </div>
+          ))
+        )}
       </div>
     </div>
   )
