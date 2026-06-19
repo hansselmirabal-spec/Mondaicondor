@@ -34,6 +34,7 @@ interface BoardStore {
 
   apiTasks: MockTask[]
   setApiTasks: (tasks: MockTask[]) => void
+  patchApiTask: (taskId: string, patch: Partial<MockTask>) => void
 
   apiUsers: MockUser[]
   setApiUsers: (users: MockUser[]) => void
@@ -108,6 +109,9 @@ export const useBoardStore = create<BoardStore>((set, get) => ({
   setApiTasks: tasks => set(state => ({
     apiTasks: tasks,
     newTasks: state.newTasks.filter(t => !tasks.some(at => at.id === t.id)),
+  })),
+  patchApiTask: (taskId, patch) => set(state => ({
+    apiTasks: state.apiTasks.map(t => t.id === taskId ? { ...t, ...patch } : t),
   })),
 
   apiUsers: [],

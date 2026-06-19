@@ -79,6 +79,7 @@ export function TaskDetailDrawer() {
   const setApiUsers = useBoardStore(state => state.setApiUsers)
   const boards = useBoardStore(state => state.boards)
   const workspaceUens = useBoardStore(state => state.workspaceUens)
+  const patchApiTask = useBoardStore(state => state.patchApiTask)
   const task = taskId ? (apiTasks.find(t => t.id === taskId) ?? newTasks.find(t => t.id === taskId) ?? null) : null
 
   const currentUser = useAuthStore(state => state.user)
@@ -500,7 +501,13 @@ export function TaskDetailDrawer() {
                   value={currentUenId ?? ''}
                   onChange={e => {
                     const val = e.target.value || null
+                    const uen = workspaceUens.find(u => u.id === val) ?? null
                     updateTask(task.id, { uenId: val })
+                    patchApiTask(task.id, {
+                      uenId: val,
+                      uenName: uen?.name ?? null,
+                      uenColor: uen?.color ?? null,
+                    })
                     api.tasks.update(task.id, { uenId: val }).catch(console.error)
                   }}
                   className="w-full text-xs border border-gray-200 rounded-lg px-2 py-1.5 bg-white focus:outline-none focus:ring-2 focus:ring-blue-400"
