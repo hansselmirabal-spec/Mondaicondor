@@ -252,6 +252,25 @@ function BoardCard({ summary, workspaceStatuses, onClick }: BoardCardProps) {
                       <span className="text-[11px] text-gray-700 truncate flex-1 leading-tight">
                         {task.title}
                       </span>
+                      {task.assignees.length > 0 && (
+                        <div className="flex -space-x-1 shrink-0">
+                          {task.assignees.slice(0, 3).map(({ user }) => (
+                            <span
+                              key={user.id}
+                              title={user.name}
+                              className="w-4 h-4 rounded-full text-white text-[8px] font-bold flex items-center justify-center border border-white"
+                              style={{ backgroundColor: user.color }}
+                            >
+                              {user.initials}
+                            </span>
+                          ))}
+                          {task.assignees.length > 3 && (
+                            <span className="w-4 h-4 rounded-full bg-gray-300 text-gray-600 text-[8px] font-bold flex items-center justify-center border border-white">
+                              +{task.assignees.length - 3}
+                            </span>
+                          )}
+                        </div>
+                      )}
                       {task.deadline && (
                         <span className={`text-[10px] flex items-center gap-0.5 shrink-0 font-medium px-1 py-0.5 rounded ${
                           overdue

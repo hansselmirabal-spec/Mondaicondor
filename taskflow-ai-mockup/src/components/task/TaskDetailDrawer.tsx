@@ -175,7 +175,6 @@ export function TaskDetailDrawer() {
     if (!task) return
     const newIds = [...currentAssigneeIds, userId]
     updateTask(task.id, { assigneeIds: newIds })
-    setAssigneePicker(false)
     api.tasks.update(task.id, { assigneeIds: newIds }).catch(console.error)
   }
 
