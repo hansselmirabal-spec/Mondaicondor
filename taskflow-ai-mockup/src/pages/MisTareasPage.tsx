@@ -149,6 +149,19 @@ function TaskPanel({ taskId, onClose, onStatusChange }: TaskPanelProps) {
               })()}
             </div>
 
+            {/* UEN */}
+            {task.uen && (
+              <div className="flex items-center gap-2">
+                <span className="text-xs text-gray-400 w-16 shrink-0">UEN</span>
+                <span
+                  className="text-xs font-medium px-2 py-0.5 rounded-full"
+                  style={{ backgroundColor: task.uen.color + '22', color: task.uen.color }}
+                >
+                  {task.uen.name}
+                </span>
+              </div>
+            )}
+
             {/* Deadline */}
             {deadlineStr && (
               <div className="flex items-center gap-2">
@@ -371,11 +384,12 @@ export function MisTareasPage() {
                     <table className="w-full text-sm">
                       <thead>
                         <tr className="border-b border-gray-100 bg-gray-50">
-                          <th className="text-left px-4 py-2 text-xs font-semibold text-gray-400 w-[40%]">Tarea</th>
-                          <th className="text-left px-3 py-2 text-xs font-semibold text-gray-400 w-[15%]">Grupo</th>
-                          <th className="text-left px-3 py-2 text-xs font-semibold text-gray-400 w-[15%]">Estado</th>
+                          <th className="text-left px-4 py-2 text-xs font-semibold text-gray-400 w-[32%]">Tarea</th>
+                          <th className="text-left px-3 py-2 text-xs font-semibold text-gray-400 w-[12%]">Grupo</th>
+                          <th className="text-left px-3 py-2 text-xs font-semibold text-gray-400 w-[10%]">UEN</th>
+                          <th className="text-left px-3 py-2 text-xs font-semibold text-gray-400 w-[13%]">Estado</th>
                           <th className="text-left px-3 py-2 text-xs font-semibold text-gray-400 w-[10%]">Prioridad</th>
-                          <th className="text-left px-3 py-2 text-xs font-semibold text-gray-400 w-[12%]">Fecha</th>
+                          <th className="text-left px-3 py-2 text-xs font-semibold text-gray-400 w-[11%]">Fecha</th>
                           <th className="text-left px-3 py-2 text-xs font-semibold text-gray-400 w-[8%]">Equipo</th>
                         </tr>
                       </thead>
@@ -412,6 +426,20 @@ export function MisTareasPage() {
                               {/* Group */}
                               <td className="px-3 py-2.5">
                                 <span className="text-xs text-gray-500 truncate">{task.group.name}</span>
+                              </td>
+
+                              {/* UEN */}
+                              <td className="px-3 py-2.5">
+                                {task.uen ? (
+                                  <span
+                                    className="text-xs font-medium px-2 py-0.5 rounded-full"
+                                    style={{ backgroundColor: task.uen.color + '22', color: task.uen.color }}
+                                  >
+                                    {task.uen.name}
+                                  </span>
+                                ) : (
+                                  <span className="text-xs text-gray-300">—</span>
+                                )}
                               </td>
 
                               {/* Status */}
