@@ -257,7 +257,7 @@ function TaskPanel({ taskId, onClose, onStatusChange }: TaskPanelProps) {
 export function MisTareasPage() {
   const [tasks, setTasks] = useState<ApiTaskWithBoard[]>([])
   const [loading, setLoading] = useState(true)
-  const [filter, setFilter] = useState<FilterTab>('todas')
+  const [filter, setFilter] = useState<FilterTab>('pendientes')
   const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null)
 
   useEffect(() => {
@@ -315,15 +315,24 @@ export function MisTareasPage() {
                 onClick={() => setFilter(tab.key)}
                 className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors flex items-center gap-1.5 ${
                   filter === tab.key
-                    ? 'bg-indigo-600 text-white'
-                    : 'text-gray-500 hover:bg-gray-100'
+                    ? tab.key === 'completadas'
+                      ? 'bg-green-600 text-white'
+                      : 'bg-indigo-600 text-white'
+                    : tab.key === 'completadas' && doneCount > 0
+                      ? 'text-green-700 hover:bg-green-50 border border-green-200'
+                      : 'text-gray-500 hover:bg-gray-100'
                 }`}
               >
+                {tab.key === 'todas' && <ClipboardList className="w-3 h-3" />}
                 {tab.key === 'pendientes' && <Clock className="w-3 h-3" />}
                 {tab.key === 'completadas' && <CheckCircle2 className="w-3 h-3" />}
                 {tab.label}
                 <span className={`px-1.5 py-0.5 rounded text-[10px] font-bold ${
-                  filter === tab.key ? 'bg-white/20' : 'bg-gray-200 text-gray-600'
+                  filter === tab.key
+                    ? 'bg-white/20'
+                    : tab.key === 'completadas' && doneCount > 0
+                      ? 'bg-green-100 text-green-700'
+                      : 'bg-gray-200 text-gray-600'
                 }`}>
                   {tab.count}
                 </span>
