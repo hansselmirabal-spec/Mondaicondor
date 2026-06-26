@@ -292,3 +292,20 @@ boardRoutes.delete('/groups/:groupId', async (c) => {
   await prisma.group.delete({ where: { id: groupId } })
   return c.json({ message: 'Grupo eliminado' })
 })
+
+// ── Reorder groups ──────────────────────────────────────────────────────────
+boardRoutes.put('/:boardId/groups/reorder', zValidator('json', z.object({ order: z.array(z.string()) })), async (c) => {
+  const { userId } = c.get('user')
+  const { boardId } = c.req.param()
+  const { order } = c.req.valid('json')
+
+  const access = await assertBoardAccess(boardId, userId)
+  if (!access) return c.json({ error: 'Sin acceso' }, 403)
+  if (access.wsMembership.role === 'VIEWER') return c.json({ error: 'Sin permisos' }, 403)
+
+  await prisma.$transaction(
+    order.map((id, index) => prisma.group.update({ where: { id }, data: { order: index } }))
+  )
+
+  return c.json({ message: 'Orden actualizado' })
+})

@@ -1,4 +1,4 @@
-import { ChevronDown, ChevronRight, Plus, Check, X, MoreHorizontal, Pencil, Trash2, Eye, EyeOff } from 'lucide-react'
+import { ChevronDown, ChevronRight, Plus, Check, X, MoreHorizontal, Pencil, Trash2, Eye, EyeOff, GripVertical } from 'lucide-react'
 import { useState, useRef, useEffect } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import type { MockGroup, MockTask } from '@/types'
@@ -57,9 +57,17 @@ interface BoardGroupProps {
   tasks: MockTask[]
   label?: string
   onAddTask?: (title: string, deadline: string | null) => void
+  isDragging?: boolean
+  isOver?: boolean
+  onDragStart?: (e: React.DragEvent) => void
+  onDragEnd?: (e: React.DragEvent) => void
+  onDragEnter?: (e: React.DragEvent) => void
+  onDragLeave?: (e: React.DragEvent) => void
+  onDragOver?: (e: React.DragEvent) => void
+  onDrop?: (e: React.DragEvent) => void
 }
 
-export function BoardGroup({ group, tasks, label, onAddTask }: BoardGroupProps) {
+export function BoardGroup({ group, tasks, label, onAddTask, isDragging, isOver, onDragStart, onDragEnd, onDragEnter, onDragLeave, onDragOver, onDrop }: BoardGroupProps) {
   const { toggleGroup, isGroupCollapsed } = useUIStore()
   const { isColumnVisible } = useFilterStore()
   const { removeGroup, patchGroup } = useBoardStore()
@@ -143,8 +151,22 @@ export function BoardGroup({ group, tasks, label, onAddTask }: BoardGroupProps) 
   const colSpan = 2 + visibleColumns.length
 
   return (
-    <div className="mb-6">
+    <div
+      className={`mb-6 transition-opacity ${isDragging ? 'opacity-40' : 'opacity-100'} ${isOver ? 'border-t-2 border-blue-400 pt-0.5' : ''}`}
+      draggable={!!onDragStart}
+      onDragStart={onDragStart}
+      onDragEnd={onDragEnd}
+      onDragEnter={onDragEnter}
+      onDragLeave={onDragLeave}
+      onDragOver={onDragOver}
+      onDrop={onDrop}
+    >
       <div className="flex items-center gap-1 mb-1 px-2 py-1 select-none group/header">
+        {onDragStart && (
+          <span className="opacity-0 group-hover/header:opacity-100 transition-opacity cursor-grab active:cursor-grabbing text-gray-300 hover:text-gray-500 p-0.5">
+            <GripVertical className="w-3.5 h-3.5" />
+          </span>
+        )}
         <button
           onClick={() => toggleGroup(group.id)}
           className="flex items-center gap-1 hover:bg-gray-100 rounded px-1 py-0.5 transition-colors"

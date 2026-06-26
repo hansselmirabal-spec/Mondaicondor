@@ -322,6 +322,12 @@ export const api = {
 
     removeMember: (boardId: string, userId: string) =>
       request<{ message: string }>(`/boards/${boardId}/members/${userId}`, { method: 'DELETE' }),
+
+    reorderGroups: (boardId: string, order: string[]) =>
+      request<{ message: string }>(`/boards/${boardId}/groups/reorder`, {
+        method: 'PUT',
+        body: JSON.stringify({ order }),
+      }),
   },
 
   groups: {

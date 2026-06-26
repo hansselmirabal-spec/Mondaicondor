@@ -33,6 +33,66 @@ export function BoardTable({ board }: BoardTableProps) {
   const groupInputRef = useRef<HTMLInputElement>(null)
   useEffect(() => { if (addingGroup) groupInputRef.current?.focus() }, [addingGroup])
 
+  const [draggingGroupId, setDraggingGroupId] = useState<string | null>(null)
+  const [overGroupId, setOverGroupId] = useState<string | null>(null)
+  const groupDragCounter = useRef<Record<string, number>>({})
+
+  function handleGroupDragStart(e: React.DragEvent, groupId: string) {
+    setDraggingGroupId(groupId)
+    e.dataTransfer.effectAllowed = 'move'
+    e.dataTransfer.setData('groupId', groupId)
+  }
+
+  function handleGroupDragEnd() {
+    setDraggingGroupId(null)
+    setOverGroupId(null)
+    groupDragCounter.current = {}
+  }
+
+  function handleGroupDragEnter(e: React.DragEvent, groupId: string) {
+    e.preventDefault()
+    groupDragCounter.current[groupId] = (groupDragCounter.current[groupId] ?? 0) + 1
+    setOverGroupId(groupId)
+  }
+
+  function handleGroupDragLeave(e: React.DragEvent, groupId: string) {
+    e.preventDefault()
+    groupDragCounter.current[groupId] = (groupDragCounter.current[groupId] ?? 1) - 1
+    if ((groupDragCounter.current[groupId] ?? 0) <= 0) {
+      groupDragCounter.current[groupId] = 0
+      setOverGroupId(prev => prev === groupId ? null : prev)
+    }
+  }
+
+  function handleGroupDragOver(e: React.DragEvent) {
+    e.preventDefault()
+    e.dataTransfer.dropEffect = 'move'
+  }
+
+  function handleGroupDrop(e: React.DragEvent, targetGroupId: string) {
+    e.preventDefault()
+    const sourceId = e.dataTransfer.getData('groupId') || draggingGroupId
+    if (!sourceId || sourceId === targetGroupId) { handleGroupDragEnd(); return }
+
+    const currentGroups = [...board.groups]
+    const fromIndex = currentGroups.findIndex(g => g.id === sourceId)
+    const toIndex = currentGroups.findIndex(g => g.id === targetGroupId)
+    if (fromIndex === -1 || toIndex === -1) { handleGroupDragEnd(); return }
+
+    const reordered = [...currentGroups]
+    const [moved] = reordered.splice(fromIndex, 1)
+    reordered.splice(toIndex, 0, moved)
+    const withOrder = reordered.map((g, i) => ({ ...g, order: i }))
+
+    patchBoard(board.id, { groups: withOrder })
+
+    api.boards.reorderGroups(board.id, withOrder.map(g => g.id)).catch(() => {
+      patchBoard(board.id, { groups: currentGroups })
+    })
+
+    handleGroupDragEnd()
+  }
+
   async function handleCreateGroup() {
     const name = groupName.trim()
     if (!name) return
@@ -178,7 +238,22 @@ export function BoardTable({ board }: BoardTableProps) {
             ...newTasks.filter(t => t.groupId === group.id),
           ]
           const tasks = sortTasks(groupTasks.filter(filterTask))
-          return <BoardGroup key={group.id} group={group} tasks={tasks} onAddTask={makeAddTask(group.id, board.id)} />
+          return (
+            <BoardGroup
+              key={group.id}
+              group={group}
+              tasks={tasks}
+              onAddTask={makeAddTask(group.id, board.id)}
+              isDragging={draggingGroupId === group.id}
+              isOver={overGroupId === group.id && draggingGroupId !== group.id}
+              onDragStart={e => handleGroupDragStart(e, group.id)}
+              onDragEnd={handleGroupDragEnd}
+              onDragEnter={e => handleGroupDragEnter(e, group.id)}
+              onDragLeave={e => handleGroupDragLeave(e, group.id)}
+              onDragOver={handleGroupDragOver}
+              onDrop={e => handleGroupDrop(e, group.id)}
+            />
+          )
         })}
         {addGroupBar}
       </div>
