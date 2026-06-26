@@ -71,6 +71,7 @@ export interface MockTask {
   fileUrl: string | null
   text: string | null
   description: string
+  order: number
   createdAt: string
   updatedAt: string
   uenId: string | null

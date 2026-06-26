@@ -131,7 +131,7 @@ taskRoutes.get('/board/:boardId', async (c) => {
       ...(assigneeId && { assignees: { some: { userId: assigneeId } } }),
     },
     include: taskInclude,
-    orderBy: { createdAt: 'asc' },
+    orderBy: { order: 'asc' },
   })
 
   return c.json({ tasks })
@@ -166,6 +166,8 @@ taskRoutes.post('/', zValidator('json', createTaskSchema), async (c) => {
     }
   }
 
+  const taskCount = await prisma.task.count({ where: { groupId } })
+
   const task = await prisma.task.create({
     data: {
       groupId,
@@ -176,6 +178,7 @@ taskRoutes.post('/', zValidator('json', createTaskSchema), async (c) => {
       deadline: deadline ? new Date(deadline) : null,
       uenId: uenId ?? null,
       createdBy: userId,
+      order: taskCount,
       assignees: assigneeIds?.length
         ? { create: assigneeIds.map((uid) => ({ userId: uid })) }
         : undefined,

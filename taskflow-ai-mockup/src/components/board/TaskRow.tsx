@@ -1,5 +1,5 @@
 import { useNavigate, useSearchParams } from 'react-router-dom'
-import { MessageSquare, CheckSquare, Square, Plus, UserMinus, ArrowRightLeft } from 'lucide-react'
+import { MessageSquare, CheckSquare, Square, Plus, UserMinus, ArrowRightLeft, GripVertical } from 'lucide-react'
 import { useState, useRef, useEffect } from 'react'
 import type { MockTask, PriorityType } from '@/types'
 import { MoveBoardModal } from '@/components/task/MoveBoardModal'
@@ -20,13 +20,21 @@ const PRIORITY_TO_API: Record<PriorityType, string> = {
 
 interface TaskRowProps {
   task: MockTask
+  isDragging?: boolean
+  isOver?: boolean
+  onDragStart?: (e: React.DragEvent) => void
+  onDragEnd?: (e: React.DragEvent) => void
+  onDragEnter?: (e: React.DragEvent) => void
+  onDragLeave?: (e: React.DragEvent) => void
+  onDragOver?: (e: React.DragEvent) => void
+  onDrop?: (e: React.DragEvent) => void
 }
 
 type DropdownType = 'status' | 'priority' | 'assignee' | null
 
 
 
-export function TaskRow({ task }: TaskRowProps) {
+export function TaskRow({ task, isDragging, isOver, onDragStart, onDragEnd, onDragEnter, onDragLeave, onDragOver, onDrop }: TaskRowProps) {
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
   const isSelected = searchParams.get('task') === task.id
@@ -116,17 +124,31 @@ export function TaskRow({ task }: TaskRowProps) {
 
   return (
     <tr
-      onClick={handleRowClick}
-      className={`group border-b border-gray-100 cursor-pointer transition-colors ${
+      onClick={isDragging ? undefined : handleRowClick}
+      draggable={!!onDragStart}
+      onDragStart={onDragStart}
+      onDragEnd={onDragEnd}
+      onDragEnter={onDragEnter}
+      onDragLeave={onDragLeave}
+      onDragOver={onDragOver}
+      onDrop={onDrop}
+      className={`group border-b border-gray-100 cursor-pointer transition-all ${
+        isDragging ? 'opacity-40' : ''
+      } ${isOver ? 'border-t-2 border-blue-400' : ''} ${
         isSelected ? 'bg-blue-50' : isCompleted ? 'bg-gray-50/50' : 'hover:bg-gray-50'
       }`}
     >
-      {/* Checkbox */}
+      {/* Checkbox / drag handle */}
       <td className="w-8 px-2 py-0" onClick={handleCheck}>
-        {isCompleted
-          ? <CheckSquare className="w-4 h-4 text-green-500 cursor-pointer" />
-          : <Square className="w-4 h-4 text-gray-300 opacity-0 group-hover:opacity-100 cursor-pointer transition-opacity" />
-        }
+        <div className="flex items-center gap-0.5">
+          {onDragStart && (
+            <GripVertical className="w-3 h-3 text-gray-200 group-hover:text-gray-400 shrink-0 cursor-grab active:cursor-grabbing transition-colors" />
+          )}
+          {isCompleted
+            ? <CheckSquare className="w-4 h-4 text-green-500 cursor-pointer" />
+            : <Square className="w-4 h-4 text-gray-300 opacity-0 group-hover:opacity-100 cursor-pointer transition-opacity" />
+          }
+        </div>
       </td>
 
       {/* Title */}
@@ -214,6 +236,14 @@ export function TaskRow({ task }: TaskRowProps) {
             ? <span className="text-xs text-gray-500 truncate block max-w-xs">{mutation.description ?? task.description}</span>
             : <span className="text-gray-300 text-xs">—</span>
           }
+        </td>
+      )}
+
+      {isColumnVisible('Fecha creación') && (
+        <td className="py-2 px-3 w-32">
+          <span className="text-xs text-gray-400">
+            {new Date(task.createdAt).toLocaleDateString('es-PY', { day: '2-digit', month: '2-digit', year: 'numeric' })}
+          </span>
         </td>
       )}
 

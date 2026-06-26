@@ -70,7 +70,7 @@ interface BoardGroupProps {
 export function BoardGroup({ group, tasks, label, onAddTask, isDragging, isOver, onDragStart, onDragEnd, onDragEnter, onDragLeave, onDragOver, onDrop }: BoardGroupProps) {
   const { toggleGroup, isGroupCollapsed } = useUIStore()
   const { isColumnVisible } = useFilterStore()
-  const { removeGroup, patchGroup } = useBoardStore()
+  const { removeGroup, patchGroup, patchApiTask } = useBoardStore()
   const collapsed = isGroupCollapsed(group.id)
   const displayName = label ?? group.name
   const [adding, setAdding] = useState(false)
@@ -82,6 +82,65 @@ export function BoardGroup({ group, tasks, label, onAddTask, isDragging, isOver,
   const activeTasks = tasks.filter(t => !DONE_STATUSES.has(t.status))
   const completedTasks = tasks.filter(t => DONE_STATUSES.has(t.status))
   const visibleTasks = showCompleted ? tasks : activeTasks
+
+  const [draggingTaskId, setDraggingTaskId] = useState<string | null>(null)
+  const [overTaskId, setOverTaskId] = useState<string | null>(null)
+  const taskDragCounter = useRef<Record<string, number>>({})
+
+  function handleTaskDragStart(e: React.DragEvent, taskId: string) {
+    setDraggingTaskId(taskId)
+    e.dataTransfer.effectAllowed = 'move'
+    e.dataTransfer.setData('taskId', taskId)
+  }
+
+  function handleTaskDragEnd() {
+    setDraggingTaskId(null)
+    setOverTaskId(null)
+    taskDragCounter.current = {}
+  }
+
+  function handleTaskDragEnter(e: React.DragEvent, taskId: string) {
+    e.preventDefault()
+    taskDragCounter.current[taskId] = (taskDragCounter.current[taskId] ?? 0) + 1
+    setOverTaskId(taskId)
+  }
+
+  function handleTaskDragLeave(e: React.DragEvent, taskId: string) {
+    e.preventDefault()
+    taskDragCounter.current[taskId] = (taskDragCounter.current[taskId] ?? 1) - 1
+    if ((taskDragCounter.current[taskId] ?? 0) <= 0) {
+      taskDragCounter.current[taskId] = 0
+      setOverTaskId(prev => prev === taskId ? null : prev)
+    }
+  }
+
+  function handleTaskDragOver(e: React.DragEvent) {
+    e.preventDefault()
+    e.dataTransfer.dropEffect = 'move'
+  }
+
+  function handleTaskDrop(e: React.DragEvent, targetTaskId: string) {
+    e.preventDefault()
+    const sourceId = e.dataTransfer.getData('taskId') || draggingTaskId
+    if (!sourceId || sourceId === targetTaskId) { handleTaskDragEnd(); return }
+
+    const fromIdx = visibleTasks.findIndex(t => t.id === sourceId)
+    const toIdx = visibleTasks.findIndex(t => t.id === targetTaskId)
+    if (fromIdx === -1 || toIdx === -1) { handleTaskDragEnd(); return }
+
+    const snapshot = visibleTasks.map(t => ({ id: t.id, order: t.order }))
+    const reordered = [...visibleTasks]
+    const [moved] = reordered.splice(fromIdx, 1)
+    reordered.splice(toIdx, 0, moved)
+
+    reordered.forEach((t, i) => patchApiTask(t.id, { order: i }))
+
+    api.tasks.reorder(group.id, reordered.map(t => t.id)).catch(() => {
+      snapshot.forEach(({ id, order }) => patchApiTask(id, { order }))
+    })
+
+    handleTaskDragEnd()
+  }
 
   const [menuOpen, setMenuOpen] = useState(false)
   const menuRef = useRef<HTMLDivElement>(null)
@@ -288,14 +347,28 @@ export function BoardGroup({ group, tasks, label, onAddTask, isDragging, isOver,
                 {isColumnVisible('Prioridad')   && <th className="py-2 px-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide w-28">Prioridad</th>}
                 {isColumnVisible('UEN')         && <th className="py-1.5 px-2 text-xs font-medium text-gray-400 uppercase tracking-wide text-left w-28">UEN</th>}
                 {isColumnVisible('Fecha límite') && <th className="py-2 px-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide w-32">Fecha límite</th>}
-                {isColumnVisible('Archivo')     && <th className="py-2 px-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide w-24">Archivo</th>}
-                {isColumnVisible('Texto')       && <th className="py-2 px-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">Texto</th>}
+                {isColumnVisible('Archivo')       && <th className="py-2 px-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide w-24">Archivo</th>}
+                {isColumnVisible('Texto')         && <th className="py-2 px-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">Texto</th>}
+                {isColumnVisible('Fecha creación') && <th className="py-2 px-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide w-32">Creado</th>}
               </tr>
             </thead>
             <tbody className="bg-white">
               {tasks.length === 0
                 ? <tr><td colSpan={colSpan}><EmptyState /></td></tr>
-                : visibleTasks.map(task => <TaskRow key={task.id} task={task} />)
+                : visibleTasks.map(task => (
+                    <TaskRow
+                      key={task.id}
+                      task={task}
+                      isDragging={draggingTaskId === task.id}
+                      isOver={overTaskId === task.id && draggingTaskId !== task.id}
+                      onDragStart={onAddTask ? e => handleTaskDragStart(e, task.id) : undefined}
+                      onDragEnd={onAddTask ? handleTaskDragEnd : undefined}
+                      onDragEnter={onAddTask ? e => handleTaskDragEnter(e, task.id) : undefined}
+                      onDragLeave={onAddTask ? e => handleTaskDragLeave(e, task.id) : undefined}
+                      onDragOver={onAddTask ? handleTaskDragOver : undefined}
+                      onDrop={onAddTask ? e => handleTaskDrop(e, task.id) : undefined}
+                    />
+                  ))
               }
               {completedTasks.length > 0 && (
                 <tr className="border-t border-gray-100">

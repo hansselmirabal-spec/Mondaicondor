@@ -129,7 +129,7 @@ export function BoardTable({ board }: BoardTableProps) {
   }
 
   function sortTasks(tasks: MockTask[]) {
-    if (!sortField) return tasks
+    if (!sortField) return [...tasks].sort((a, b) => a.order - b.order)
     return [...tasks].sort((a, b) => {
       let cmp = 0
       if (sortField === 'title')    cmp = a.title.localeCompare(b.title)
@@ -151,6 +151,7 @@ export function BoardTable({ board }: BoardTableProps) {
         id: tempId, groupId, boardId, title,
         assigneeIds: [], status: 'Nuevo', priority: 'Media',
         deadline, fileUrl: null, text: null, description: '',
+        order: 9999,
         createdAt: now, updatedAt: now,
         uenId: null, uenName: null, uenColor: null,
       })

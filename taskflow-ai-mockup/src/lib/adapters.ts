@@ -34,6 +34,7 @@ export function toMockTask(t: ApiTask): MockTask {
     deadline: t.deadline ? t.deadline.slice(0, 10) : null,
     fileUrl: t.fileUrl,
     text: null,
+    order: t.order ?? 0,
     assigneeIds: t.assignees.map((a) => a.user.id),
     createdAt: t.createdAt,
     updatedAt: t.updatedAt,

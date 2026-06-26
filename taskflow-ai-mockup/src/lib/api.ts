@@ -403,6 +403,12 @@ export const api = {
     move: (taskId: string, groupId: string) =>
       request<{ task: ApiTask }>(`/tasks/${taskId}/move`, { method: 'PATCH', body: JSON.stringify({ groupId }) }),
 
+    reorder: (groupId: string, order: string[]) =>
+      request<{ message: string }>(`/boards/groups/${groupId}/tasks/reorder`, {
+        method: 'PUT',
+        body: JSON.stringify({ order }),
+      }),
+
     addComment: (taskId: string, content: string) =>
       request<{ comment: ApiComment }>(`/tasks/${taskId}/comments`, {
         method: 'POST',
@@ -511,6 +517,7 @@ export interface ApiTask {
   deadline: string | null
   fileUrl: string | null
   createdBy: string | null
+  order: number
   createdAt: string
   updatedAt: string
   assignees: Array<{ user: ApiUser }>

@@ -293,6 +293,26 @@ boardRoutes.delete('/groups/:groupId', async (c) => {
   return c.json({ message: 'Grupo eliminado' })
 })
 
+// ── Reorder tasks within a group ────────────────────────────────────────────
+boardRoutes.put('/groups/:groupId/tasks/reorder', zValidator('json', z.object({ order: z.array(z.string()) })), async (c) => {
+  const { userId } = c.get('user')
+  const { groupId } = c.req.param()
+  const { order } = c.req.valid('json')
+
+  const group = await prisma.group.findUnique({ where: { id: groupId }, include: { board: true } })
+  if (!group) return c.json({ error: 'Grupo no encontrado' }, 404)
+
+  const access = await assertBoardAccess(group.boardId, userId)
+  if (!access) return c.json({ error: 'Sin acceso' }, 403)
+  if (access.wsMembership.role === 'VIEWER') return c.json({ error: 'Sin permisos' }, 403)
+
+  await prisma.$transaction(
+    order.map((id, index) => prisma.task.update({ where: { id }, data: { order: index } }))
+  )
+
+  return c.json({ message: 'Orden actualizado' })
+})
+
 // ── Reorder groups ──────────────────────────────────────────────────────────
 boardRoutes.put('/:boardId/groups/reorder', zValidator('json', z.object({ order: z.array(z.string()) })), async (c) => {
   const { userId } = c.get('user')
