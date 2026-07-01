@@ -19,19 +19,20 @@ export function CommentList({ taskId }: CommentListProps) {
   const comments = allComments.filter(c => c.taskId === taskId)
   const [draft, setDraft] = useState('')
 
-  useEffect(() => {
+  function loadComments() {
     api.tasks.get(taskId)
       .then(({ task }) => {
-        const loaded: MockComment[] = task.comments.map(c => ({
-          id: c.id,
-          taskId,
-          authorId: c.author.id,
-          content: c.content,
-          createdAt: c.createdAt,
-        }))
-        setTaskComments(taskId, loaded)
+        setTaskComments(taskId, task.comments.map(c => ({
+          id: c.id, taskId, authorId: c.author.id, content: c.content, createdAt: c.createdAt,
+        })))
       })
       .catch(() => {})
+  }
+
+  useEffect(() => {
+    loadComments()
+    const poll = setInterval(loadComments, 5_000)
+    return () => clearInterval(poll)
   }, [taskId])
 
   function formatTs(ts: string) {

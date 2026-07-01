@@ -12,7 +12,7 @@ import { api } from '@/lib/api'
 import { toMockBoard, extractTasks, toMockTask } from '@/lib/adapters'
 import type { MockBoard, WorkspaceStatus } from '@/types'
 
-const POLL_INTERVAL_MS = 30_000
+const POLL_INTERVAL_MS = 5_000
 
 export function BoardPage() {
   const { boardId } = useParams<{ boardId: string }>()
