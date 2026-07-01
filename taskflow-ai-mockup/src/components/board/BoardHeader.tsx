@@ -28,10 +28,6 @@ export function BoardHeader({ board }: BoardHeaderProps) {
   const [membersModal, setMembersModal] = useState(false)
   const [allUsers, setAllUsers] = useState<ApiUser[]>([])
   const [loadingMembers, setLoadingMembers] = useState(false)
-  const [showNewForm, setShowNewForm] = useState(false)
-  const [newForm, setNewForm] = useState({ name: '', email: '', password: '', role: 'MEMBER' as 'ADMIN' | 'MEMBER' | 'VIEWER' })
-  const [newFormError, setNewFormError] = useState<string | null>(null)
-  const [savingNew, setSavingNew] = useState(false)
 
   const titleRef = useRef<HTMLDivElement>(null)
   const moreRef = useRef<HTMLDivElement>(null)
@@ -75,9 +71,6 @@ export function BoardHeader({ board }: BoardHeaderProps) {
 
   function closeMembersModal() {
     setMembersModal(false)
-    setShowNewForm(false)
-    setNewForm({ name: '', email: '', password: '', role: 'MEMBER' })
-    setNewFormError(null)
   }
 
   async function handleAddMember(userId: string) {
@@ -100,33 +93,6 @@ export function BoardHeader({ board }: BoardHeaderProps) {
       toast('Miembro eliminado del tablero.', 'success')
     } catch {
       toast('Error al eliminar.', 'error')
-    }
-  }
-
-  async function handleCreateAndAdd() {
-    setSavingNew(true)
-    setNewFormError(null)
-    try {
-      const { member } = await api.admin.createUser(board.workspaceId, {
-        name: newForm.name.trim(),
-        email: newForm.email.trim(),
-        password: newForm.password,
-        role: newForm.role,
-      })
-      await api.boards.addMember(board.id, member.userId)
-      const newUser = {
-        id: member.userId, name: member.user.name, initials: member.user.initials,
-        color: member.user.color, email: member.user.email,
-      }
-      setApiUsers([...apiUsers, newUser])
-      setAllUsers(prev => [...prev, { ...newUser, mustChangePassword: false, isAppAdmin: false }])
-      setNewForm({ name: '', email: '', password: '', role: 'MEMBER' })
-      setShowNewForm(false)
-      toast('Usuario creado y agregado al tablero.', 'success')
-    } catch (err) {
-      setNewFormError((err as Error).message)
-    } finally {
-      setSavingNew(false)
     }
   }
 
@@ -329,70 +295,15 @@ export function BoardHeader({ board }: BoardHeaderProps) {
                 </div>
               )}
 
-              {/* Create new user */}
+              {/* Invite new member */}
               <div className="border-t border-gray-100 pt-4">
-                {showNewForm ? (
-                  <div className="space-y-3">
-                    <p className="text-xs font-semibold text-gray-700 flex items-center gap-1.5">
-                      <UserPlus className="w-3.5 h-3.5" /> Nuevo usuario
-                    </p>
-                    <input
-                      autoFocus
-                      value={newForm.name}
-                      onChange={e => setNewForm(f => ({ ...f, name: e.target.value }))}
-                      placeholder="Nombre completo"
-                      className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    />
-                    <input
-                      type="email"
-                      value={newForm.email}
-                      onChange={e => setNewForm(f => ({ ...f, email: e.target.value }))}
-                      placeholder="Email"
-                      className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    />
-                    <input
-                      type="password"
-                      value={newForm.password}
-                      onChange={e => setNewForm(f => ({ ...f, password: e.target.value }))}
-                      placeholder="Contraseña (mín. 8 caracteres)"
-                      className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    />
-                    <select
-                      value={newForm.role}
-                      onChange={e => setNewForm(f => ({ ...f, role: e.target.value as 'ADMIN' | 'MEMBER' | 'VIEWER' }))}
-                      className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    >
-                      <option value="MEMBER">Miembro</option>
-                      <option value="VIEWER">Visualizador</option>
-                      <option value="ADMIN">Admin</option>
-                    </select>
-                    {newFormError && <p className="text-xs text-red-500">{newFormError}</p>}
-                    <div className="flex gap-2">
-                      <button
-                        onClick={handleCreateAndAdd}
-                        disabled={savingNew || !newForm.name.trim() || !newForm.email.trim() || newForm.password.length < 8}
-                        className="flex-1 py-2 text-sm bg-blue-600 hover:bg-blue-700 disabled:bg-blue-200 text-white font-medium rounded-lg transition-colors flex items-center justify-center gap-2"
-                      >
-                        {savingNew ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <UserPlus className="w-3.5 h-3.5" />}
-                        Crear y agregar al tablero
-                      </button>
-                      <button
-                        onClick={() => { setShowNewForm(false); setNewFormError(null) }}
-                        className="px-3 py-2 text-sm text-gray-500 border border-gray-200 rounded-lg hover:bg-gray-50"
-                      >
-                        <X className="w-4 h-4" />
-                      </button>
-                    </div>
-                  </div>
-                ) : (
-                  <button
-                    onClick={() => setShowNewForm(true)}
-                    className="w-full flex items-center justify-center gap-2 py-2.5 text-sm text-blue-600 border-2 border-dashed border-blue-200 rounded-lg hover:bg-blue-50 hover:border-blue-300 transition-colors"
-                  >
-                    <UserPlus className="w-4 h-4" />
-                    Crear nuevo usuario y agregar al tablero
-                  </button>
-                )}
+                <button
+                  onClick={() => { setMembersModal(false); navigate('/settings/members') }}
+                  className="w-full flex items-center justify-center gap-2 py-2.5 text-sm text-blue-600 border-2 border-dashed border-blue-200 rounded-lg hover:bg-blue-50 hover:border-blue-300 transition-colors"
+                >
+                  <UserPlus className="w-4 h-4" />
+                  Invitar nuevo miembro al workspace
+                </button>
               </div>
             </>
           )}
