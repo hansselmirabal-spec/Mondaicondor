@@ -66,12 +66,12 @@ export function BoardPage() {
             if (activeBoardId.current === boardId) setWorkspaceUens(uens)
           })
           .catch(() => {})
-        api.boards.listMembers(boardId!)
-          .then(({ members }) => {
+        api.users.list()
+          .then(({ users }) => {
             if (activeBoardId.current !== boardId) return
-            setApiUsers(members.map(m => ({
-              id: m.user.id, name: m.user.name, initials: m.user.initials,
-              color: m.user.color, email: m.user.email,
+            setApiUsers(users.map(u => ({
+              id: u.id, name: u.name, initials: u.initials,
+              color: u.color, email: u.email, avatarUrl: u.avatarUrl,
             })))
           })
           .catch(() => {})
