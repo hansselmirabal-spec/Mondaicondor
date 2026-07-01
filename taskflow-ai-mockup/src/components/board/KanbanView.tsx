@@ -7,6 +7,7 @@ import { DeadlineCell } from '@/components/ui/DeadlineCell'
 import { PriorityBadge } from '@/components/ui/PriorityBadge'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { api } from '@/lib/api'
+import { CalendarDays } from 'lucide-react'
 
 interface KanbanCardProps {
   task: MockTask
@@ -51,6 +52,10 @@ function KanbanCard({ task, isDragging, onDragStart, onDragEnd }: KanbanCardProp
           <PriorityBadge priority={priority} />
         </div>
       )}
+      <div className="mt-2 flex items-center gap-1 text-[10px] text-gray-400">
+        <CalendarDays className="w-3 h-3" />
+        {new Date(task.createdAt).toLocaleDateString('es-PY', { day: '2-digit', month: '2-digit', year: 'numeric' })}
+      </div>
     </div>
   )
 }
