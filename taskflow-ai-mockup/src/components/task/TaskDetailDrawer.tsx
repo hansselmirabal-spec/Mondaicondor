@@ -1,4 +1,4 @@
-import { X, Calendar, Flag, User, FileText, MessageSquare, Clock, ChevronDown, Plus, UserMinus, Pencil, History, Trash2, UserPlus, Loader2, ArrowRightLeft } from 'lucide-react'
+import { X, Calendar, Flag, User, FileText, MessageSquare, Clock, ChevronDown, Plus, UserMinus, Pencil, History, Trash2, ArrowRightLeft } from 'lucide-react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { useState, useEffect, useRef } from 'react'
 import { useBoardStore } from '@/store/boardStore'
@@ -77,7 +77,6 @@ export function TaskDetailDrawer() {
   const apiTasks = useBoardStore(state => state.apiTasks)
   const apiUsers = useBoardStore(state => state.apiUsers)
   const setApiUsers = useBoardStore(state => state.setApiUsers)
-  const boards = useBoardStore(state => state.boards)
   const workspaceUens = useBoardStore(state => state.workspaceUens)
   const patchApiTask = useBoardStore(state => state.patchApiTask)
   const task = taskId ? (apiTasks.find(t => t.id === taskId) ?? newTasks.find(t => t.id === taskId) ?? null) : null
@@ -89,13 +88,13 @@ export function TaskDetailDrawer() {
   const setDeadline = useBoardStore(state => state.setDeadline)
   const deadlineHistory = useBoardStore(state => task ? (state.deadlineHistory[task.id] ?? []) : [])
 
-  // Load board members if the store is empty (e.g. direct URL open or navigation from outside board)
+  // Load workspace members if the store is empty (e.g. direct URL open or navigation from outside board)
   useEffect(() => {
     if (!task || apiUsers.length > 0) return
-    api.boards.listMembers(task.boardId)
-      .then(({ members }) => setApiUsers(members.map(m => ({
-        id: m.user.id, name: m.user.name, initials: m.user.initials,
-        color: m.user.color, email: m.user.email,
+    api.users.list()
+      .then(({ users }) => setApiUsers(users.map(u => ({
+        id: u.id, name: u.name, initials: u.initials,
+        color: u.color, email: u.email, avatarUrl: u.avatarUrl,
       }))))
       .catch(() => {})
   }, [task?.id, apiUsers.length])
@@ -110,17 +109,8 @@ export function TaskDetailDrawer() {
   const [showMoveModal, setShowMoveModal] = useState(false)
   const pickerRef = useRef<HTMLDivElement>(null)
 
-  const [showNewUserForm, setShowNewUserForm] = useState(false)
-  const [newUserForm, setNewUserForm] = useState({ name: '', email: '', password: '', role: 'MEMBER' as 'ADMIN' | 'MEMBER' | 'VIEWER' })
-  const [newUserError, setNewUserError] = useState<string | null>(null)
-  const [savingNewUser, setSavingNewUser] = useState(false)
-
   useEffect(() => {
-    if (!assigneePicker) {
-      setShowNewUserForm(false)
-      setNewUserError(null)
-      return
-    }
+    if (!assigneePicker) return
     function handleClick(e: MouseEvent) {
       if (pickerRef.current && !pickerRef.current.contains(e.target as Node)) setAssigneePicker(false)
     }
@@ -195,39 +185,6 @@ export function TaskDetailDrawer() {
     updateTask(task.id, { description: descDraft })
     setEditingDesc(false)
     api.tasks.update(task.id, { description: descDraft }).catch(console.error)
-  }
-
-  async function createAndAssign() {
-    if (!task) return
-    const board = boards.find(b => b.id === task.boardId)
-    if (!board?.workspaceId) return
-    setSavingNewUser(true)
-    setNewUserError(null)
-    try {
-      const { member } = await api.admin.createUser(board.workspaceId, {
-        name: newUserForm.name.trim(),
-        email: newUserForm.email.trim(),
-        password: newUserForm.password,
-        role: newUserForm.role,
-      })
-      // Add to board so they appear in future assignee pickers
-      await api.boards.addMember(task.boardId, member.userId)
-      const newUser = {
-        id: member.userId,
-        name: member.user.name,
-        initials: member.user.initials,
-        color: member.user.color,
-        email: member.user.email,
-      }
-      setApiUsers([...apiUsers, newUser])
-      addAssignee(member.userId)
-      setShowNewUserForm(false)
-      setNewUserForm({ name: '', email: '', password: '', role: 'MEMBER' })
-    } catch (err) {
-      setNewUserError((err as Error).message)
-    } finally {
-      setSavingNewUser(false)
-    }
   }
 
   async function handleDeleteTask() {
@@ -306,7 +263,7 @@ export function TaskDetailDrawer() {
                 <div className="absolute top-full left-0 mt-1 z-50 bg-white border border-gray-200 rounded-xl shadow-xl w-60 overflow-hidden">
                   <p className="text-xs font-semibold text-gray-500 px-3 py-2 border-b border-gray-100">Responsables</p>
 
-                  {apiUsers.length === 0 && !showNewUserForm && (
+                  {apiUsers.length === 0 && (
                     <p className="text-xs text-gray-400 px-3 py-2 italic">Sin miembros disponibles</p>
                   )}
 
@@ -328,70 +285,6 @@ export function TaskDetailDrawer() {
                     )
                   })}
 
-                  <div className="border-t border-gray-100">
-                    {showNewUserForm ? (
-                      <div className="p-3 space-y-2">
-                        <p className="text-xs font-semibold text-gray-700 flex items-center gap-1">
-                          <UserPlus className="w-3 h-3" /> Nuevo usuario
-                        </p>
-                        <input
-                          autoFocus
-                          value={newUserForm.name}
-                          onChange={e => setNewUserForm(f => ({ ...f, name: e.target.value }))}
-                          placeholder="Nombre completo"
-                          className="w-full px-2 py-1.5 text-xs border border-gray-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-400"
-                        />
-                        <input
-                          type="email"
-                          value={newUserForm.email}
-                          onChange={e => setNewUserForm(f => ({ ...f, email: e.target.value }))}
-                          placeholder="Email"
-                          className="w-full px-2 py-1.5 text-xs border border-gray-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-400"
-                        />
-                        <input
-                          type="password"
-                          value={newUserForm.password}
-                          onChange={e => setNewUserForm(f => ({ ...f, password: e.target.value }))}
-                          placeholder="Contraseña (mín. 8 chars)"
-                          className="w-full px-2 py-1.5 text-xs border border-gray-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-400"
-                        />
-                        <select
-                          value={newUserForm.role}
-                          onChange={e => setNewUserForm(f => ({ ...f, role: e.target.value as 'ADMIN' | 'MEMBER' | 'VIEWER' }))}
-                          className="w-full px-2 py-1.5 text-xs border border-gray-200 rounded-lg bg-white focus:outline-none focus:ring-1 focus:ring-blue-400"
-                        >
-                          <option value="MEMBER">Miembro</option>
-                          <option value="VIEWER">Visualizador</option>
-                          <option value="ADMIN">Admin</option>
-                        </select>
-                        {newUserError && <p className="text-[10px] text-red-500">{newUserError}</p>}
-                        <div className="flex gap-1.5">
-                          <button
-                            onClick={createAndAssign}
-                            disabled={savingNewUser || !newUserForm.name.trim() || !newUserForm.email.trim() || newUserForm.password.length < 8}
-                            className="flex-1 py-1.5 text-xs bg-blue-600 hover:bg-blue-700 disabled:bg-blue-200 text-white font-medium rounded-lg transition-colors flex items-center justify-center gap-1"
-                          >
-                            {savingNewUser ? <Loader2 className="w-3 h-3 animate-spin" /> : <UserPlus className="w-3 h-3" />}
-                            Crear y asignar
-                          </button>
-                          <button
-                            onClick={() => { setShowNewUserForm(false); setNewUserError(null) }}
-                            className="px-2 py-1.5 text-xs text-gray-500 border border-gray-200 rounded-lg hover:bg-gray-50"
-                          >
-                            ✕
-                          </button>
-                        </div>
-                      </div>
-                    ) : (
-                      <button
-                        onClick={() => setShowNewUserForm(true)}
-                        className="w-full flex items-center gap-2 px-3 py-2 text-xs text-blue-600 hover:bg-blue-50 transition-colors"
-                      >
-                        <UserPlus className="w-3.5 h-3.5" />
-                        Nuevo usuario
-                      </button>
-                    )}
-                  </div>
                 </div>
               )}
             </div>
