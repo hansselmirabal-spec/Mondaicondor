@@ -101,9 +101,9 @@ export function FloatingActions() {
   const [soonTitle, setSoonTitle] = useState('')
   const [searchParams] = useSearchParams()
 
-  // Move away from drawer (480px wide) when task or panel is open
+  // Move away from drawer (480px wide) when task or panel is open (desktop only)
   const drawerOpen = !!searchParams.get('task') || !!searchParams.get('panel')
-  const positionClass = drawerOpen ? 'right-[500px]' : 'right-6'
+  const rightClass = drawerOpen ? 'right-6 md:right-[500px]' : 'right-6'
 
   function openSoon(title: string) {
     setSoonTitle(title)
@@ -112,7 +112,7 @@ export function FloatingActions() {
 
   return (
     <>
-      <div className={`fixed bottom-6 flex flex-col items-end gap-2 z-[60] transition-all duration-300 ${positionClass}`}>
+      <div className={`fixed bottom-[calc(3.5rem+1.5rem)] md:bottom-6 flex flex-col items-end gap-2 z-[60] transition-all duration-300 ${rightClass}`}>
         <button
           onClick={() => openSoon('Ayuda contextual')}
           title="Ayuda"

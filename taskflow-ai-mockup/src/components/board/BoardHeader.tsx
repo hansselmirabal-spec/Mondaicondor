@@ -180,37 +180,39 @@ export function BoardHeader({ board }: BoardHeaderProps) {
         </div>
 
         <div className="flex items-center gap-1">
-          <button onClick={() => openPanel('automations')} className="flex items-center gap-1 px-2 py-1.5 text-sm text-gray-600 hover:bg-gray-50 rounded-md transition-colors">
-            <Zap className="w-3.5 h-3.5 text-orange-500" />
-            <span>Automatizaciones</span>
-          </button>
-          <div className="w-px h-5 bg-gray-200 mx-1" />
-          <button
-            onClick={openMembersModal}
-            className="flex items-center gap-1.5 px-2 py-1.5 text-sm text-gray-600 hover:bg-gray-50 rounded-md border border-gray-200 transition-colors"
-          >
-            <Users className="w-3.5 h-3.5" />
-            <span>Personas</span>
-            {apiUsers.length > 0 && (
-              <span className="bg-blue-100 text-blue-700 text-xs font-semibold rounded-full px-1.5 py-0.5 leading-none">
-                {apiUsers.length}
-              </span>
-            )}
-          </button>
-          <button
-            onClick={() => toast('Enlace copiado al portapapeles.', 'success')}
-            title="Compartir tablero"
-            className="p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-50 rounded-md transition-colors"
-          >
-            <Share2 className="w-4 h-4" />
-          </button>
-          <button
-            onClick={() => toast('Enlace copiado al portapapeles.', 'success')}
-            title="Copiar enlace"
-            className="p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-50 rounded-md transition-colors"
-          >
-            <Link2 className="w-4 h-4" />
-          </button>
+          <div className="hidden md:flex items-center gap-1">
+            <button onClick={() => openPanel('automations')} className="flex items-center gap-1 px-2 py-1.5 text-sm text-gray-600 hover:bg-gray-50 rounded-md transition-colors">
+              <Zap className="w-3.5 h-3.5 text-orange-500" />
+              <span>Automatizaciones</span>
+            </button>
+            <div className="w-px h-5 bg-gray-200 mx-1" />
+            <button
+              onClick={openMembersModal}
+              className="flex items-center gap-1.5 px-2 py-1.5 text-sm text-gray-600 hover:bg-gray-50 rounded-md border border-gray-200 transition-colors"
+            >
+              <Users className="w-3.5 h-3.5" />
+              <span>Personas</span>
+              {apiUsers.length > 0 && (
+                <span className="bg-blue-100 text-blue-700 text-xs font-semibold rounded-full px-1.5 py-0.5 leading-none">
+                  {apiUsers.length}
+                </span>
+              )}
+            </button>
+            <button
+              onClick={() => toast('Enlace copiado al portapapeles.', 'success')}
+              title="Compartir tablero"
+              className="p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-50 rounded-md transition-colors"
+            >
+              <Share2 className="w-4 h-4" />
+            </button>
+            <button
+              onClick={() => toast('Enlace copiado al portapapeles.', 'success')}
+              title="Copiar enlace"
+              className="p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-50 rounded-md transition-colors"
+            >
+              <Link2 className="w-4 h-4" />
+            </button>
+          </div>
           <div ref={moreRef} className="relative">
             <button
               onClick={() => setMoreMenuOpen(o => !o)}
