@@ -278,6 +278,10 @@ export function MisTareasPage() {
       .then(({ tasks }) => setTasks(tasks))
       .catch(() => toast('Error al cargar tus tareas', 'error'))
       .finally(() => setLoading(false))
+    const poll = setInterval(() => {
+      api.tasks.mine().then(({ tasks }) => setTasks(tasks)).catch(() => {})
+    }, 5_000)
+    return () => clearInterval(poll)
   }, [])
 
   function handleStatusChange(taskId: string, status: string) {
