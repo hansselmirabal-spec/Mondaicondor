@@ -28,6 +28,9 @@ export function BoardHeader({ board }: BoardHeaderProps) {
   const [membersModal, setMembersModal] = useState(false)
   const [allUsers, setAllUsers] = useState<ApiUser[]>([])
   const [loadingMembers, setLoadingMembers] = useState(false)
+  const [inviteEmail, setInviteEmail] = useState('')
+  const [inviteRole, setInviteRole] = useState<'ADMIN' | 'MEMBER' | 'VIEWER'>('MEMBER')
+  const [inviting, setInviting] = useState(false)
 
   const titleRef = useRef<HTMLDivElement>(null)
   const moreRef = useRef<HTMLDivElement>(null)
@@ -71,6 +74,23 @@ export function BoardHeader({ board }: BoardHeaderProps) {
 
   function closeMembersModal() {
     setMembersModal(false)
+    setInviteEmail('')
+    setInviteRole('MEMBER')
+  }
+
+  async function handleInvite() {
+    if (!inviteEmail.includes('@')) return
+    setInviting(true)
+    try {
+      await api.workspaces.addMember(board.workspaceId, { email: inviteEmail.trim(), role: inviteRole, sendEmail: true })
+      toast(`Invitación enviada a ${inviteEmail}`, 'success')
+      setInviteEmail('')
+      setInviteRole('MEMBER')
+    } catch (err) {
+      toast((err as Error).message ?? 'Error al enviar invitación', 'error')
+    } finally {
+      setInviting(false)
+    }
   }
 
   async function handleAddMember(userId: string) {
@@ -296,13 +316,34 @@ export function BoardHeader({ board }: BoardHeaderProps) {
               )}
 
               {/* Invite new member */}
-              <div className="border-t border-gray-100 pt-4">
-                <button
-                  onClick={() => { setMembersModal(false); navigate('/settings/members') }}
-                  className="w-full flex items-center justify-center gap-2 py-2.5 text-sm text-blue-600 border-2 border-dashed border-blue-200 rounded-lg hover:bg-blue-50 hover:border-blue-300 transition-colors"
+              <div className="border-t border-gray-100 pt-4 space-y-3">
+                <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide flex items-center gap-1.5">
+                  <UserPlus className="w-3.5 h-3.5" /> Invitar miembro
+                </p>
+                <p className="text-xs text-gray-400">Se generará un link de invitación y se enviará un email.</p>
+                <input
+                  type="email"
+                  value={inviteEmail}
+                  onChange={e => setInviteEmail(e.target.value)}
+                  placeholder="nuevo@empresa.com"
+                  className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+                <select
+                  value={inviteRole}
+                  onChange={e => setInviteRole(e.target.value as 'ADMIN' | 'MEMBER' | 'VIEWER')}
+                  className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
                 >
-                  <UserPlus className="w-4 h-4" />
-                  Invitar nuevo miembro al workspace
+                  <option value="MEMBER">Miembro</option>
+                  <option value="VIEWER">Visualizador</option>
+                  <option value="ADMIN">Admin</option>
+                </select>
+                <button
+                  onClick={handleInvite}
+                  disabled={inviting || !inviteEmail.includes('@')}
+                  className="w-full py-2.5 text-sm bg-blue-600 hover:bg-blue-700 disabled:bg-blue-200 text-white font-medium rounded-lg transition-colors flex items-center justify-center gap-2"
+                >
+                  {inviting ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <UserPlus className="w-3.5 h-3.5" />}
+                  Generar invitación y enviar correo
                 </button>
               </div>
             </>
