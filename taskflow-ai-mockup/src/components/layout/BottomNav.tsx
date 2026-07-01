@@ -1,4 +1,4 @@
-import { LayoutGrid, Bell, Settings, ShieldCheck } from 'lucide-react'
+import { LayoutGrid, Bell, Settings, ShieldCheck, ClipboardList, BarChart2 } from 'lucide-react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { useState, useCallback, useEffect } from 'react'
 import { useAuthStore } from '@/store/authStore'
@@ -25,6 +25,8 @@ export function BottomNav() {
   }, [user, fetchUnread])
 
   const isBoards = location.pathname.startsWith('/boards')
+  const isMisTareas = location.pathname === '/mis-tareas'
+  const isGerencia = location.pathname === '/gerencia'
   const isSettings = location.pathname.startsWith('/settings')
   const isAdmin = location.pathname.startsWith('/system-admin')
 
@@ -54,6 +56,18 @@ export function BottomNav() {
           label="Alertas"
           active={false}
           onClick={() => navigate('/settings/email-alerts')}
+        />
+        <NavBtn
+          icon={<ClipboardList className="w-5 h-5" />}
+          label="Mis tareas"
+          active={isMisTareas}
+          onClick={() => navigate('/mis-tareas')}
+        />
+        <NavBtn
+          icon={<BarChart2 className="w-5 h-5" />}
+          label="Gerencia"
+          active={isGerencia}
+          onClick={() => navigate('/gerencia')}
         />
         <NavBtn
           icon={<Settings className="w-5 h-5" />}
