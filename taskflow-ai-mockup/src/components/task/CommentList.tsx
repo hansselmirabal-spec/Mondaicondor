@@ -1,5 +1,5 @@
 import { Send } from 'lucide-react'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useBoardStore } from '@/store/boardStore'
 import { useAuthStore } from '@/store/authStore'
 import { AssigneeAvatar } from '@/components/ui/AssigneeAvatar'
@@ -13,10 +13,26 @@ interface CommentListProps {
 export function CommentList({ taskId }: CommentListProps) {
   const allComments = useBoardStore(state => state.comments)
   const addComment = useBoardStore(state => state.addComment)
+  const setTaskComments = useBoardStore(state => state.setTaskComments)
   const apiUsers = useBoardStore(state => state.apiUsers)
   const currentUser = useAuthStore(state => state.user)
   const comments = allComments.filter(c => c.taskId === taskId)
   const [draft, setDraft] = useState('')
+
+  useEffect(() => {
+    api.tasks.get(taskId)
+      .then(({ task }) => {
+        const loaded: MockComment[] = task.comments.map(c => ({
+          id: c.id,
+          taskId,
+          authorId: c.author.id,
+          content: c.content,
+          createdAt: c.createdAt,
+        }))
+        setTaskComments(taskId, loaded)
+      })
+      .catch(() => {})
+  }, [taskId])
 
   function formatTs(ts: string) {
     return new Date(ts).toLocaleString('es-PY', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })
@@ -35,7 +51,11 @@ export function CommentList({ taskId }: CommentListProps) {
     }
     addComment(tempComment)
     try {
-      await api.tasks.addComment(taskId, text)
+      const { comment } = await api.tasks.addComment(taskId, text)
+      setTaskComments(taskId, [
+        ...allComments.filter(c => c.taskId === taskId && c.id !== tempComment.id),
+        { id: comment.id, taskId, authorId: comment.author.id, content: comment.content, createdAt: comment.createdAt },
+      ])
     } catch {
       console.error('Error guardando comentario')
     }

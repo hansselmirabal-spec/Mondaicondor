@@ -47,6 +47,7 @@ interface BoardStore {
 
   comments: MockComment[]
   addComment: (comment: MockComment) => void
+  setTaskComments: (taskId: string, comments: MockComment[]) => void
 
   workspaces: Array<{ id: string; name: string; color: string }>
   setWorkspaces: (list: Array<{ id: string; name: string; color: string }>) => void
@@ -125,6 +126,9 @@ export const useBoardStore = create<BoardStore>((set, get) => ({
 
   comments: [...mockComments],
   addComment: comment => set(state => ({ comments: [...state.comments, comment] })),
+  setTaskComments: (taskId, incoming) => set(state => ({
+    comments: [...state.comments.filter(c => c.taskId !== taskId), ...incoming],
+  })),
 
   workspaces: [],
   setWorkspaces: list => set({ workspaces: list }),
