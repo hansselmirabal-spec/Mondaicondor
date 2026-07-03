@@ -459,12 +459,22 @@ export function BoardGroup({ group, tasks, label, onAddTask, isDragging, isOver,
                     className="py-2 px-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide cursor-grab active:cursor-grabbing select-none"
                   >
                     {col === 'Fecha creación' ? 'Creado' : col}
+                    {/* resize handle — right edge of this column */}
                     <div
                       className="absolute right-0 top-0 h-full w-1.5 cursor-col-resize hover:bg-blue-400 opacity-0 hover:opacity-100 transition-opacity"
                       onMouseDown={e => startResize(e, col)}
                       draggable={false}
                       onClick={e => e.stopPropagation()}
                     />
+                    {/* resize handle — left edge (resizes the previous column) */}
+                    {orderedVisible.indexOf(col) > 0 && (
+                      <div
+                        className="absolute left-0 top-0 h-full w-1.5 cursor-col-resize hover:bg-blue-400 opacity-0 hover:opacity-100 transition-opacity"
+                        onMouseDown={e => startResize(e, orderedVisible[orderedVisible.indexOf(col) - 1])}
+                        draggable={false}
+                        onClick={e => e.stopPropagation()}
+                      />
+                    )}
                   </th>
                 ))}
               </tr>
