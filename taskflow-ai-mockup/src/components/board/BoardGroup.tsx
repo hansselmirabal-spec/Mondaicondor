@@ -353,21 +353,8 @@ export function BoardGroup({ group, tasks, label, onAddTask, isDragging, isOver,
         <>
         {/* ── Mobile card list ── */}
         <div className="block md:hidden rounded-sm border border-gray-100" style={{ borderLeft: `4px solid ${group.color}` }}>
-          {tasks.length === 0
-            ? <div className="p-4"><EmptyState /></div>
-            : visibleTasks.map(task => <TaskMobileCard key={task.id} task={task} />)
-          }
-          {completedTasks.length > 0 && (
-            <button
-              onClick={() => setShowCompleted(v => !v)}
-              className="flex items-center gap-2 px-4 py-2.5 w-full text-xs text-gray-400 hover:text-gray-600 hover:bg-gray-50 transition-colors border-t border-gray-100"
-            >
-              {showCompleted ? <EyeOff className="w-3.5 h-3.5 shrink-0" /> : <Eye className="w-3.5 h-3.5 shrink-0" />}
-              <span>{showCompleted ? 'Ocultar' : 'Ver'} {completedTasks.length} completada{completedTasks.length !== 1 ? 's' : ''}</span>
-            </button>
-          )}
           {adding ? (
-            <div className="p-3 border-t border-gray-100 bg-blue-50/40">
+            <div className="p-3 border-b border-gray-100 bg-blue-50/40">
               <input
                 ref={inputRef}
                 value={newTitle}
@@ -388,10 +375,23 @@ export function BoardGroup({ group, tasks, label, onAddTask, isDragging, isOver,
           ) : (
             <button
               onClick={() => setAdding(true)}
-              className="flex items-center gap-1 px-4 py-3 text-sm text-gray-400 hover:text-gray-600 hover:bg-gray-50 w-full transition-colors border-t border-gray-100"
+              className="flex items-center gap-1 px-4 py-3 text-sm text-gray-400 hover:text-gray-600 hover:bg-gray-50 w-full transition-colors border-b border-gray-100"
             >
               <Plus className="w-3.5 h-3.5" />
               <span>Agregar elemento</span>
+            </button>
+          )}
+          {tasks.length === 0
+            ? <div className="p-4"><EmptyState /></div>
+            : visibleTasks.map(task => <TaskMobileCard key={task.id} task={task} />)
+          }
+          {completedTasks.length > 0 && (
+            <button
+              onClick={() => setShowCompleted(v => !v)}
+              className="flex items-center gap-2 px-4 py-2.5 w-full text-xs text-gray-400 hover:text-gray-600 hover:bg-gray-50 transition-colors border-t border-gray-100"
+            >
+              {showCompleted ? <EyeOff className="w-3.5 h-3.5 shrink-0" /> : <Eye className="w-3.5 h-3.5 shrink-0" />}
+              <span>{showCompleted ? 'Ocultar' : 'Ver'} {completedTasks.length} completada{completedTasks.length !== 1 ? 's' : ''}</span>
             </button>
           )}
         </div>
@@ -421,6 +421,67 @@ export function BoardGroup({ group, tasks, label, onAddTask, isDragging, isOver,
               </tr>
             </thead>
             <tbody className="bg-white">
+              {adding ? (
+                <tr className="border-b border-gray-100 bg-blue-50/40">
+                  <td className="w-8 px-2" />
+                  <td className="py-1.5 px-3">
+                    <div className="flex items-center gap-2">
+                      <input
+                        ref={inputRef}
+                        value={newTitle}
+                        onChange={e => setNewTitle(e.target.value)}
+                        onKeyDown={handleAddKeyDown}
+                        placeholder="Nombre del elemento..."
+                        className="flex-1 text-sm text-gray-800 bg-white border border-blue-400 rounded-md px-2 py-1 focus:outline-none focus:ring-2 focus:ring-blue-400 min-w-[180px]"
+                      />
+                      <button
+                        onClick={commitAdd}
+                        disabled={!newTitle.trim()}
+                        className="p-1 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-200 text-white rounded-md transition-colors"
+                        title="Confirmar (Enter)"
+                      >
+                        <Check className="w-3.5 h-3.5" />
+                      </button>
+                      <button
+                        onClick={() => { setNewTitle(''); setNewDeadline(''); setAdding(false) }}
+                        className="p-1 text-gray-400 hover:text-gray-600 hover:bg-gray-200 rounded-md transition-colors"
+                        title="Cancelar (Esc)"
+                      >
+                        <X className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                  </td>
+                  {isColumnVisible('Responsable') && <td className="w-28" />}
+                  {isColumnVisible('Estado') && <td className="w-32" />}
+                  {isColumnVisible('Prioridad') && <td className="w-28" />}
+                  {isColumnVisible('UEN') && <td className="w-28" />}
+                  {isColumnVisible('Fecha límite') && (
+                    <td className="py-1.5 px-2 w-32">
+                      <input
+                        type="date"
+                        value={newDeadline}
+                        onChange={e => setNewDeadline(e.target.value)}
+                        onKeyDown={handleAddKeyDown}
+                        className="w-full text-xs text-gray-700 bg-white border border-gray-300 rounded-md px-2 py-1 focus:outline-none focus:border-blue-400 focus:ring-1 focus:ring-blue-400"
+                      />
+                    </td>
+                  )}
+                  {isColumnVisible('Archivo') && <td className="w-24" />}
+                  {isColumnVisible('Texto') && <td />}
+                </tr>
+              ) : (
+                <tr className="border-b border-gray-100">
+                  <td colSpan={colSpan}>
+                    <button
+                      onClick={() => setAdding(true)}
+                      className="flex items-center gap-1 px-4 py-2 text-sm text-gray-400 hover:text-gray-600 hover:bg-gray-50 w-full transition-colors"
+                    >
+                      <Plus className="w-3.5 h-3.5" />
+                      <span>Agregar elemento</span>
+                    </button>
+                  </td>
+                </tr>
+              )}
               {tasks.length === 0
                 ? (
                   <tr>
@@ -470,73 +531,6 @@ export function BoardGroup({ group, tasks, label, onAddTask, isDragging, isOver,
                     <div className="border-2 border-dashed border-blue-400 rounded-lg py-2 text-center text-xs text-blue-500 font-medium">
                       Soltar aquí
                     </div>
-                  </td>
-                </tr>
-              )}
-              {adding ? (
-                <tr className="border-t border-gray-100 bg-blue-50/40">
-                  <td className="w-8 px-2" />
-                  {/* Title */}
-                  <td className="py-1.5 px-3">
-                    <div className="flex items-center gap-2">
-                      <input
-                        ref={inputRef}
-                        value={newTitle}
-                        onChange={e => setNewTitle(e.target.value)}
-                        onKeyDown={handleAddKeyDown}
-                        placeholder="Nombre del elemento..."
-                        className="flex-1 text-sm text-gray-800 bg-white border border-blue-400 rounded-md px-2 py-1 focus:outline-none focus:ring-2 focus:ring-blue-400 min-w-[180px]"
-                      />
-                      <button
-                        onClick={commitAdd}
-                        disabled={!newTitle.trim()}
-                        className="p-1 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-200 text-white rounded-md transition-colors"
-                        title="Confirmar (Enter)"
-                      >
-                        <Check className="w-3.5 h-3.5" />
-                      </button>
-                      <button
-                        onClick={() => { setNewTitle(''); setNewDeadline(''); setAdding(false) }}
-                        className="p-1 text-gray-400 hover:text-gray-600 hover:bg-gray-200 rounded-md transition-colors"
-                        title="Cancelar (Esc)"
-                      >
-                        <X className="w-3.5 h-3.5" />
-                      </button>
-                    </div>
-                  </td>
-                  {/* Responsable — empty on creation */}
-                  {isColumnVisible('Responsable') && <td className="w-28" />}
-                  {/* Estado — empty on creation */}
-                  {isColumnVisible('Estado') && <td className="w-32" />}
-                  {/* Prioridad — empty on creation */}
-                  {isColumnVisible('Prioridad') && <td className="w-28" />}
-                  {/* UEN — empty on creation */}
-                  {isColumnVisible('UEN') && <td className="w-28" />}
-                  {/* Fecha límite — input aligned with column */}
-                  {isColumnVisible('Fecha límite') && (
-                    <td className="py-1.5 px-2 w-32">
-                      <input
-                        type="date"
-                        value={newDeadline}
-                        onChange={e => setNewDeadline(e.target.value)}
-                        onKeyDown={handleAddKeyDown}
-                        className="w-full text-xs text-gray-700 bg-white border border-gray-300 rounded-md px-2 py-1 focus:outline-none focus:border-blue-400 focus:ring-1 focus:ring-blue-400"
-                      />
-                    </td>
-                  )}
-                  {isColumnVisible('Archivo') && <td className="w-24" />}
-                  {isColumnVisible('Texto') && <td />}
-                </tr>
-              ) : (
-                <tr className="border-t border-gray-100">
-                  <td colSpan={colSpan}>
-                    <button
-                      onClick={() => setAdding(true)}
-                      className="flex items-center gap-1 px-4 py-2 text-sm text-gray-400 hover:text-gray-600 hover:bg-gray-50 w-full transition-colors"
-                    >
-                      <Plus className="w-3.5 h-3.5" />
-                      <span>Agregar elemento</span>
-                    </button>
                   </td>
                 </tr>
               )}
