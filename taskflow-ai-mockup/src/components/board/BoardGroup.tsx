@@ -94,6 +94,7 @@ export function BoardGroup({ group, tasks, label, onAddTask, isDragging, isOver,
   }
 
   function handleTaskDragStart(e: React.DragEvent, taskId: string) {
+    e.stopPropagation()
     setDraggingTaskId(taskId)
     e.dataTransfer.effectAllowed = 'move'
     e.dataTransfer.setData('taskId', taskId)
