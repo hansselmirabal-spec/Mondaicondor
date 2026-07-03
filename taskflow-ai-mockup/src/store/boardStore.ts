@@ -32,6 +32,10 @@ interface BoardStore {
   addTask: (task: MockTask) => void
   removeTask: (taskId: string) => void
 
+  pendingMoves: Record<string, string>
+  setPendingMove: (taskId: string, groupId: string) => void
+  clearPendingMove: (taskId: string) => void
+
   apiTasks: MockTask[]
   setApiTasks: (tasks: MockTask[]) => void
   patchApiTask: (taskId: string, patch: Partial<MockTask>) => void
@@ -106,9 +110,18 @@ export const useBoardStore = create<BoardStore>((set, get) => ({
     apiTasks: state.apiTasks.filter(t => t.id !== taskId),
   })),
 
+  pendingMoves: {},
+  setPendingMove: (taskId, groupId) => set(state => ({
+    pendingMoves: { ...state.pendingMoves, [taskId]: groupId },
+  })),
+  clearPendingMove: taskId => set(state => {
+    const { [taskId]: _, ...rest } = state.pendingMoves
+    return { pendingMoves: rest }
+  }),
+
   apiTasks: [],
   setApiTasks: tasks => set(state => ({
-    apiTasks: tasks,
+    apiTasks: tasks.map(t => state.pendingMoves[t.id] ? { ...t, groupId: state.pendingMoves[t.id] } : t),
     newTasks: state.newTasks.filter(t => !tasks.some(at => at.id === t.id)),
   })),
   patchApiTask: (taskId, patch) => set(state => ({
