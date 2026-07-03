@@ -79,6 +79,7 @@ export function TaskDetailDrawer() {
   const setApiUsers = useBoardStore(state => state.setApiUsers)
   const workspaceUens = useBoardStore(state => state.workspaceUens)
   const patchApiTask = useBoardStore(state => state.patchApiTask)
+  const boards = useBoardStore(state => state.boards)
   const task = taskId ? (apiTasks.find(t => t.id === taskId) ?? newTasks.find(t => t.id === taskId) ?? null) : null
 
   const currentUser = useAuthStore(state => state.user)
@@ -386,6 +387,30 @@ export function TaskDetailDrawer() {
               />
             </div>
 
+            {(() => {
+              const board = boards.find(b => b.id === task.boardId)
+              return board && board.groups.length > 1 ? (
+                <div className="col-span-2">
+                  <p className="text-xs text-gray-400 font-medium mb-1">Grupo</p>
+                  <select
+                    value={task.groupId}
+                    onChange={e => {
+                      const newGroupId = e.target.value
+                      if (newGroupId === task.groupId) return
+                      patchApiTask(task.id, { groupId: newGroupId })
+                      api.tasks.move(task.id, newGroupId).catch(() => {
+                        patchApiTask(task.id, { groupId: task.groupId })
+                      })
+                    }}
+                    className="w-full text-xs border border-gray-200 rounded-lg px-2 py-1.5 bg-white focus:outline-none focus:ring-2 focus:ring-blue-400"
+                  >
+                    {board.groups.map(g => (
+                      <option key={g.id} value={g.id}>{g.name}</option>
+                    ))}
+                  </select>
+                </div>
+              ) : null
+            })()}
             {workspaceUens.length > 0 && (
               <div className="col-span-2">
                 <p className="text-xs text-gray-400 font-medium mb-1">UEN</p>

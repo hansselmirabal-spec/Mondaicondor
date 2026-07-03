@@ -86,6 +86,12 @@ export function BoardGroup({ group, tasks, label, onAddTask, isDragging, isOver,
   const [draggingTaskId, setDraggingTaskId] = useState<string | null>(null)
   const [overTaskId, setOverTaskId] = useState<string | null>(null)
   const taskDragCounter = useRef<Record<string, number>>({})
+  const [isGroupDragOver, setIsGroupDragOver] = useState(false)
+  const groupDragCounter = useRef(0)
+
+  function hasTaskDrag(e: React.DragEvent) {
+    return Array.from(e.dataTransfer.types).some(t => t.toLowerCase() === 'taskid')
+  }
 
   function handleTaskDragStart(e: React.DragEvent, taskId: string) {
     setDraggingTaskId(taskId)
@@ -97,6 +103,8 @@ export function BoardGroup({ group, tasks, label, onAddTask, isDragging, isOver,
     setDraggingTaskId(null)
     setOverTaskId(null)
     taskDragCounter.current = {}
+    setIsGroupDragOver(false)
+    groupDragCounter.current = 0
   }
 
   function handleTaskDragEnter(e: React.DragEvent, taskId: string) {
@@ -121,11 +129,20 @@ export function BoardGroup({ group, tasks, label, onAddTask, isDragging, isOver,
 
   function handleTaskDrop(e: React.DragEvent, targetTaskId: string) {
     e.preventDefault()
+    e.stopPropagation()
     const sourceId = e.dataTransfer.getData('taskId') || draggingTaskId
     if (!sourceId || sourceId === targetTaskId) { handleTaskDragEnd(); return }
 
     const fromIdx = visibleTasks.findIndex(t => t.id === sourceId)
     const toIdx = visibleTasks.findIndex(t => t.id === targetTaskId)
+
+    if (fromIdx === -1 && toIdx !== -1) {
+      patchApiTask(sourceId, { groupId: group.id })
+      api.tasks.move(sourceId, group.id).catch(() => {})
+      handleTaskDragEnd()
+      return
+    }
+
     if (fromIdx === -1 || toIdx === -1) { handleTaskDragEnd(); return }
 
     const snapshot = visibleTasks.map(t => ({ id: t.id, order: t.order }))
@@ -139,6 +156,41 @@ export function BoardGroup({ group, tasks, label, onAddTask, isDragging, isOver,
       snapshot.forEach(({ id, order }) => patchApiTask(id, { order }))
     })
 
+    handleTaskDragEnd()
+  }
+
+  function handleWrapperDragEnter(e: React.DragEvent) {
+    if (!hasTaskDrag(e)) return
+    e.preventDefault()
+    groupDragCounter.current++
+    setIsGroupDragOver(true)
+  }
+
+  function handleWrapperDragLeave(e: React.DragEvent) {
+    if (!hasTaskDrag(e)) return
+    groupDragCounter.current--
+    if (groupDragCounter.current <= 0) {
+      groupDragCounter.current = 0
+      setIsGroupDragOver(false)
+    }
+  }
+
+  function handleWrapperDragOver(e: React.DragEvent) {
+    if (!hasTaskDrag(e)) return
+    e.preventDefault()
+    e.dataTransfer.dropEffect = 'move'
+  }
+
+  function handleWrapperDrop(e: React.DragEvent) {
+    setIsGroupDragOver(false)
+    groupDragCounter.current = 0
+    const sourceId = e.dataTransfer.getData('taskId')
+    if (!sourceId) return
+    e.preventDefault()
+    const fromIdx = visibleTasks.findIndex(t => t.id === sourceId)
+    if (fromIdx !== -1) return
+    patchApiTask(sourceId, { groupId: group.id })
+    api.tasks.move(sourceId, group.id).catch(() => {})
     handleTaskDragEnd()
   }
 
@@ -336,7 +388,14 @@ export function BoardGroup({ group, tasks, label, onAddTask, isDragging, isOver,
         </div>
 
         {/* ── Desktop table ── */}
-        <div className="hidden md:block rounded-sm border border-gray-100 overflow-x-auto" style={{ borderLeft: `4px solid ${group.color}` }}>
+        <div
+          className="hidden md:block rounded-sm border border-gray-100 overflow-x-auto"
+          style={{ borderLeft: `4px solid ${group.color}` }}
+          onDragEnter={handleWrapperDragEnter}
+          onDragLeave={handleWrapperDragLeave}
+          onDragOver={handleWrapperDragOver}
+          onDrop={handleWrapperDrop}
+        >
           <table className="w-full min-w-[600px] border-collapse">
             <thead>
               <tr className="bg-gray-50 border-b border-gray-200">
@@ -354,7 +413,20 @@ export function BoardGroup({ group, tasks, label, onAddTask, isDragging, isOver,
             </thead>
             <tbody className="bg-white">
               {tasks.length === 0
-                ? <tr><td colSpan={colSpan}><EmptyState /></td></tr>
+                ? (
+                  <tr>
+                    <td colSpan={colSpan}>
+                      {isGroupDragOver && draggingTaskId === null
+                        ? (
+                          <div className="m-2 border-2 border-dashed border-blue-400 rounded-lg py-4 text-center text-xs text-blue-500 font-medium">
+                            Soltar aquí
+                          </div>
+                        )
+                        : <EmptyState />
+                      }
+                    </td>
+                  </tr>
+                )
                 : visibleTasks.map(task => (
                     <TaskRow
                       key={task.id}
@@ -380,6 +452,15 @@ export function BoardGroup({ group, tasks, label, onAddTask, isDragging, isOver,
                       {showCompleted ? <EyeOff className="w-3.5 h-3.5 shrink-0" /> : <Eye className="w-3.5 h-3.5 shrink-0" />}
                       <span>{showCompleted ? 'Ocultar' : 'Ver'} {completedTasks.length} completada{completedTasks.length !== 1 ? 's' : ''}</span>
                     </button>
+                  </td>
+                </tr>
+              )}
+              {isGroupDragOver && draggingTaskId === null && tasks.length > 0 && (
+                <tr className="border-t border-blue-100">
+                  <td colSpan={colSpan} className="px-3 py-2">
+                    <div className="border-2 border-dashed border-blue-400 rounded-lg py-2 text-center text-xs text-blue-500 font-medium">
+                      Soltar aquí
+                    </div>
                   </td>
                 </tr>
               )}
