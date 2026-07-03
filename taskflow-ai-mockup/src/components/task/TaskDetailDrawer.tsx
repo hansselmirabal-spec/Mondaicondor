@@ -438,6 +438,11 @@ export function TaskDetailDrawer() {
             )}
           </div>
 
+          <div className="flex items-center gap-1.5 text-xs text-gray-400">
+            <Clock className="w-3 h-3 shrink-0" />
+            <span>Creado el {new Date(task.createdAt).toLocaleDateString('es-PY', { day: '2-digit', month: '2-digit', year: 'numeric' })}</span>
+          </div>
+
           {/* Description */}
           <div>
             <p className="text-xs text-gray-400 font-medium mb-1.5 flex items-center gap-1">
