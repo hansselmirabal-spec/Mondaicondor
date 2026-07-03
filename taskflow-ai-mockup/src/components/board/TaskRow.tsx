@@ -9,7 +9,7 @@ import { AssigneeAvatar, AssigneeAvatarGroup } from '@/components/ui/AssigneeAva
 import { DeadlineCell } from '@/components/ui/DeadlineCell'
 import { getCommentsByTaskId } from '@/data/mockComments'
 import { useBoardStore } from '@/store/boardStore'
-import { useFilterStore } from '@/store/filterStore'
+import { useFilterStore, DEFAULT_WIDTHS } from '@/store/filterStore'
 import { api } from '@/lib/api'
 
 const PRIORITIES: PriorityType[] = ['Crítica', 'Alta', 'Media', 'Baja', 'Siempre activo']
@@ -44,7 +44,8 @@ export function TaskRow({ task, isDragging, isOver, onDragStart, onDragEnd, onDr
   const comments = useBoardStore(state => state.comments)
   const apiUsers = useBoardStore(state => state.apiUsers)
   const workspaceStatuses = useBoardStore(state => state.workspaceStatuses)
-  const { isColumnVisible } = useFilterStore()
+  const { isColumnVisible, columnOrder, columnWidths } = useFilterStore()
+  const orderedVisible = columnOrder.filter(col => isColumnVisible(col))
 
   const currentStatus = mutation.status ?? task.status
   const currentPriority = mutation.priority ?? task.priority
@@ -173,79 +174,84 @@ export function TaskRow({ task, isDragging, isOver, onDragStart, onDragEnd, onDr
         </div>
       </td>
 
-      {/* Responsable */}
-      {isColumnVisible('Responsable') && (
-        <td className="py-1 px-2 w-28" onClick={e => toggleDropdown(e, 'assignee')}>
-          <div className="flex items-center gap-1 min-h-[28px] cursor-pointer hover:bg-gray-100 rounded px-1 -mx-1 transition-colors">
-            {currentAssigneeIds.length > 0
-              ? <AssigneeAvatarGroup userIds={currentAssigneeIds} max={3} />
-              : <Plus className="w-3.5 h-3.5 text-gray-300" />
-            }
-          </div>
-        </td>
-      )}
-
-      {/* Estado */}
-      {isColumnVisible('Estado') && (
-        <td className="py-1 px-1 w-32" onClick={e => toggleDropdown(e, 'status')}>
-          <div className="cursor-pointer hover:opacity-80 transition-opacity">
-            <StatusBadge status={currentStatus} />
-          </div>
-        </td>
-      )}
-
-      {/* Prioridad */}
-      {isColumnVisible('Prioridad') && (
-        <td className="py-1 px-1 w-28" onClick={e => toggleDropdown(e, 'priority')}>
-          <div className="cursor-pointer hover:opacity-80 transition-opacity">
-            <PriorityBadge priority={currentPriority} />
-          </div>
-        </td>
-      )}
-
-      {isColumnVisible('UEN') && (
-        <td className="py-1 px-2 w-28">
-          {task.uenId ? (
-            <span
-              className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium text-white truncate max-w-[100px]"
-              style={{ backgroundColor: task.uenColor ?? '#6366f1' }}
-            >
-              {task.uenName}
-            </span>
-          ) : (
-            <span className="text-gray-300 text-xs">—</span>
-          )}
-        </td>
-      )}
-
-      {isColumnVisible('Fecha límite') && (
-        <td className="py-2 px-3 w-32">
-          <DeadlineCell deadline={currentDeadline} />
-        </td>
-      )}
-
-      {isColumnVisible('Archivo') && (
-        <td className="py-2 px-3 w-24">
-          <span className="text-gray-300 text-xs">—</span>
-        </td>
-      )}
-
-      {isColumnVisible('Texto') && (
-        <td className="py-2 px-3 min-w-[160px]">
-          {(mutation.description ?? task.description)
-            ? <span className="text-xs text-gray-500 truncate block max-w-xs">{mutation.description ?? task.description}</span>
-            : <span className="text-gray-300 text-xs">—</span>
-          }
-        </td>
-      )}
-
-      {isColumnVisible('Fecha creación') && (
-        <td className="py-2 px-3 w-32">
-          <span className="text-xs text-gray-400">
-            {new Date(task.createdAt).toLocaleDateString('es-PY', { day: '2-digit', month: '2-digit', year: 'numeric' })}
-          </span>
-        </td>
-      )}
+      {orderedVisible.map(col => {
+        const w = columnWidths[col] ?? DEFAULT_WIDTHS[col] ?? 112
+        switch (col) {
+          case 'Responsable':
+            return (
+              <td key={col} className="py-1 px-2" style={{ width: w }} onClick={e => toggleDropdown(e, 'assignee')}>
+                <div className="flex items-center gap-1 min-h-[28px] cursor-pointer hover:bg-gray-100 rounded px-1 -mx-1 transition-colors">
+                  {currentAssigneeIds.length > 0
+                    ? <AssigneeAvatarGroup userIds={currentAssigneeIds} max={3} />
+                    : <Plus className="w-3.5 h-3.5 text-gray-300" />
+                  }
+                </div>
+              </td>
+            )
+          case 'Estado':
+            return (
+              <td key={col} className="py-1 px-1" style={{ width: w }} onClick={e => toggleDropdown(e, 'status')}>
+                <div className="cursor-pointer hover:opacity-80 transition-opacity">
+                  <StatusBadge status={currentStatus} />
+                </div>
+              </td>
+            )
+          case 'Prioridad':
+            return (
+              <td key={col} className="py-1 px-1" style={{ width: w }} onClick={e => toggleDropdown(e, 'priority')}>
+                <div className="cursor-pointer hover:opacity-80 transition-opacity">
+                  <PriorityBadge priority={currentPriority} />
+                </div>
+              </td>
+            )
+          case 'UEN':
+            return (
+              <td key={col} className="py-1 px-2" style={{ width: w }}>
+                {task.uenId ? (
+                  <span
+                    className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium text-white truncate max-w-[100px]"
+                    style={{ backgroundColor: task.uenColor ?? '#6366f1' }}
+                  >
+                    {task.uenName}
+                  </span>
+                ) : (
+                  <span className="text-gray-300 text-xs">—</span>
+                )}
+              </td>
+            )
+          case 'Fecha límite':
+            return (
+              <td key={col} className="py-2 px-3" style={{ width: w }}>
+                <DeadlineCell deadline={currentDeadline} />
+              </td>
+            )
+          case 'Archivo':
+            return (
+              <td key={col} className="py-2 px-3" style={{ width: w }}>
+                <span className="text-gray-300 text-xs">—</span>
+              </td>
+            )
+          case 'Texto':
+            return (
+              <td key={col} className="py-2 px-3" style={{ width: w }}>
+                {(mutation.description ?? task.description)
+                  ? <span className="text-xs text-gray-500 truncate block max-w-xs">{mutation.description ?? task.description}</span>
+                  : <span className="text-gray-300 text-xs">—</span>
+                }
+              </td>
+            )
+          case 'Fecha creación':
+            return (
+              <td key={col} className="py-2 px-3" style={{ width: w }}>
+                <span className="text-xs text-gray-400">
+                  {new Date(task.createdAt).toLocaleDateString('es-PY', { day: '2-digit', month: '2-digit', year: 'numeric' })}
+                </span>
+              </td>
+            )
+          default:
+            return <td key={col} style={{ width: w }} />
+        }
+      })}
 
       {/* Dropdowns fixed — escape overflow containers */}
       {openDropdown === 'assignee' && (
