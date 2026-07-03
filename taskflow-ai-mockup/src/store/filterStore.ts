@@ -8,6 +8,17 @@ export type GroupBy = 'default' | 'status' | 'priority' | 'assignee'
 export const ALL_COLUMNS = ['Responsable', 'Estado', 'Prioridad', 'UEN', 'Fecha límite', 'Archivo', 'Texto', 'Fecha creación'] as const
 export type ColumnName = typeof ALL_COLUMNS[number]
 
+export const DEFAULT_WIDTHS: Record<string, number> = {
+  'Responsable': 112,
+  'Estado': 128,
+  'Prioridad': 112,
+  'UEN': 112,
+  'Fecha límite': 128,
+  'Archivo': 96,
+  'Texto': 200,
+  'Fecha creación': 128,
+}
+
 interface FilterStore {
   searchQuery: string
   setSearchQuery: (q: string) => void
@@ -31,6 +42,12 @@ interface FilterStore {
   hiddenColumns: string[]
   toggleColumn: (col: string) => void
   isColumnVisible: (col: string) => boolean
+
+  columnOrder: string[]
+  setColumnOrder: (order: string[]) => void
+
+  columnWidths: Record<string, number>
+  setColumnWidth: (col: string, width: number) => void
 
   groupBy: GroupBy
   setGroupBy: (g: GroupBy) => void
@@ -69,6 +86,14 @@ export const useFilterStore = create<FilterStore>((set, get) => ({
         : [...state.hiddenColumns, col],
     })),
   isColumnVisible: col => !get().hiddenColumns.includes(col),
+
+  columnOrder: [...ALL_COLUMNS],
+  setColumnOrder: order => set({ columnOrder: order }),
+
+  columnWidths: { ...DEFAULT_WIDTHS },
+  setColumnWidth: (col, width) => set(state => ({
+    columnWidths: { ...state.columnWidths, [col]: width },
+  })),
 
   groupBy: 'default',
   setGroupBy: g => set({ groupBy: g }),

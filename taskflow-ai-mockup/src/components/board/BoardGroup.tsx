@@ -9,7 +9,7 @@ import { PriorityBadge } from '@/components/ui/PriorityBadge'
 import { AssigneeAvatarGroup } from '@/components/ui/AssigneeAvatar'
 import { DeadlineCell } from '@/components/ui/DeadlineCell'
 import { useUIStore } from '@/store/uiStore'
-import { useFilterStore, ALL_COLUMNS } from '@/store/filterStore'
+import { useFilterStore, DEFAULT_WIDTHS } from '@/store/filterStore'
 import { useBoardStore } from '@/store/boardStore'
 import { api } from '@/lib/api'
 import { toast } from '@/components/ui/Toast'
@@ -69,7 +69,7 @@ interface BoardGroupProps {
 
 export function BoardGroup({ group, tasks, label, onAddTask, isDragging, isOver, onDragStart, onDragEnd, onDragEnter, onDragLeave, onDragOver, onDrop }: BoardGroupProps) {
   const { toggleGroup, isGroupCollapsed } = useUIStore()
-  const { isColumnVisible } = useFilterStore()
+  const { isColumnVisible, columnOrder, setColumnOrder, columnWidths, setColumnWidth } = useFilterStore()
   const { removeGroup, patchGroup, patchApiTask, setPendingMove, clearPendingMove, apiTasks } = useBoardStore()
   const collapsed = isGroupCollapsed(group.id)
   const displayName = label ?? group.name
@@ -266,9 +266,47 @@ export function BoardGroup({ group, tasks, label, onAddTask, isDragging, isOver,
     if (e.key === 'Escape') { setNewTitle(''); setNewDeadline(''); setAdding(false) }
   }
 
-  const visibleColumns = ALL_COLUMNS.filter(col => isColumnVisible(col))
-  // +2 = checkbox col + title col
-  const colSpan = 2 + visibleColumns.length
+  const colDragRef = useRef<string | null>(null)
+  const orderedVisible = columnOrder.filter(col => isColumnVisible(col))
+  const colSpan = 2 + orderedVisible.length
+
+  function startResize(e: React.MouseEvent, col: string) {
+    e.preventDefault()
+    e.stopPropagation()
+    const startX = e.clientX
+    const startW = columnWidths[col] ?? DEFAULT_WIDTHS[col] ?? 112
+    function onMove(ev: MouseEvent) {
+      setColumnWidth(col, Math.max(60, startW + ev.clientX - startX))
+    }
+    function onUp() {
+      document.removeEventListener('mousemove', onMove)
+      document.removeEventListener('mouseup', onUp)
+    }
+    document.addEventListener('mousemove', onMove)
+    document.addEventListener('mouseup', onUp)
+  }
+
+  function handleColDragStart(e: React.DragEvent, col: string) {
+    e.stopPropagation()
+    colDragRef.current = col
+    e.dataTransfer.setData('colName', col)
+    e.dataTransfer.effectAllowed = 'move'
+  }
+
+  function handleColDrop(e: React.DragEvent, targetCol: string) {
+    e.preventDefault()
+    e.stopPropagation()
+    const srcCol = e.dataTransfer.getData('colName') || colDragRef.current
+    if (!srcCol || srcCol === targetCol) return
+    const next = [...columnOrder]
+    const fromIdx = next.indexOf(srcCol)
+    const toIdx = next.indexOf(targetCol)
+    if (fromIdx === -1 || toIdx === -1) return
+    next.splice(fromIdx, 1)
+    next.splice(toIdx, 0, srcCol)
+    setColumnOrder(next)
+    colDragRef.current = null
+  }
 
   return (
     <div
@@ -409,15 +447,26 @@ export function BoardGroup({ group, tasks, label, onAddTask, isDragging, isOver,
             <thead>
               <tr className="bg-gray-50 border-b border-gray-200">
                 <th className="w-8 px-2" />
-                <th className="py-2 px-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">Elemento</th>
-                {isColumnVisible('Responsable') && <th className="py-2 px-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide w-28">Responsable</th>}
-                {isColumnVisible('Estado')      && <th className="py-2 px-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide w-32">Estado</th>}
-                {isColumnVisible('Prioridad')   && <th className="py-2 px-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide w-28">Prioridad</th>}
-                {isColumnVisible('UEN')         && <th className="py-1.5 px-2 text-xs font-medium text-gray-400 uppercase tracking-wide text-left w-28">UEN</th>}
-                {isColumnVisible('Fecha límite') && <th className="py-2 px-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide w-32">Fecha límite</th>}
-                {isColumnVisible('Archivo')       && <th className="py-2 px-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide w-24">Archivo</th>}
-                {isColumnVisible('Texto')         && <th className="py-2 px-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">Texto</th>}
-                {isColumnVisible('Fecha creación') && <th className="py-2 px-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide w-32">Creado</th>}
+                <th className="py-2 px-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide min-w-[200px]">Elemento</th>
+                {orderedVisible.map(col => (
+                  <th
+                    key={col}
+                    draggable
+                    onDragStart={e => handleColDragStart(e, col)}
+                    onDragOver={e => { e.preventDefault(); e.stopPropagation() }}
+                    onDrop={e => handleColDrop(e, col)}
+                    style={{ width: columnWidths[col] ?? DEFAULT_WIDTHS[col] ?? 112, position: 'relative' }}
+                    className="py-2 px-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide cursor-grab active:cursor-grabbing select-none"
+                  >
+                    {col === 'Fecha creación' ? 'Creado' : col}
+                    <div
+                      className="absolute right-0 top-0 h-full w-1.5 cursor-col-resize hover:bg-blue-400 opacity-0 hover:opacity-100 transition-opacity"
+                      onMouseDown={e => startResize(e, col)}
+                      draggable={false}
+                      onClick={e => e.stopPropagation()}
+                    />
+                  </th>
+                ))}
               </tr>
             </thead>
             <tbody className="bg-white">
@@ -451,12 +500,8 @@ export function BoardGroup({ group, tasks, label, onAddTask, isDragging, isOver,
                       </button>
                     </div>
                   </td>
-                  {isColumnVisible('Responsable') && <td className="w-28" />}
-                  {isColumnVisible('Estado') && <td className="w-32" />}
-                  {isColumnVisible('Prioridad') && <td className="w-28" />}
-                  {isColumnVisible('UEN') && <td className="w-28" />}
-                  {isColumnVisible('Fecha límite') && (
-                    <td className="py-1.5 px-2 w-32">
+                  {orderedVisible.map(col => col === 'Fecha límite' ? (
+                    <td key={col} className="py-1.5 px-2" style={{ width: columnWidths[col] ?? DEFAULT_WIDTHS[col] }}>
                       <input
                         type="date"
                         value={newDeadline}
@@ -465,9 +510,9 @@ export function BoardGroup({ group, tasks, label, onAddTask, isDragging, isOver,
                         className="w-full text-xs text-gray-700 bg-white border border-gray-300 rounded-md px-2 py-1 focus:outline-none focus:border-blue-400 focus:ring-1 focus:ring-blue-400"
                       />
                     </td>
-                  )}
-                  {isColumnVisible('Archivo') && <td className="w-24" />}
-                  {isColumnVisible('Texto') && <td />}
+                  ) : (
+                    <td key={col} style={{ width: columnWidths[col] ?? DEFAULT_WIDTHS[col] }} />
+                  ))}
                 </tr>
               ) : (
                 <tr className="border-b border-gray-100">
@@ -538,9 +583,12 @@ export function BoardGroup({ group, tasks, label, onAddTask, isDragging, isOver,
           </table>
           <div className="flex border-t border-gray-100 bg-gray-50 h-4">
             <div className="flex-1" />
-            {isColumnVisible('Estado') && <div className="w-32 px-1"><div className="h-2 mt-1 rounded" style={{ backgroundColor: group.color, opacity: 0.35 }} /></div>}
-            {isColumnVisible('Prioridad') && <div className="w-28 px-1"><div className="h-2 mt-1 rounded bg-rose-400/30" /></div>}
-            {isColumnVisible('Fecha límite') && <div className="w-32" />}
+            {orderedVisible.map(col => (
+              <div key={col} style={{ width: columnWidths[col] ?? DEFAULT_WIDTHS[col] }} className="px-1">
+                {col === 'Estado' && <div className="h-2 mt-1 rounded" style={{ backgroundColor: group.color, opacity: 0.35 }} />}
+                {col === 'Prioridad' && <div className="h-2 mt-1 rounded bg-rose-400/30" />}
+              </div>
+            ))}
           </div>
         </div>
         </>
