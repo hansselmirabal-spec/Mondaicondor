@@ -45,6 +45,7 @@ export function TaskRow({ task, isDragging, isOver, onDragStart, onDragEnd, onDr
   const apiUsers = useBoardStore(state => state.apiUsers)
   const workspaceStatuses = useBoardStore(state => state.workspaceStatuses)
   const boards = useBoardStore(state => state.boards)
+  const taskOrigins = useBoardStore(state => state.taskOrigins)
   const { isColumnVisible, columnOrder, columnWidths } = useFilterStore()
   const orderedVisible = columnOrder.filter(col => isColumnVisible(col))
 
@@ -250,13 +251,16 @@ export function TaskRow({ task, isDragging, isOver, onDragStart, onDragEnd, onDr
               </td>
             )
           case 'Grupo': {
-            const group = boards.flatMap(b => b.groups).find(g => g.id === task.groupId)
+            const originGroupId = taskOrigins[task.id]
+            const group = originGroupId
+              ? boards.flatMap(b => b.groups).find(g => g.id === originGroupId)
+              : null
             return (
               <td key={col} className="py-2 px-3" style={{ width: w }}>
                 {group ? (
                   <div className="flex items-center gap-1.5 min-w-0">
                     <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: group.color }} />
-                    <span className="text-xs text-gray-600 truncate">{group.name}</span>
+                    <span className="text-xs text-gray-500 truncate">{group.name}</span>
                   </div>
                 ) : null}
               </td>

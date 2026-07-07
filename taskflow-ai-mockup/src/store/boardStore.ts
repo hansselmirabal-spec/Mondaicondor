@@ -36,6 +36,9 @@ interface BoardStore {
   setPendingMove: (taskId: string, groupId: string) => void
   clearPendingMove: (taskId: string) => void
 
+  taskOrigins: Record<string, string>
+  setTaskOrigin: (taskId: string, fromGroupId: string) => void
+
   apiTasks: MockTask[]
   setApiTasks: (tasks: MockTask[]) => void
   patchApiTask: (taskId: string, patch: Partial<MockTask>) => void
@@ -118,6 +121,11 @@ export const useBoardStore = create<BoardStore>((set, get) => ({
     const { [taskId]: _, ...rest } = state.pendingMoves
     return { pendingMoves: rest }
   }),
+
+  taskOrigins: {},
+  setTaskOrigin: (taskId, fromGroupId) => set(state => ({
+    taskOrigins: state.taskOrigins[taskId] ? state.taskOrigins : { ...state.taskOrigins, [taskId]: fromGroupId },
+  })),
 
   apiTasks: [],
   setApiTasks: tasks => set(state => ({
