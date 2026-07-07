@@ -70,7 +70,7 @@ interface BoardGroupProps {
 export function BoardGroup({ group, tasks, label, onAddTask, isDragging, isOver, onDragStart, onDragEnd, onDragEnter, onDragLeave, onDragOver, onDrop }: BoardGroupProps) {
   const { toggleGroup, isGroupCollapsed } = useUIStore()
   const { isColumnVisible, columnOrder, setColumnOrder, columnWidths, setColumnWidth } = useFilterStore()
-  const { removeGroup, patchGroup, patchApiTask, setPendingMove, clearPendingMove, apiTasks } = useBoardStore()
+  const { removeGroup, patchGroup, patchApiTask, setPendingMove, clearPendingMove, apiTasks, setTaskOrigin } = useBoardStore()
   const collapsed = isGroupCollapsed(group.id)
   const displayName = label ?? group.name
   const [adding, setAdding] = useState(false)
@@ -139,6 +139,7 @@ export function BoardGroup({ group, tasks, label, onAddTask, isDragging, isOver,
 
     if (fromIdx === -1 && toIdx !== -1) {
       const prevGroupId = apiTasks.find(t => t.id === sourceId)?.groupId ?? ''
+      if (prevGroupId) setTaskOrigin(sourceId, prevGroupId)
       setPendingMove(sourceId, group.id)
       patchApiTask(sourceId, { groupId: group.id })
       api.tasks.move(sourceId, group.id)
@@ -195,6 +196,7 @@ export function BoardGroup({ group, tasks, label, onAddTask, isDragging, isOver,
     const fromIdx = visibleTasks.findIndex(t => t.id === sourceId)
     if (fromIdx !== -1) return
     const prevGroupId = apiTasks.find(t => t.id === sourceId)?.groupId ?? ''
+    if (prevGroupId) setTaskOrigin(sourceId, prevGroupId)
     setPendingMove(sourceId, group.id)
     patchApiTask(sourceId, { groupId: group.id })
     api.tasks.move(sourceId, group.id)
