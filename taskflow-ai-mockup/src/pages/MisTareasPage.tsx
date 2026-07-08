@@ -150,15 +150,20 @@ function TaskPanel({ taskId, onClose, onStatusChange }: TaskPanelProps) {
             </div>
 
             {/* UEN */}
-            {task.uen && (
+            {task.uens && task.uens.length > 0 && (
               <div className="flex items-center gap-2">
                 <span className="text-xs text-gray-400 w-16 shrink-0">UEN</span>
-                <span
-                  className="text-xs font-medium px-2 py-0.5 rounded-full"
-                  style={{ backgroundColor: task.uen.color + '22', color: task.uen.color }}
-                >
-                  {task.uen.name}
-                </span>
+                <div className="flex flex-wrap gap-1">
+                  {task.uens.map(u => (
+                    <span
+                      key={u.id}
+                      className="text-xs font-medium px-2 py-0.5 rounded-full"
+                      style={{ backgroundColor: u.color + '22', color: u.color }}
+                    >
+                      {u.name}
+                    </span>
+                  ))}
+                </div>
               </div>
             )}
 
@@ -434,13 +439,18 @@ export function MisTareasPage() {
 
                               {/* UEN */}
                               <td className="px-3 py-2.5">
-                                {task.uen ? (
-                                  <span
-                                    className="text-xs font-medium px-2 py-0.5 rounded-full"
-                                    style={{ backgroundColor: task.uen.color + '22', color: task.uen.color }}
-                                  >
-                                    {task.uen.name}
-                                  </span>
+                                {task.uens && task.uens.length > 0 ? (
+                                  <div className="flex flex-wrap gap-1">
+                                    {task.uens.map(u => (
+                                      <span
+                                        key={u.id}
+                                        className="text-xs font-medium px-2 py-0.5 rounded-full"
+                                        style={{ backgroundColor: u.color + '22', color: u.color }}
+                                      >
+                                        {u.name}
+                                      </span>
+                                    ))}
+                                  </div>
                                 ) : (
                                   <span className="text-xs text-gray-300">—</span>
                                 )}

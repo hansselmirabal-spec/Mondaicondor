@@ -19,6 +19,7 @@ const DONE_STATUSES = new Set(['Completado', 'AlwaysOn'])
 function TaskMobileCard({ task }: { task: MockTask }) {
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
+  const workspaceUens = useBoardStore(state => state.workspaceUens)
   function handleClick() {
     const params = new URLSearchParams(searchParams)
     params.set('task', task.id)
@@ -34,14 +35,18 @@ function TaskMobileCard({ task }: { task: MockTask }) {
         <div className="flex items-center gap-1.5 mt-1.5 flex-wrap">
           <StatusBadge status={task.status} />
           <PriorityBadge priority={task.priority} />
-          {task.uenName && (
-            <span
-              className="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium text-white"
-              style={{ backgroundColor: task.uenColor ?? '#6366f1' }}
-            >
-              {task.uenName}
-            </span>
-          )}
+          {task.uenIds.map(uid => {
+            const uen = workspaceUens.find(u => u.id === uid)
+            return uen ? (
+              <span
+                key={uid}
+                className="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium text-white"
+                style={{ backgroundColor: uen.color }}
+              >
+                {uen.name}
+              </span>
+            ) : null
+          })}
         </div>
       </div>
       <div className="flex flex-col items-end gap-1 shrink-0">

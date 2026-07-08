@@ -206,7 +206,6 @@ model Task {
   priority    TaskPriority @default(Media)
   deadline    DateTime?
   fileUrl     String?
-  uenId       String?
   createdBy   String?
   order       Int          @default(0)
   createdAt   DateTime     @default(now())
@@ -217,12 +216,11 @@ model Task {
   assignees  TaskAssignee[]
   comments   Comment[]
   activities Activity[]
-  uen        WorkspaceUen?  @relation(fields: [uenId], references: [id], onDelete: SetNull)
+  uens       WorkspaceUen[]
 
   @@index([groupId])
   @@index([status])
   @@index([deadline])
-  @@index([uenId])
   @@index([createdBy])
 }
 

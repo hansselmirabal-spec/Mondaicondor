@@ -20,7 +20,7 @@ const createTaskSchema = z.object({
   priority: z.enum(priorityValues).optional(),
   deadline: z.string().datetime().nullable().optional(),
   assigneeIds: z.array(z.string()).optional(),
-  uenId: z.string().optional().nullable(),
+  uenIds: z.array(z.string()).optional(),
 })
 
 const updateTaskSchema = z.object({
@@ -31,7 +31,7 @@ const updateTaskSchema = z.object({
   deadline: z.string().datetime().nullable().optional(),
   groupId: z.string().optional(),
   assigneeIds: z.array(z.string()).optional(),
-  uenId: z.string().optional().nullable(),
+  uenIds: z.array(z.string()).optional(),
 })
 
 const taskInclude = {
@@ -41,13 +41,13 @@ const taskInclude = {
     },
   },
   group: { select: { id: true, name: true, boardId: true } },
-  uen: { select: { id: true, name: true, color: true } },
+  uens: { select: { id: true, name: true, color: true } },
 }
 
 // Extended include for /mine — adds board name so the frontend can group by board
 const taskMineInclude = {
   assignees: taskInclude.assignees,
-  uen: taskInclude.uen,
+  uens: taskInclude.uens,
   group: {
     select: {
       id: true, name: true, boardId: true,
@@ -139,7 +139,7 @@ taskRoutes.get('/board/:boardId', async (c) => {
 
 taskRoutes.post('/', zValidator('json', createTaskSchema), async (c) => {
   const { userId } = c.get('user')
-  const { groupId, title, description, status, priority, deadline, assigneeIds, uenId } = c.req.valid('json')
+  const { groupId, title, description, status, priority, deadline, assigneeIds, uenIds } = c.req.valid('json')
 
   const group = await prisma.group.findUnique({
     where: { id: groupId },
@@ -176,11 +176,13 @@ taskRoutes.post('/', zValidator('json', createTaskSchema), async (c) => {
       status: status ?? 'Nuevo',
       priority: priority ?? 'Media',
       deadline: deadline ? new Date(deadline) : null,
-      uenId: uenId ?? null,
       createdBy: userId,
       order: taskCount,
       assignees: assigneeIds?.length
         ? { create: assigneeIds.map((uid) => ({ userId: uid })) }
+        : undefined,
+      uens: uenIds?.length
+        ? { connect: uenIds.map((id) => ({ id })) }
         : undefined,
       activities: {
         create: { userId, action: `Creó la tarea "${title}"` },
@@ -243,7 +245,7 @@ taskRoutes.get('/:id', async (c) => {
 taskRoutes.put('/:id', zValidator('json', updateTaskSchema), async (c) => {
   const { userId } = c.get('user')
   const { id } = c.req.param()
-  const { assigneeIds, deadline, uenId, ...rest } = c.req.valid('json')
+  const { assigneeIds, deadline, uenIds, ...rest } = c.req.valid('json')
 
   const existing = await prisma.task.findUnique({
     where: { id },
@@ -263,7 +265,7 @@ taskRoutes.put('/:id', zValidator('json', updateTaskSchema), async (c) => {
   if (membership?.role === 'VIEWER') return c.json({ error: 'Sin permisos' }, 403)
 
   // Assignees who are not workspace members can only change status/priority/description/deadline
-  if (!membership && isAssignee && (assigneeIds || rest.groupId || uenId !== undefined)) {
+  if (!membership && isAssignee && (assigneeIds || rest.groupId || uenIds !== undefined)) {
     return c.json({ error: 'Solo podés actualizar el estado, prioridad, descripción o fecha límite de esta tarea' }, 403)
   }
 
@@ -304,7 +306,7 @@ taskRoutes.put('/:id', zValidator('json', updateTaskSchema), async (c) => {
     data: {
       ...rest,
       ...(deadline !== undefined && { deadline: deadline ? new Date(deadline) : null }),
-      ...(uenId !== undefined && { uenId }),
+      ...(uenIds !== undefined && { uens: { set: uenIds.map((id) => ({ id })) } }),
       ...(assigneeIds && {
         assignees: {
           deleteMany: {},

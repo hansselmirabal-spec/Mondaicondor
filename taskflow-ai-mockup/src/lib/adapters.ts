@@ -38,9 +38,7 @@ export function toMockTask(t: ApiTask): MockTask {
     assigneeIds: t.assignees.map((a) => a.user.id),
     createdAt: t.createdAt,
     updatedAt: t.updatedAt,
-    uenId: t.uen?.id ?? null,
-    uenName: t.uen?.name ?? null,
-    uenColor: t.uen?.color ?? null,
+    uenIds: (t.uens ?? []).map(u => u.id),
   }
 }
 

@@ -153,7 +153,7 @@ export function BoardTable({ board }: BoardTableProps) {
         deadline, fileUrl: null, text: null, description: '',
         order: 9999,
         createdAt: now, updatedAt: now,
-        uenId: null, uenName: null, uenColor: null,
+        uenIds: [],
       })
       const params = new URLSearchParams(searchParams)
       params.set('task', tempId)
