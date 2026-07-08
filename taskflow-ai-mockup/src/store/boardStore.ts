@@ -8,7 +8,6 @@ interface TaskMutation {
   description?: string
   assigneeIds?: string[]
   deadline?: string | null
-  uenId?: string | null
 }
 
 export interface DeadlineChange {

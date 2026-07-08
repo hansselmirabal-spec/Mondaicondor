@@ -74,9 +74,7 @@ export interface MockTask {
   order: number
   createdAt: string
   updatedAt: string
-  uenId: string | null
-  uenName: string | null
-  uenColor: string | null
+  uenIds: string[]
 }
 
 export interface MockComment {

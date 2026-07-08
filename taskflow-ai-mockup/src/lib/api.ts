@@ -380,7 +380,7 @@ export const api = {
   },
 
   tasks: {
-    create: (data: { groupId: string; title: string; status?: string; priority?: string; deadline?: string; uenId?: string | null }) =>
+    create: (data: { groupId: string; title: string; status?: string; priority?: string; deadline?: string; uenIds?: string[] }) =>
       request<{ task: ApiTask }>('/tasks', { method: 'POST', body: JSON.stringify(data) }),
 
     listByBoard: (boardId: string, filters?: Record<string, string>) => {
@@ -522,7 +522,7 @@ export interface ApiTask {
   updatedAt: string
   assignees: Array<{ user: ApiUser }>
   group: { id: string; name: string; boardId: string }
-  uen: { id: string; name: string; color: string } | null
+  uens: Array<{ id: string; name: string; color: string }>
 }
 
 export interface ApiTaskUpdate {
@@ -533,7 +533,7 @@ export interface ApiTaskUpdate {
   deadline: string | null
   groupId: string
   assigneeIds: string[]
-  uenId?: string | null
+  uenIds?: string[]
 }
 
 export interface ApiWorkspaceMember {

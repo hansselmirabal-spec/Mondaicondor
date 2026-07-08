@@ -30,7 +30,7 @@ interface TaskRowProps {
   onDrop?: (e: React.DragEvent) => void
 }
 
-type DropdownType = 'status' | 'priority' | 'assignee' | null
+type DropdownType = 'status' | 'priority' | 'assignee' | 'uen' | null
 
 
 
@@ -41,9 +41,11 @@ export function TaskRow({ task, isDragging, isOver, onDragStart, onDragEnd, onDr
 
   const mutation = useBoardStore(state => state.taskMutations[task.id] ?? {})
   const updateTask = useBoardStore(state => state.updateTask)
+  const patchApiTask = useBoardStore(state => state.patchApiTask)
   const comments = useBoardStore(state => state.comments)
   const apiUsers = useBoardStore(state => state.apiUsers)
   const workspaceStatuses = useBoardStore(state => state.workspaceStatuses)
+  const workspaceUens = useBoardStore(state => state.workspaceUens)
   const boards = useBoardStore(state => state.boards)
   const taskOrigins = useBoardStore(state => state.taskOrigins)
   const { isColumnVisible, columnOrder, columnWidths } = useFilterStore()
@@ -208,17 +210,24 @@ export function TaskRow({ task, isDragging, isOver, onDragStart, onDragEnd, onDr
             )
           case 'UEN':
             return (
-              <td key={col} className="py-1 px-2" style={{ width: w }}>
-                {task.uenId ? (
-                  <span
-                    className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium text-white truncate max-w-[100px]"
-                    style={{ backgroundColor: task.uenColor ?? '#6366f1' }}
-                  >
-                    {task.uenName}
-                  </span>
-                ) : (
-                  <span className="text-gray-300 text-xs">—</span>
-                )}
+              <td key={col} className="py-1 px-2" style={{ width: w }} onClick={e => toggleDropdown(e, 'uen')}>
+                <div className="flex flex-wrap gap-1 min-h-[28px] cursor-pointer hover:bg-gray-100 rounded px-1 -mx-1 transition-colors items-center">
+                  {task.uenIds.length > 0
+                    ? task.uenIds.map(uid => {
+                        const uen = workspaceUens.find(u => u.id === uid)
+                        return uen ? (
+                          <span
+                            key={uid}
+                            className="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium text-white"
+                            style={{ backgroundColor: uen.color }}
+                          >
+                            {uen.name}
+                          </span>
+                        ) : null
+                      })
+                    : <Plus className="w-3.5 h-3.5 text-gray-300" />
+                  }
+                </div>
               </td>
             )
           case 'Fecha límite':
@@ -355,6 +364,44 @@ export function TaskRow({ task, isDragging, isOver, onDragStart, onDragEnd, onDr
                 <PriorityBadge priority={p} />
               </button>
             ))}
+          </div>
+        </td>
+      )}
+
+      {openDropdown === 'uen' && (
+        <td className="p-0 border-0">
+          <div
+            ref={dropdownRef}
+            className="fixed z-[9999] bg-white border border-gray-200 rounded-xl shadow-xl w-44 overflow-hidden"
+            style={{ top: dropdownPos.top, left: dropdownPos.left }}
+            onClick={e => e.stopPropagation()}
+          >
+            <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wide px-3 py-1.5 border-b border-gray-100">UEN</p>
+            {workspaceUens.length === 0 && (
+              <p className="text-xs text-gray-400 px-3 py-2 italic">Sin UENs configuradas</p>
+            )}
+            {workspaceUens.map(u => {
+              const active = task.uenIds.includes(u.id)
+              return (
+                <button
+                  key={u.id}
+                  onClick={e => {
+                    e.stopPropagation()
+                    const newIds = active ? task.uenIds.filter(id => id !== u.id) : [...task.uenIds, u.id]
+                    patchApiTask(task.id, { uenIds: newIds })
+                    api.tasks.update(task.id, { uenIds: newIds }).catch(console.error)
+                  }}
+                  className="w-full flex items-center gap-2 px-3 py-1.5 hover:bg-gray-50 transition-colors"
+                >
+                  <span
+                    className={`w-2.5 h-2.5 rounded-sm shrink-0 ${active ? 'ring-2 ring-offset-1 ring-blue-400' : ''}`}
+                    style={{ backgroundColor: u.color }}
+                  />
+                  <span className="text-xs text-gray-700 flex-1 text-left">{u.name}</span>
+                  {active && <span className="text-[10px] text-blue-500 font-semibold">✓</span>}
+                </button>
+              )
+            })}
           </div>
         </td>
       )}

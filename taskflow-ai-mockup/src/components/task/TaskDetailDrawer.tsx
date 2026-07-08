@@ -159,7 +159,7 @@ export function TaskDetailDrawer() {
     if (!d) return 'Sin fecha'
     return formatDate(d)
   }
-  const currentUenId = mutation.uenId !== undefined ? mutation.uenId : task.uenId
+  const currentUenIds = task.uenIds
   const currentAssigneeIds = mutation.assigneeIds ?? task.assigneeIds
   const availableUsers = apiUsers.filter(u => !currentAssigneeIds.includes(u.id))
 
@@ -416,26 +416,28 @@ export function TaskDetailDrawer() {
             {workspaceUens.length > 0 && (
               <div className="col-span-2">
                 <p className="text-xs text-gray-400 font-medium mb-1">UEN</p>
-                <select
-                  value={currentUenId ?? ''}
-                  onChange={e => {
-                    const val = e.target.value || null
-                    const uen = workspaceUens.find(u => u.id === val) ?? null
-                    updateTask(task.id, { uenId: val })
-                    patchApiTask(task.id, {
-                      uenId: val,
-                      uenName: uen?.name ?? null,
-                      uenColor: uen?.color ?? null,
-                    })
-                    api.tasks.update(task.id, { uenId: val }).catch(console.error)
-                  }}
-                  className="w-full text-xs border border-gray-200 rounded-lg px-2 py-1.5 bg-white focus:outline-none focus:ring-2 focus:ring-blue-400"
-                >
-                  <option value="">Sin UEN</option>
-                  {workspaceUens.map(u => (
-                    <option key={u.id} value={u.id}>{u.name}</option>
-                  ))}
-                </select>
+                <div className="flex flex-wrap gap-1.5">
+                  {workspaceUens.map(u => {
+                    const active = currentUenIds.includes(u.id)
+                    return (
+                      <button
+                        key={u.id}
+                        onClick={() => {
+                          const newIds = active ? currentUenIds.filter(id => id !== u.id) : [...currentUenIds, u.id]
+                          patchApiTask(task.id, { uenIds: newIds })
+                          api.tasks.update(task.id, { uenIds: newIds }).catch(console.error)
+                        }}
+                        className={`px-2 py-0.5 rounded text-xs font-medium border transition-colors ${active ? 'text-white border-transparent' : 'border-gray-200 text-gray-600 hover:border-blue-400'}`}
+                        style={active ? { backgroundColor: u.color, borderColor: u.color } : {}}
+                      >
+                        {u.name}
+                      </button>
+                    )
+                  })}
+                </div>
+                {currentUenIds.length === 0 && (
+                  <p className="text-xs text-gray-400 italic mt-1">Ninguna seleccionada</p>
+                )}
               </div>
             )}
           </div>
