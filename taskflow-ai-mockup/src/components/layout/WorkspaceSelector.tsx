@@ -178,18 +178,10 @@ export function WorkspaceSelector() {
           </button>
 
           {dropdownOpen && (
-            <div className="absolute left-0 top-full mt-1 z-50 w-56 bg-[#1a1a2e] border border-white/10 rounded-xl shadow-2xl overflow-hidden">
+            <div className="absolute left-0 top-full mt-1 z-50 w-64 bg-[#1a1a2e] border border-white/10 rounded-xl shadow-2xl overflow-hidden">
               <p className="text-[10px] text-white/40 uppercase tracking-widest font-semibold px-3 pt-2 pb-1">
                 Mis workspaces
               </p>
-              <div className="px-3 py-1 text-[9px] text-yellow-300 break-all border-b border-yellow-500/30 mb-1">
-                <div>uid={user?.id ?? 'NULL'}</div>
-                {workspaces.map(ws => (
-                  <div key={'dbg-' + ws.id}>
-                    {ws.name}: role={String(roleOf(ws))} m={ws.members?.length ?? 'undef'} [{ws.members?.map(m => m.userId.slice(-5) + ':' + m.role).join(', ')}]
-                  </div>
-                ))}
-              </div>
               {workspaces.map(ws => (
                 <div key={ws.id} className="group/ws relative">
                   {editingWsId === ws.id ? (
@@ -243,23 +235,23 @@ export function WorkspaceSelector() {
                         {ws.id === workspace?.id && <Check className="w-3.5 h-3.5 text-blue-400 shrink-0" />}
                         {switchingId === ws.id && <span className="text-xs text-white/40">...</span>}
                       </button>
-                      <div className="flex gap-0.5 opacity-0 group-hover/ws:opacity-100 transition-opacity shrink-0 pr-1">
+                      <div className="flex items-center gap-1 shrink-0 pr-2">
                         {roleOf(ws) !== 'VIEWER' && (
                           <button
                             onClick={() => { setWsMenuOpenId(null); setEditWsName(ws.name); setEditWsColor(ws.color); setEditingWsId(ws.id) }}
-                            className="p-1 rounded text-white/40 hover:text-white hover:bg-white/10 transition-colors"
+                            className="p-1.5 rounded text-white/50 hover:text-white hover:bg-white/10 transition-colors"
                             title="Editar workspace"
                           >
-                            <Pencil className="w-3 h-3" />
+                            <Pencil className="w-3.5 h-3.5" />
                           </button>
                         )}
                         {roleOf(ws) === 'ADMIN' && (
                           <button
                             onClick={() => setConfirmDeleteWsId(ws.id)}
-                            className="p-1 rounded text-white/40 hover:text-red-400 hover:bg-white/10 transition-colors"
+                            className="p-1.5 rounded text-red-400/80 hover:text-red-400 hover:bg-red-500/10 transition-colors"
                             title="Eliminar workspace"
                           >
-                            <Trash2 className="w-3 h-3" />
+                            <Trash2 className="w-3.5 h-3.5" />
                           </button>
                         )}
                       </div>
