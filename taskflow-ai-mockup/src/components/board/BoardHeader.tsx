@@ -17,6 +17,9 @@ export function BoardHeader({ board }: BoardHeaderProps) {
   const apiUsers = useBoardStore(state => state.apiUsers)
   const setApiUsers = useBoardStore(state => state.setApiUsers)
   const patchBoard = useBoardStore(state => state.patchBoard)
+  const workspaces = useBoardStore(state => state.workspaces)
+
+  const isWorkspaceAdmin = workspaces.find(w => w.id === board.workspaceId)?.role === 'ADMIN'
 
   const [titleMenuOpen, setTitleMenuOpen] = useState(false)
   const [moreMenuOpen, setMoreMenuOpen] = useState(false)
@@ -315,7 +318,8 @@ export function BoardHeader({ board }: BoardHeaderProps) {
                 </div>
               )}
 
-              {/* Invite new member */}
+              {/* Invite new member — admins only */}
+              {isWorkspaceAdmin && (
               <div className="border-t border-gray-100 pt-4 space-y-3">
                 <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide flex items-center gap-1.5">
                   <UserPlus className="w-3.5 h-3.5" /> Invitar miembro
@@ -346,6 +350,7 @@ export function BoardHeader({ board }: BoardHeaderProps) {
                   Generar invitación y enviar correo
                 </button>
               </div>
+              )}
             </>
           )}
         </div>

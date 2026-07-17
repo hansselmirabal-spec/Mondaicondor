@@ -2,7 +2,10 @@ import { create } from 'zustand'
 import type { PriorityType, MockBoard, MockComment, MockTask, MockUser, WorkspaceStatus, WorkspaceUen } from '@/types'
 import { mockComments } from '@/data/mockComments'
 
+export type WorkspaceRole = 'ADMIN' | 'MEMBER' | 'VIEWER'
+
 interface TaskMutation {
+  title?: string
   status?: string
   priority?: PriorityType
   description?: string
@@ -55,8 +58,8 @@ interface BoardStore {
   addComment: (comment: MockComment) => void
   setTaskComments: (taskId: string, comments: MockComment[]) => void
 
-  workspaces: Array<{ id: string; name: string; color: string }>
-  setWorkspaces: (list: Array<{ id: string; name: string; color: string }>) => void
+  workspaces: Array<{ id: string; name: string; color: string; role?: WorkspaceRole }>
+  setWorkspaces: (list: Array<{ id: string; name: string; color: string; role?: WorkspaceRole }>) => void
   workspace: { id: string; name: string; color: string } | null
   setWorkspace: (ws: { id: string; name: string; color: string }) => void
   updateWorkspace: (id: string, patch: { name?: string; color?: string }) => void

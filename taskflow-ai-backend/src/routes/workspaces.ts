@@ -131,8 +131,8 @@ workspaceRoutes.put('/:id', zValidator('json', updateWorkspaceSchema), async (c)
   const membership = await prisma.workspaceMember.findUnique({
     where: { workspaceId_userId: { workspaceId: id, userId } },
   })
-  if (!membership || membership.role !== 'ADMIN') {
-    return c.json({ error: 'Solo admins pueden editar el workspace' }, 403)
+  if (!membership || membership.role === 'VIEWER') {
+    return c.json({ error: 'Los viewers no pueden editar el workspace' }, 403)
   }
 
   const workspace = await prisma.workspace.update({ where: { id }, data })
@@ -162,8 +162,8 @@ workspaceRoutes.post('/:id/invite', zValidator('json', inviteSchema), async (c) 
   const membership = await prisma.workspaceMember.findUnique({
     where: { workspaceId_userId: { workspaceId: id, userId } },
   })
-  if (!membership || membership.role === 'VIEWER') {
-    return c.json({ error: 'Sin permisos para invitar' }, 403)
+  if (!membership || membership.role !== 'ADMIN') {
+    return c.json({ error: 'Solo admins pueden agregar miembros' }, 403)
   }
 
   const workspace = await prisma.workspace.findUnique({ where: { id }, select: { name: true } })

@@ -78,7 +78,7 @@ export function WorkspaceSelector() {
     setWsSaving(true)
     try {
       const { workspace: apiWs } = await api.workspaces.create({ name: wsName.trim(), color: wsColor })
-      const ws = { id: apiWs.id, name: apiWs.name, color: apiWs.color }
+      const ws = { id: apiWs.id, name: apiWs.name, color: apiWs.color, role: 'ADMIN' as const }
       setWorkspaces([...workspaces, ws])
       setWorkspace(ws)
       setBoards([])
@@ -227,20 +227,24 @@ export function WorkspaceSelector() {
                         {switchingId === ws.id && <span className="text-xs text-white/40">...</span>}
                       </button>
                       <div className="flex gap-0.5 opacity-0 group-hover/ws:opacity-100 transition-opacity shrink-0 pr-1">
-                        <button
-                          onClick={() => { setWsMenuOpenId(null); setEditWsName(ws.name); setEditWsColor(ws.color); setEditingWsId(ws.id) }}
-                          className="p-1 rounded text-white/40 hover:text-white hover:bg-white/10 transition-colors"
-                          title="Editar workspace"
-                        >
-                          <Pencil className="w-3 h-3" />
-                        </button>
-                        <button
-                          onClick={() => setConfirmDeleteWsId(ws.id)}
-                          className="p-1 rounded text-white/40 hover:text-red-400 hover:bg-white/10 transition-colors"
-                          title="Eliminar workspace"
-                        >
-                          <Trash2 className="w-3 h-3" />
-                        </button>
+                        {ws.role !== 'VIEWER' && (
+                          <button
+                            onClick={() => { setWsMenuOpenId(null); setEditWsName(ws.name); setEditWsColor(ws.color); setEditingWsId(ws.id) }}
+                            className="p-1 rounded text-white/40 hover:text-white hover:bg-white/10 transition-colors"
+                            title="Editar workspace"
+                          >
+                            <Pencil className="w-3 h-3" />
+                          </button>
+                        )}
+                        {ws.role === 'ADMIN' && (
+                          <button
+                            onClick={() => setConfirmDeleteWsId(ws.id)}
+                            className="p-1 rounded text-white/40 hover:text-red-400 hover:bg-white/10 transition-colors"
+                            title="Eliminar workspace"
+                          >
+                            <Trash2 className="w-3 h-3" />
+                          </button>
+                        )}
                       </div>
                     </div>
                   )}
