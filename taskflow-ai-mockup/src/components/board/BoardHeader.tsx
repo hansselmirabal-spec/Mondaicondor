@@ -5,6 +5,7 @@ import type { MockBoard } from '@/types'
 import { Modal } from '@/components/ui/Modal'
 import { AssigneeAvatar } from '@/components/ui/AssigneeAvatar'
 import { useBoardStore } from '@/store/boardStore'
+import { useAuthStore } from '@/store/authStore'
 import { toast } from '@/components/ui/Toast'
 import { api } from '@/lib/api'
 import type { ApiUser } from '@/lib/api'
@@ -18,8 +19,11 @@ export function BoardHeader({ board }: BoardHeaderProps) {
   const setApiUsers = useBoardStore(state => state.setApiUsers)
   const patchBoard = useBoardStore(state => state.patchBoard)
   const workspaces = useBoardStore(state => state.workspaces)
+  const user = useAuthStore(state => state.user)
 
-  const isWorkspaceAdmin = workspaces.find(w => w.id === board.workspaceId)?.role === 'ADMIN'
+  const isWorkspaceAdmin = workspaces
+    .find(w => w.id === board.workspaceId)
+    ?.members?.find(m => m.userId === user?.id)?.role === 'ADMIN'
 
   const [titleMenuOpen, setTitleMenuOpen] = useState(false)
   const [moreMenuOpen, setMoreMenuOpen] = useState(false)
