@@ -214,7 +214,7 @@ export function Sidebar() {
       </div>
 
       {/* Main sidebar panel */}
-      <div className="w-52 flex flex-col bg-[#292944] overflow-hidden">
+      <div className="w-52 flex flex-col bg-[#292944] overflow-visible">
         {/* Header */}
         <div className="flex items-center justify-between px-3 py-3 border-b border-white/10">
           <span className="text-sm font-semibold text-white/80">Espacio de trabajo</span>
