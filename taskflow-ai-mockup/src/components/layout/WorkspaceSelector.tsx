@@ -182,6 +182,14 @@ export function WorkspaceSelector() {
               <p className="text-[10px] text-white/40 uppercase tracking-widest font-semibold px-3 pt-2 pb-1">
                 Mis workspaces
               </p>
+              <div className="px-3 py-1 text-[9px] text-yellow-300 break-all border-b border-yellow-500/30 mb-1">
+                <div>uid={user?.id ?? 'NULL'}</div>
+                {workspaces.map(ws => (
+                  <div key={'dbg-' + ws.id}>
+                    {ws.name}: role={String(roleOf(ws))} m={ws.members?.length ?? 'undef'} [{ws.members?.map(m => m.userId.slice(-5) + ':' + m.role).join(', ')}]
+                  </div>
+                ))}
+              </div>
               {workspaces.map(ws => (
                 <div key={ws.id} className="group/ws relative">
                   {editingWsId === ws.id ? (
