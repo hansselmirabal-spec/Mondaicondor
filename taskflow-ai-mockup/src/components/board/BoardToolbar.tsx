@@ -26,6 +26,8 @@ const SORT_OPTIONS = [
   { label: 'Deadline ↑',    field: 'deadline' as const, dir: 'asc' as const },
   { label: 'Deadline ↓',    field: 'deadline' as const, dir: 'desc' as const },
   { label: 'Estado A→Z',    field: 'status' as const, dir: 'asc' as const },
+  { label: 'Creación ↑',    field: 'createdAt' as const, dir: 'asc' as const },
+  { label: 'Creación ↓',    field: 'createdAt' as const, dir: 'desc' as const },
 ]
 const GROUP_OPTIONS = [
   { label: 'Sin agrupar',  value: 'default' as const },

@@ -2,7 +2,7 @@ import { create } from 'zustand'
 import type { PriorityType } from '@/types'
 
 export type ViewTab = 'table' | 'chart' | 'kanban'
-export type SortField = 'title' | 'priority' | 'deadline' | 'status' | 'uen'
+export type SortField = 'title' | 'priority' | 'deadline' | 'status' | 'uen' | 'createdAt'
 export type GroupBy = 'default' | 'status' | 'priority' | 'assignee'
 
 export const ALL_COLUMNS = ['Responsable', 'Estado', 'Prioridad', 'UEN', 'Fecha límite', 'Archivo', 'Texto', 'Fecha creación', 'Grupo'] as const

@@ -1,4 +1,4 @@
-import { ChevronDown, ChevronRight, Plus, Check, X, MoreHorizontal, Pencil, Trash2, Eye, EyeOff, GripVertical } from 'lucide-react'
+import { ChevronDown, ChevronRight, Plus, Check, X, MoreHorizontal, Pencil, Trash2, Eye, EyeOff, GripVertical, ArrowUp, ArrowDown, ChevronsUpDown } from 'lucide-react'
 import { useState, useRef, useEffect } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import type { MockGroup, MockTask } from '@/types'
@@ -74,7 +74,14 @@ interface BoardGroupProps {
 
 export function BoardGroup({ group, tasks, label, onAddTask, isDragging, isOver, onDragStart, onDragEnd, onDragEnter, onDragLeave, onDragOver, onDrop }: BoardGroupProps) {
   const { toggleGroup, isGroupCollapsed } = useUIStore()
-  const { isColumnVisible, columnOrder, setColumnOrder, columnWidths, setColumnWidth } = useFilterStore()
+  const { isColumnVisible, columnOrder, setColumnOrder, columnWidths, setColumnWidth, sortField, sortDir, setSortBy } = useFilterStore()
+
+  // Click cycles: none → asc → desc → none, only for the creation-date column
+  function toggleCreatedSort() {
+    if (sortField !== 'createdAt') setSortBy('createdAt', 'asc')
+    else if (sortDir === 'asc') setSortBy('createdAt', 'desc')
+    else setSortBy(null)
+  }
   const { removeGroup, patchGroup, patchApiTask, setPendingMove, clearPendingMove, apiTasks, setTaskOrigin } = useBoardStore()
   const collapsed = isGroupCollapsed(group.id)
   const displayName = label ?? group.name
@@ -465,7 +472,20 @@ export function BoardGroup({ group, tasks, label, onAddTask, isDragging, isOver,
                     style={{ width: columnWidths[col] ?? DEFAULT_WIDTHS[col] ?? 112, position: 'relative' }}
                     className="py-2 px-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide cursor-grab active:cursor-grabbing select-none"
                   >
-                    {col === 'Fecha creación' ? 'Creado' : col}
+                    {col === 'Fecha creación' ? (
+                      <button
+                        type="button"
+                        draggable={false}
+                        onClick={e => { e.stopPropagation(); toggleCreatedSort() }}
+                        title="Ordenar por fecha de creación"
+                        className="inline-flex items-center gap-1 uppercase tracking-wide hover:text-gray-700 transition-colors"
+                      >
+                        Creado
+                        {sortField === 'createdAt'
+                          ? (sortDir === 'asc' ? <ArrowUp className="w-3 h-3 text-blue-600" /> : <ArrowDown className="w-3 h-3 text-blue-600" />)
+                          : <ChevronsUpDown className="w-3 h-3 text-gray-300" />}
+                      </button>
+                    ) : col}
                     {/* resize handle — right edge of this column */}
                     <div
                       className="absolute right-0 top-0 h-full w-1.5 cursor-col-resize hover:bg-blue-400 opacity-0 hover:opacity-100 transition-opacity"

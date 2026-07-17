@@ -139,6 +139,7 @@ export function BoardTable({ board }: BoardTableProps) {
         const da = a.deadline ?? '9999', db = b.deadline ?? '9999'
         cmp = da.localeCompare(db)
       }
+      if (sortField === 'createdAt') cmp = a.createdAt.localeCompare(b.createdAt)
       return sortDir === 'asc' ? cmp : -cmp
     })
   }
