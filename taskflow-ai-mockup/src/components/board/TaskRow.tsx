@@ -55,8 +55,25 @@ export function TaskRow({ task, isDragging, isOver, onDragStart, onDragEnd, onDr
   const currentPriority = mutation.priority ?? task.priority
   const currentAssigneeIds = mutation.assigneeIds ?? task.assigneeIds
   const currentDeadline = mutation.deadline !== undefined ? mutation.deadline : task.deadline
+  const currentTitle = mutation.title ?? task.title
   const commentCount = comments.filter(c => c.taskId === task.id).length || getCommentsByTaskId(task.id).length
   const isCompleted = currentStatus === 'Completado'
+
+  const [editingTitle, setEditingTitle] = useState(false)
+  const [titleDraft, setTitleDraft] = useState('')
+
+  function startEditTitle() {
+    setTitleDraft(currentTitle)
+    setEditingTitle(true)
+  }
+
+  function saveTitle() {
+    const trimmed = titleDraft.trim()
+    setEditingTitle(false)
+    if (!trimmed || trimmed === currentTitle) return
+    updateTask(task.id, { title: trimmed })
+    api.tasks.update(task.id, { title: trimmed }).catch(console.error)
+  }
 
   const [openDropdown, setOpenDropdown] = useState<DropdownType>(null)
   const [dropdownPos, setDropdownPos] = useState({ top: 0, left: 0 })
@@ -157,15 +174,34 @@ export function TaskRow({ task, isDragging, isOver, onDragStart, onDragEnd, onDr
       </td>
 
       {/* Title */}
-      <td className="py-2 px-3 min-w-[280px]">
-        <div className="flex items-center gap-2">
-          <span className={`text-sm truncate max-w-xs ${isCompleted ? 'line-through text-gray-400' : 'text-gray-800'}`}>
-            {task.title}
-          </span>
+      <td className="py-2 px-3 min-w-[280px] align-top">
+        <div className="flex items-start gap-2">
+          {editingTitle ? (
+            <input
+              autoFocus
+              value={titleDraft}
+              onChange={e => setTitleDraft(e.target.value)}
+              onClick={e => e.stopPropagation()}
+              onBlur={saveTitle}
+              onKeyDown={e => {
+                if (e.key === 'Enter') { e.preventDefault(); saveTitle() }
+                if (e.key === 'Escape') setEditingTitle(false)
+              }}
+              className="text-sm flex-1 min-w-0 px-1.5 py-0.5 -my-0.5 border border-blue-400 rounded focus:outline-none focus:ring-1 focus:ring-blue-400 text-gray-800"
+            />
+          ) : (
+            <span
+              onDoubleClick={e => { e.stopPropagation(); startEditTitle() }}
+              title="Doble clic para editar"
+              className={`text-sm whitespace-normal break-words ${isCompleted ? 'line-through text-gray-400' : 'text-gray-800'}`}
+            >
+              {currentTitle}
+            </span>
+          )}
           <button
             onClick={e => { e.stopPropagation(); setShowMoveModal(true) }}
             title="Mover a otro tablero"
-            className="p-0.5 text-gray-300 hover:text-indigo-500 opacity-0 group-hover:opacity-100 transition-all shrink-0"
+            className="p-0.5 mt-0.5 text-gray-300 hover:text-indigo-500 opacity-0 group-hover:opacity-100 transition-all shrink-0"
           >
             <ArrowRightLeft className="w-3 h-3" />
           </button>
