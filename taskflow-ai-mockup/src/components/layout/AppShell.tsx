@@ -22,6 +22,7 @@ export function AppShell() {
   const setApiUsers = useBoardStore(state => state.setApiUsers)
 
   useEffect(() => {
+    if (!user) return
     if (workspaces.length > 0) return
     const activeWorkspace = workspace
     async function load() {
@@ -32,7 +33,7 @@ export function AppShell() {
           id: w.id,
           name: w.name,
           color: w.color,
-          role: w.members.find(m => m.userId === user?.id)?.role as WorkspaceRole | undefined,
+          role: w.members.find(m => m.userId === user!.id)?.role as WorkspaceRole | undefined,
         }))
         setWorkspaces(mapped)
         const active = activeWorkspace ?? mapped[0]
@@ -53,7 +54,7 @@ export function AppShell() {
     }
     load()
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
+  }, [user])
 
   return (
     <div className="flex h-dvh overflow-hidden bg-gray-50">
