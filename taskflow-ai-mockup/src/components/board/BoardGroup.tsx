@@ -76,11 +76,17 @@ export function BoardGroup({ group, tasks, label, onAddTask, isDragging, isOver,
   const { toggleGroup, isGroupCollapsed } = useUIStore()
   const { isColumnVisible, columnOrder, setColumnOrder, columnWidths, setColumnWidth, sortField, sortDir, setSortBy } = useFilterStore()
 
-  // Click cycles: none → asc → desc → none, only for the creation-date column
-  function toggleCreatedSort() {
-    if (sortField !== 'createdAt') setSortBy('createdAt', 'asc')
-    else if (sortDir === 'asc') setSortBy('createdAt', 'desc')
+  // Click cycles: none → asc → desc → none, for a given sortable column
+  function toggleColumnSort(field: 'createdAt' | 'deadline') {
+    if (sortField !== field) setSortBy(field, 'asc')
+    else if (sortDir === 'asc') setSortBy(field, 'desc')
     else setSortBy(null)
+  }
+
+  // Map a column name to its sortable field (null = not sortable via header)
+  const SORTABLE_COLUMN: Record<string, 'createdAt' | 'deadline'> = {
+    'Fecha creación': 'createdAt',
+    'Fecha límite': 'deadline',
   }
   const { removeGroup, patchGroup, patchApiTask, setPendingMove, clearPendingMove, apiTasks, setTaskOrigin } = useBoardStore()
   const collapsed = isGroupCollapsed(group.id)
@@ -472,16 +478,16 @@ export function BoardGroup({ group, tasks, label, onAddTask, isDragging, isOver,
                     style={{ width: columnWidths[col] ?? DEFAULT_WIDTHS[col] ?? 112, position: 'relative' }}
                     className="py-2 px-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide cursor-grab active:cursor-grabbing select-none"
                   >
-                    {col === 'Fecha creación' ? (
+                    {SORTABLE_COLUMN[col] ? (
                       <button
                         type="button"
                         draggable={false}
-                        onClick={e => { e.stopPropagation(); toggleCreatedSort() }}
-                        title="Ordenar por fecha de creación"
+                        onClick={e => { e.stopPropagation(); toggleColumnSort(SORTABLE_COLUMN[col]) }}
+                        title={col === 'Fecha creación' ? 'Ordenar por fecha de creación' : 'Ordenar por fecha límite'}
                         className="inline-flex items-center gap-1 uppercase tracking-wide hover:text-gray-700 transition-colors"
                       >
-                        Creado
-                        {sortField === 'createdAt'
+                        {col === 'Fecha creación' ? 'Creado' : col}
+                        {sortField === SORTABLE_COLUMN[col]
                           ? (sortDir === 'asc' ? <ArrowUp className="w-3 h-3 text-blue-600" /> : <ArrowDown className="w-3 h-3 text-blue-600" />)
                           : <ChevronsUpDown className="w-3 h-3 text-gray-300" />}
                       </button>
