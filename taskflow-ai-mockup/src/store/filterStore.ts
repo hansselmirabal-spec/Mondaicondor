@@ -1,4 +1,5 @@
 import { create } from 'zustand'
+import { persist } from 'zustand/middleware'
 import type { PriorityType } from '@/types'
 
 export type ViewTab = 'table' | 'chart' | 'kanban'
@@ -59,7 +60,7 @@ interface FilterStore {
   clearFilters: () => void
 }
 
-export const useFilterStore = create<FilterStore>((set, get) => ({
+export const useFilterStore = create<FilterStore>()(persist((set, get) => ({
   searchQuery: '',
   setSearchQuery: q => set({ searchQuery: q }),
 
@@ -104,4 +105,12 @@ export const useFilterStore = create<FilterStore>((set, get) => ({
 
   clearFilters: () =>
     set({ searchQuery: '', selectedPersonaId: null, filterStatus: null, filterPriority: null, filterUenId: null, sortField: null, sortDir: 'asc', groupBy: 'default' }),
+}), {
+  name: 'taskflow-column-layout',
+  // Persist only the column layout, not the transient filters/search/sort
+  partialize: state => ({
+    columnOrder: state.columnOrder,
+    columnWidths: state.columnWidths,
+    hiddenColumns: state.hiddenColumns,
+  }),
 }))

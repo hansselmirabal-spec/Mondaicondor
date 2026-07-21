@@ -1,4 +1,4 @@
-import { ChevronDown, ChevronRight, Plus, Check, X, MoreHorizontal, Pencil, Trash2, Eye, EyeOff, GripVertical, ArrowUp, ArrowDown, ChevronsUpDown } from 'lucide-react'
+import { ChevronDown, ChevronRight, Plus, Check, X, MoreHorizontal, Pencil, Trash2, Eye, EyeOff, GripVertical } from 'lucide-react'
 import { useState, useRef, useEffect } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import type { MockGroup, MockTask } from '@/types'
@@ -10,6 +10,7 @@ import { AssigneeAvatarGroup } from '@/components/ui/AssigneeAvatar'
 import { DeadlineCell } from '@/components/ui/DeadlineCell'
 import { useUIStore } from '@/store/uiStore'
 import { useFilterStore, DEFAULT_WIDTHS } from '@/store/filterStore'
+import { ColumnHeaderRow } from './ColumnHeaderRow'
 import { useBoardStore } from '@/store/boardStore'
 import { api } from '@/lib/api'
 import { toast } from '@/components/ui/Toast'
@@ -74,20 +75,7 @@ interface BoardGroupProps {
 
 export function BoardGroup({ group, tasks, label, onAddTask, isDragging, isOver, onDragStart, onDragEnd, onDragEnter, onDragLeave, onDragOver, onDrop }: BoardGroupProps) {
   const { toggleGroup, isGroupCollapsed } = useUIStore()
-  const { isColumnVisible, columnOrder, setColumnOrder, columnWidths, setColumnWidth, sortField, sortDir, setSortBy } = useFilterStore()
-
-  // Click cycles: none → asc → desc → none, for a given sortable column
-  function toggleColumnSort(field: 'createdAt' | 'deadline') {
-    if (sortField !== field) setSortBy(field, 'asc')
-    else if (sortDir === 'asc') setSortBy(field, 'desc')
-    else setSortBy(null)
-  }
-
-  // Map a column name to its sortable field (null = not sortable via header)
-  const SORTABLE_COLUMN: Record<string, 'createdAt' | 'deadline'> = {
-    'Fecha creación': 'createdAt',
-    'Fecha límite': 'deadline',
-  }
+  const { isColumnVisible, columnOrder, columnWidths } = useFilterStore()
   const { removeGroup, patchGroup, patchApiTask, setPendingMove, clearPendingMove, apiTasks, setTaskOrigin } = useBoardStore()
   const collapsed = isGroupCollapsed(group.id)
   const displayName = label ?? group.name
@@ -286,47 +274,8 @@ export function BoardGroup({ group, tasks, label, onAddTask, isDragging, isOver,
     if (e.key === 'Escape') { setNewTitle(''); setNewDeadline(''); setAdding(false) }
   }
 
-  const colDragRef = useRef<string | null>(null)
   const orderedVisible = columnOrder.filter(col => isColumnVisible(col))
   const colSpan = 2 + orderedVisible.length
-
-  function startResize(e: React.MouseEvent, col: string) {
-    e.preventDefault()
-    e.stopPropagation()
-    const startX = e.clientX
-    const startW = columnWidths[col] ?? DEFAULT_WIDTHS[col] ?? 112
-    function onMove(ev: MouseEvent) {
-      setColumnWidth(col, Math.max(60, startW + ev.clientX - startX))
-    }
-    function onUp() {
-      document.removeEventListener('mousemove', onMove)
-      document.removeEventListener('mouseup', onUp)
-    }
-    document.addEventListener('mousemove', onMove)
-    document.addEventListener('mouseup', onUp)
-  }
-
-  function handleColDragStart(e: React.DragEvent, col: string) {
-    e.stopPropagation()
-    colDragRef.current = col
-    e.dataTransfer.setData('colName', col)
-    e.dataTransfer.effectAllowed = 'move'
-  }
-
-  function handleColDrop(e: React.DragEvent, targetCol: string) {
-    e.preventDefault()
-    e.stopPropagation()
-    const srcCol = e.dataTransfer.getData('colName') || colDragRef.current
-    if (!srcCol || srcCol === targetCol) return
-    const next = [...columnOrder]
-    const fromIdx = next.indexOf(srcCol)
-    const toIdx = next.indexOf(targetCol)
-    if (fromIdx === -1 || toIdx === -1) return
-    next.splice(fromIdx, 1)
-    next.splice(toIdx, 0, srcCol)
-    setColumnOrder(next)
-    colDragRef.current = null
-  }
 
   return (
     <div
@@ -464,54 +413,7 @@ export function BoardGroup({ group, tasks, label, onAddTask, isDragging, isOver,
           onDrop={handleWrapperDrop}
         >
           <table className="w-full min-w-[600px] border-collapse">
-            <thead>
-              <tr className="bg-gray-50 border-b border-gray-200">
-                <th className="w-8 px-2" />
-                <th className="py-2 px-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide min-w-[200px]">Elemento</th>
-                {orderedVisible.map(col => (
-                  <th
-                    key={col}
-                    draggable
-                    onDragStart={e => handleColDragStart(e, col)}
-                    onDragOver={e => { e.preventDefault(); e.stopPropagation() }}
-                    onDrop={e => handleColDrop(e, col)}
-                    style={{ width: columnWidths[col] ?? DEFAULT_WIDTHS[col] ?? 112, position: 'relative' }}
-                    className="py-2 px-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide cursor-grab active:cursor-grabbing select-none"
-                  >
-                    {SORTABLE_COLUMN[col] ? (
-                      <button
-                        type="button"
-                        draggable={false}
-                        onClick={e => { e.stopPropagation(); toggleColumnSort(SORTABLE_COLUMN[col]) }}
-                        title={col === 'Fecha creación' ? 'Ordenar por fecha de creación' : 'Ordenar por fecha límite'}
-                        className="inline-flex items-center gap-1 uppercase tracking-wide hover:text-gray-700 transition-colors"
-                      >
-                        {col === 'Fecha creación' ? 'Creado' : col}
-                        {sortField === SORTABLE_COLUMN[col]
-                          ? (sortDir === 'asc' ? <ArrowUp className="w-3 h-3 text-blue-600" /> : <ArrowDown className="w-3 h-3 text-blue-600" />)
-                          : <ChevronsUpDown className="w-3 h-3 text-gray-300" />}
-                      </button>
-                    ) : col}
-                    {/* resize handle — right edge of this column */}
-                    <div
-                      className="absolute right-0 top-0 h-full w-1.5 cursor-col-resize hover:bg-blue-400 opacity-0 hover:opacity-100 transition-opacity"
-                      onMouseDown={e => startResize(e, col)}
-                      draggable={false}
-                      onClick={e => e.stopPropagation()}
-                    />
-                    {/* resize handle — left edge (resizes the previous column) */}
-                    {orderedVisible.indexOf(col) > 0 && (
-                      <div
-                        className="absolute left-0 top-0 h-full w-1.5 cursor-col-resize hover:bg-blue-400 opacity-0 hover:opacity-100 transition-opacity"
-                        onMouseDown={e => startResize(e, orderedVisible[orderedVisible.indexOf(col) - 1])}
-                        draggable={false}
-                        onClick={e => e.stopPropagation()}
-                      />
-                    )}
-                  </th>
-                ))}
-              </tr>
-            </thead>
+            <ColumnHeaderRow orderedVisible={orderedVisible} />
             <tbody className="bg-white">
               {adding ? (
                 <tr className="border-b border-gray-100 bg-blue-50/40">
