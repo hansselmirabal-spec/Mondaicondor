@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { Loader2, UserPlus, Pencil, Trash2, Shield, User, Eye, Search, X } from 'lucide-react'
+import { Loader2, Pencil, Trash2, Shield, User, Eye, Search, X } from 'lucide-react'
 import { useAuthStore } from '@/store/authStore'
 import { api, type ApiWorkspaceMember } from '@/lib/api'
 import { Modal } from '@/components/ui/Modal'
@@ -38,7 +38,6 @@ export function MembersPage() {
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
 
-  const [showCreate, setShowCreate] = useState(false)
   const [editingMember, setEditingMember] = useState<ApiWorkspaceMember | null>(null)
   const [form, setForm] = useState<FormState>(EMPTY_FORM)
   const [submitting, setSubmitting] = useState(false)
@@ -75,12 +74,6 @@ export function MembersPage() {
     load()
   }, [])
 
-  function openCreate() {
-    setForm(EMPTY_FORM)
-    setFormError(null)
-    setShowCreate(true)
-  }
-
   function openEdit(member: ApiWorkspaceMember) {
     setForm({
       name: member.user.name,
@@ -91,26 +84,6 @@ export function MembersPage() {
     })
     setFormError(null)
     setEditingMember(member)
-  }
-
-  async function handleCreate() {
-    if (!workspaceId) return
-    setSubmitting(true)
-    setFormError(null)
-    try {
-      const { member } = await api.admin.createUser(workspaceId, {
-        name: form.name.trim(),
-        email: form.email.trim(),
-        password: form.password,
-        role: form.role,
-      })
-      setMembers(prev => [...prev, member])
-      setShowCreate(false)
-    } catch (err) {
-      setFormError((err as Error).message)
-    } finally {
-      setSubmitting(false)
-    }
   }
 
   async function handleEdit() {
@@ -170,15 +143,6 @@ export function MembersPage() {
             <h1 className="text-2xl font-bold text-gray-900">Gestión de usuarios</h1>
             <p className="text-sm text-gray-500 mt-0.5">{members.length} {members.length === 1 ? 'usuario' : 'usuarios'}</p>
           </div>
-          {isAdmin && (
-            <button
-              onClick={openCreate}
-              className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-lg transition-colors"
-            >
-              <UserPlus className="w-4 h-4" />
-              Nuevo usuario
-            </button>
-          )}
         </div>
 
         {/* Search */}
@@ -300,79 +264,6 @@ export function MembersPage() {
           </div>
         </div>
       </div>
-
-      {/* Create modal */}
-      <Modal isOpen={showCreate} onClose={() => setShowCreate(false)} title="Nuevo usuario" size="sm">
-        <div className="p-5 space-y-4">
-          <div>
-            <label className="block text-xs font-semibold text-gray-700 mb-1">Nombre completo <span className="text-red-500">*</span></label>
-            <input
-              value={form.name}
-              onChange={e => setForm(f => ({ ...f, name: e.target.value }))}
-              className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-              placeholder="Ana García"
-              autoFocus
-            />
-          </div>
-          <div>
-            <label className="block text-xs font-semibold text-gray-700 mb-1">Email <span className="text-red-500">*</span></label>
-            <input
-              type="email"
-              value={form.email}
-              onChange={e => setForm(f => ({ ...f, email: e.target.value }))}
-              className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-              placeholder="ana@empresa.com"
-            />
-          </div>
-          <div>
-            <label className="block text-xs font-semibold text-gray-700 mb-1">Contraseña <span className="text-red-500">*</span></label>
-            <input
-              type="password"
-              value={form.password}
-              onChange={e => setForm(f => ({ ...f, password: e.target.value }))}
-              className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-              placeholder="Mínimo 8 caracteres"
-            />
-          </div>
-          <div>
-            <label className="block text-xs font-semibold text-gray-700 mb-1">Rol</label>
-            <select
-              value={form.role}
-              onChange={e => setForm(f => ({ ...f, role: e.target.value as Role }))}
-              className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
-            >
-              <option value="MEMBER">Miembro</option>
-              <option value="VIEWER">Visualizador</option>
-              <option value="ADMIN">Admin</option>
-            </select>
-          </div>
-          <div>
-            <label className="block text-xs font-semibold text-gray-700 mb-2">Color de avatar</label>
-            <div className="flex gap-2 flex-wrap">
-              {COLORS.map(c => (
-                <button
-                  key={c}
-                  onClick={() => setForm(f => ({ ...f, color: c }))}
-                  className={`w-7 h-7 rounded-full transition-transform ${form.color === c ? 'ring-2 ring-offset-2 ring-gray-400 scale-110' : 'hover:scale-110'}`}
-                  style={{ backgroundColor: c }}
-                />
-              ))}
-            </div>
-          </div>
-          {formError && <p className="text-xs text-red-600">{formError}</p>}
-          <div className="flex gap-2 pt-1">
-            <button onClick={() => setShowCreate(false)} className="flex-1 py-2 text-sm text-gray-600 border border-gray-200 rounded-lg hover:bg-gray-50">Cancelar</button>
-            <button
-              onClick={handleCreate}
-              disabled={!form.name.trim() || !form.email.trim() || form.password.length < 8 || submitting}
-              className="flex-1 py-2 text-sm bg-blue-600 hover:bg-blue-700 disabled:bg-blue-200 text-white font-medium rounded-lg transition-colors flex items-center justify-center gap-2"
-            >
-              {submitting && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
-              Crear usuario
-            </button>
-          </div>
-        </div>
-      </Modal>
 
       {/* Edit modal */}
       <Modal isOpen={!!editingMember} onClose={() => setEditingMember(null)} title="Editar usuario" size="sm">
