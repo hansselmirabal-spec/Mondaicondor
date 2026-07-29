@@ -89,12 +89,16 @@ export function BoardHeader({ board }: BoardHeaderProps) {
     if (!inviteEmail.includes('@')) return
     setInviting(true)
     try {
-      await api.workspaces.addMember(board.workspaceId, { email: inviteEmail.trim(), role: inviteRole, sendEmail: true })
-      toast(`Invitación enviada a ${inviteEmail}`, 'success')
+      const { member } = await api.workspaces.addMember(board.workspaceId, { email: inviteEmail.trim(), role: inviteRole })
+      setApiUsers([...apiUsers, {
+        id: member.user.id, name: member.user.name, initials: member.user.initials,
+        color: member.user.color, email: member.user.email,
+      }])
+      toast(`Se agregó a ${member.user.name}`, 'success')
       setInviteEmail('')
       setInviteRole('MEMBER')
     } catch (err) {
-      toast((err as Error).message ?? 'Error al enviar invitación', 'error')
+      toast((err as Error).message ?? 'Error al agregar miembro', 'error')
     } finally {
       setInviting(false)
     }
@@ -326,9 +330,9 @@ export function BoardHeader({ board }: BoardHeaderProps) {
               {isWorkspaceAdmin && (
               <div className="border-t border-gray-100 pt-4 space-y-3">
                 <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide flex items-center gap-1.5">
-                  <UserPlus className="w-3.5 h-3.5" /> Invitar miembro
+                  <UserPlus className="w-3.5 h-3.5" /> Agregar miembro
                 </p>
-                <p className="text-xs text-gray-400">Se generará un link de invitación y se enviará un email.</p>
+                <p className="text-xs text-gray-400">Se agregará al workspace y se le notificará por correo.</p>
                 <input
                   type="email"
                   value={inviteEmail}
@@ -351,7 +355,7 @@ export function BoardHeader({ board }: BoardHeaderProps) {
                   className="w-full py-2.5 text-sm bg-blue-600 hover:bg-blue-700 disabled:bg-blue-200 text-white font-medium rounded-lg transition-colors flex items-center justify-center gap-2"
                 >
                   {inviting ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <UserPlus className="w-3.5 h-3.5" />}
-                  Generar invitación y enviar correo
+                  Agregar miembro
                 </button>
               </div>
               )}
