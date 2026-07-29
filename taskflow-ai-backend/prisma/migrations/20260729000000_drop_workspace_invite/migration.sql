@@ -1,5 +1,2 @@
--- DropForeignKey
-ALTER TABLE "WorkspaceInvite" DROP CONSTRAINT IF EXISTS "WorkspaceInvite_workspaceId_fkey";
-
--- DropTable
+-- DropTable (drops the workspaceId foreign key automatically)
 DROP TABLE IF EXISTS "WorkspaceInvite";

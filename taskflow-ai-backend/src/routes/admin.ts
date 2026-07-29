@@ -133,7 +133,7 @@ adminRoutes.post('/workspaces/:workspaceId/users', zValidator('json', createUser
     // Auto-provision: no name/password given, create the account with a temp password.
     tempPassword = randomBytes(5).toString('hex')
     const passwordHash = await bcrypt.hash(tempPassword, 12)
-    const derivedName = email.split('@')[0]
+    const derivedName = name?.trim() || email.split('@')[0]
     const initials = derivedName.slice(0, 2).toUpperCase()
 
     member = await prisma.$transaction(async (tx) => {
