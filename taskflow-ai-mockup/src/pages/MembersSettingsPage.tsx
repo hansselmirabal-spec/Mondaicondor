@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect } from 'react'
 import {
   Loader2,
   UserPlus,
@@ -9,16 +9,11 @@ import {
   ChevronDown,
   Search,
   Check,
-  Copy,
-  Mail,
-  Link2,
-  CheckCheck,
 } from 'lucide-react'
 import { useBoardStore } from '@/store/boardStore'
 import { useAuthStore } from '@/store/authStore'
 import { api, type ApiUser, type ApiWorkspaceMember } from '@/lib/api'
 import { toast } from '@/components/ui/Toast'
-import { copyToClipboard } from '@/lib/utils'
 
 type Role = 'ADMIN' | 'MEMBER' | 'VIEWER'
 
@@ -220,18 +215,17 @@ function InviteRegisteredTab({
   )
 }
 
-// ── Tab B: invite new user via link + email ───────────────────────────────────
+// ── Tab B: add a brand-new user directly ──────────────────────────────────────
 function InviteNewUserTab({
   workspaceId,
+  onInvited,
 }: {
   workspaceId: string
+  onInvited: () => void
 }) {
   const [email, setEmail] = useState('')
   const [role, setRole] = useState<Role>('MEMBER')
   const [submitting, setSubmitting] = useState(false)
-  const [inviteLink, setInviteLink] = useState<string | null>(null)
-  const [copied, setCopied] = useState(false)
-  const linkInputRef = useRef<HTMLInputElement>(null)
 
   const isValid = email.includes('@') && email.includes('.')
 
@@ -239,12 +233,14 @@ function InviteNewUserTab({
     if (!isValid) return
     setSubmitting(true)
     try {
-      const { inviteUrl } = await api.workspaces.addMember(workspaceId, {
+      const { member } = await api.workspaces.addMember(workspaceId, {
         email: email.trim(),
         role,
-        sendEmail: true,
       })
-      setInviteLink(`${window.location.origin}${inviteUrl}`)
+      toast(`${member.user.name} fue agregado al workspace y notificado por correo.`, 'success')
+      setEmail('')
+      setRole('MEMBER')
+      onInvited()
     } catch (err) {
       toast((err as Error).message, 'error')
     } finally {
@@ -252,65 +248,10 @@ function InviteNewUserTab({
     }
   }
 
-  function handleCopy() {
-    const input = linkInputRef.current
-    if (!input) return
-    input.focus()
-    input.select()
-    input.setSelectionRange(0, 99999)
-    document.execCommand('copy')
-    setCopied(true)
-    setTimeout(() => setCopied(false), 2000)
-  }
-
-  function handleReset() {
-    setInviteLink(null)
-    setEmail('')
-    setCopied(false)
-  }
-
-  if (inviteLink) {
-    return (
-      <div className="space-y-4">
-        <div className="p-4 bg-green-50 border border-green-200 rounded-xl space-y-3">
-          <div className="flex items-center gap-2">
-            <CheckCheck className="w-4 h-4 text-green-600" />
-            <p className="text-sm font-semibold text-green-700">Invitación generada</p>
-          </div>
-          <p className="text-xs text-green-600">
-            Se envió un email a <span className="font-medium">{email}</span> con el link de acceso. También podés compartirlo directamente:
-          </p>
-          <div className="flex gap-2">
-            <input
-              ref={linkInputRef}
-              readOnly
-              value={inviteLink}
-              className="flex-1 px-3 py-2 bg-white border border-green-300 rounded-lg text-xs text-gray-700 focus:outline-none"
-              onFocus={e => e.target.select()}
-            />
-            <button
-              onClick={handleCopy}
-              className="px-3 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg text-xs font-medium flex items-center gap-1.5 transition-colors shrink-0"
-            >
-              {copied ? <CheckCheck className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
-              {copied ? 'Copiado' : 'Copiar'}
-            </button>
-          </div>
-        </div>
-        <button
-          onClick={handleReset}
-          className="w-full py-2 border border-gray-200 hover:bg-gray-50 text-gray-600 text-sm rounded-lg transition-colors"
-        >
-          Invitar otro usuario
-        </button>
-      </div>
-    )
-  }
-
   return (
     <div className="space-y-4">
       <p className="text-xs text-gray-500">
-        Se generará un link de invitación y se enviará un email. El usuario deberá registrarse con ese email para unirse.
+        Se creará una cuenta para este email y se lo agregará al workspace de inmediato. Recibirá un correo con sus credenciales de acceso.
       </p>
       <div>
         <label className="block text-xs font-semibold text-gray-700 mb-1">
@@ -335,7 +276,7 @@ function InviteNewUserTab({
         className="w-full py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-200 text-white text-sm font-medium rounded-lg transition-colors flex items-center justify-center gap-2"
       >
         {submitting && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
-        Generar invitación y enviar correo
+        Agregar miembro
       </button>
     </div>
   )
@@ -394,11 +335,12 @@ export function MembersSettingsPage() {
     }
   }
 
-  function handleMemberCreated(member: ApiWorkspaceMember) {
-    setMembers(prev => {
-      if (prev.some(m => m.userId === member.userId)) return prev
-      return [...prev, member]
-    })
+  function refreshMembers() {
+    if (!workspace) return
+    api.workspaces
+      .get(workspace.id)
+      .then(({ workspace: ws }) => setMembers(ws.members as ApiWorkspaceMember[]))
+      .catch(() => {})
   }
 
   if (!workspace) {
@@ -542,16 +484,10 @@ export function MembersSettingsPage() {
                 <InviteRegisteredTab
                   workspaceId={workspace.id}
                   members={members}
-                  onInvited={() => {
-                    // Refresh member list after invite
-                    api.workspaces
-                      .get(workspace.id)
-                      .then(({ workspace: ws }) => setMembers(ws.members as ApiWorkspaceMember[]))
-                      .catch(() => {})
-                  }}
+                  onInvited={refreshMembers}
                 />
               ) : (
-                <InviteNewUserTab workspaceId={workspace.id} />
+                <InviteNewUserTab workspaceId={workspace.id} onInvited={refreshMembers} />
               )}
             </div>
           </div>
