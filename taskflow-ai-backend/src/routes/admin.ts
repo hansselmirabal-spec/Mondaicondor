@@ -2,6 +2,8 @@ import { Hono } from 'hono'
 import { zValidator } from '@hono/zod-validator'
 import { z } from 'zod'
 import bcrypt from 'bcryptjs'
+import { randomBytes } from 'node:crypto'
+import type { Prisma } from '@prisma/client'
 import { prisma } from '../lib/prisma.js'
 import { authMiddleware } from '../middleware/auth.js'
 import { sendInviteEmail } from '../lib/email.js'
@@ -62,10 +64,29 @@ adminRoutes.post('/workspaces/:workspaceId/users', zValidator('json', createUser
     return c.json({ error: 'Solo admins pueden agregar usuarios' }, 403)
   }
 
-  const workspace = await prisma.workspace.findUnique({ where: { id: workspaceId }, select: { name: true } })
+  const [workspace, actor] = await Promise.all([
+    prisma.workspace.findUnique({ where: { id: workspaceId }, select: { name: true } }),
+    prisma.user.findUnique({ where: { id: userId }, select: { name: true } }),
+  ])
   const workspaceName = workspace?.name ?? 'TaskFlow AI'
+  const actorName = actor?.name ?? 'Un administrador'
+  const roleLabel = role === 'ADMIN' ? 'Administrador' : role === 'VIEWER' ? 'Visualizador' : 'Miembro'
   const appUrl = process.env.APP_URL ?? 'http://localhost:5173'
   const loginUrl = `${appUrl}/login`
+
+  function notifyMember(addedUserId: string) {
+    prisma.notification.create({
+      data: {
+        userId: addedUserId,
+        title: `Te agregaron a ${workspaceName}`,
+        body: `${actorName} te agregó al workspace ${workspaceName} como ${roleLabel}.`,
+        taskId: null,
+        boardId: null,
+      },
+    }).catch((err) => {
+      console.error('[notification] create failed:', err?.message ?? err)
+    })
+  }
 
   const existing = await prisma.user.findUnique({ where: { email } })
   if (existing) {
@@ -81,31 +102,55 @@ adminRoutes.post('/workspaces/:workspaceId/users', zValidator('json', createUser
     sendInviteEmail(email, workspaceName, loginUrl, role).catch((err) => {
       console.error('[email] invite send failed:', err?.message ?? err)
     })
+    notifyMember(existing.id)
     return c.json({ member }, 201)
   }
 
-  if (!name || !password) {
-    return c.json({ error: 'Usuario no encontrado. Usá el flujo de invitación para usuarios nuevos.' }, 404)
+  const memberInclude = {
+    user: { select: { id: true, name: true, email: true, initials: true, color: true, createdAt: true } },
+  } satisfies Prisma.WorkspaceMemberInclude
+
+  let tempPassword: string | undefined
+  let member: Prisma.WorkspaceMemberGetPayload<{ include: typeof memberInclude }>
+
+  if (name && password) {
+    // Deliberate create with explicit name + password (backward compat).
+    const initials = name.split(' ').slice(0, 2).map((w: string) => w[0]?.toUpperCase() ?? '').join('')
+    const colors = ['#e2445c', '#579bfc', '#00c875', '#fdab3d', '#a25ddc', '#00c2cd', '#ff7575', '#037f4c']
+    const color = colors[Math.floor(Math.random() * colors.length)]
+    const passwordHash = await bcrypt.hash(password, 12)
+
+    member = await prisma.$transaction(async (tx) => {
+      const user = await tx.user.create({
+        data: { name, email, initials, color, passwordHash },
+      })
+      return tx.workspaceMember.create({
+        data: { workspaceId, userId: user.id, role },
+        include: memberInclude,
+      })
+    })
+  } else {
+    // Auto-provision: no name/password given, create the account with a temp password.
+    tempPassword = randomBytes(5).toString('hex')
+    const passwordHash = await bcrypt.hash(tempPassword, 12)
+    const derivedName = email.split('@')[0]
+    const initials = derivedName.slice(0, 2).toUpperCase()
+
+    member = await prisma.$transaction(async (tx) => {
+      const user = await tx.user.create({
+        data: { name: derivedName, email, initials, passwordHash, mustChangePassword: true },
+      })
+      return tx.workspaceMember.create({
+        data: { workspaceId, userId: user.id, role },
+        include: memberInclude,
+      })
+    })
   }
 
-  const initials = name.split(' ').slice(0, 2).map((w: string) => w[0]?.toUpperCase() ?? '').join('')
-  const colors = ['#e2445c', '#579bfc', '#00c875', '#fdab3d', '#a25ddc', '#00c2cd', '#ff7575', '#037f4c']
-  const color = colors[Math.floor(Math.random() * colors.length)]
-  const passwordHash = await bcrypt.hash(password, 12)
-
-  const member = await prisma.$transaction(async (tx) => {
-    const user = await tx.user.create({
-      data: { name, email, initials, color, passwordHash },
-    })
-    return tx.workspaceMember.create({
-      data: { workspaceId, userId: user.id, role },
-      include: { user: { select: { id: true, name: true, email: true, initials: true, color: true, createdAt: true } } },
-    })
-  })
-
-  sendInviteEmail(email, workspaceName, loginUrl, role).catch((err) => {
+  sendInviteEmail(email, workspaceName, loginUrl, role, tempPassword).catch((err) => {
     console.error('[email] invite send failed:', err?.message ?? err)
   })
+  notifyMember(member.userId)
   return c.json({ member }, 201)
 })
 
