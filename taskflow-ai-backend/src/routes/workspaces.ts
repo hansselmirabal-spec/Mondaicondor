@@ -3,9 +3,6 @@ import { zValidator } from '@hono/zod-validator'
 import { z } from 'zod'
 import { prisma } from '../lib/prisma.js'
 import { authMiddleware } from '../middleware/auth.js'
-import { sendInviteEmail } from '../lib/email.js'
-import bcrypt from 'bcryptjs'
-import { randomBytes } from 'node:crypto'
 import type { AppEnv } from '../lib/types.js'
 
 export const workspaceRoutes = new Hono<AppEnv>()
@@ -37,12 +34,6 @@ const createWorkspaceSchema = z.object({
 const updateWorkspaceSchema = z.object({
   name: z.string().min(2).optional(),
   color: z.string().regex(/^#[0-9a-fA-F]{6}$/).optional(),
-})
-
-const inviteSchema = z.object({
-  email: z.string().email(),
-  role: z.enum(['ADMIN', 'MEMBER', 'VIEWER']).default('MEMBER'),
-  sendEmail: z.boolean().optional().default(false),
 })
 
 const updateSettingsSchema = z.object({
@@ -152,92 +143,6 @@ workspaceRoutes.delete('/:id', async (c) => {
 
   await prisma.workspace.delete({ where: { id } })
   return c.json({ message: 'Workspace eliminado' })
-})
-
-workspaceRoutes.post('/:id/invite', zValidator('json', inviteSchema), async (c) => {
-  const { userId } = c.get('user')
-  const { id } = c.req.param()
-  const { email, role, sendEmail } = c.req.valid('json')
-
-  const membership = await prisma.workspaceMember.findUnique({
-    where: { workspaceId_userId: { workspaceId: id, userId } },
-  })
-  if (!membership || membership.role !== 'ADMIN') {
-    return c.json({ error: 'Solo admins pueden agregar miembros' }, 403)
-  }
-
-  const workspace = await prisma.workspace.findUnique({ where: { id }, select: { name: true } })
-
-  const invite = await prisma.workspaceInvite.upsert({
-    where: { workspaceId_email: { workspaceId: id, email } },
-    update: { role, expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), acceptedAt: null },
-    create: {
-      workspaceId: id,
-      email,
-      role,
-      expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
-    },
-  })
-
-  const appUrl = process.env.APP_URL ?? 'http://localhost:5173'
-  const loginUrl = `${appUrl}/login`
-
-  // If the user doesn't exist yet, create the account with a temp password
-  let tempPassword: string | undefined
-  const existingUser = await prisma.user.findUnique({ where: { email } })
-  if (!existingUser) {
-    tempPassword = randomBytes(5).toString('hex') // e.g. "a3f8c1d2e5"
-    const passwordHash = await bcrypt.hash(tempPassword, 12)
-    const name = email.split('@')[0]
-    const initials = name.slice(0, 2).toUpperCase()
-    const newUser = await prisma.user.create({
-      data: { email, name, initials, passwordHash, mustChangePassword: true },
-    })
-    await prisma.workspaceMember.upsert({
-      where: { workspaceId_userId: { workspaceId: id, userId: newUser.id } },
-      update: { role },
-      create: { workspaceId: id, userId: newUser.id, role },
-    })
-  }
-
-  if (sendEmail) {
-    try {
-      await sendInviteEmail(email, workspace?.name ?? 'TaskFlow AI', loginUrl, role, tempPassword)
-    } catch (emailErr) {
-      console.error('Failed to send invite email:', emailErr)
-    }
-  }
-
-  return c.json({ invite, inviteUrl: `/workspaces/accept/${invite.token}` }, 201)
-})
-
-workspaceRoutes.post('/accept/:token', async (c) => {
-  const { userId } = c.get('user')
-  const { token } = c.req.param()
-
-  const invite = await prisma.workspaceInvite.findUnique({ where: { token } })
-  if (!invite || invite.expiresAt < new Date() || invite.acceptedAt) {
-    return c.json({ error: 'Invitación inválida o expirada' }, 400)
-  }
-
-  const user = await prisma.user.findUnique({ where: { id: userId } })
-  if (user?.email !== invite.email) {
-    return c.json({ error: 'Esta invitación es para otro email' }, 403)
-  }
-
-  await prisma.$transaction([
-    prisma.workspaceMember.upsert({
-      where: { workspaceId_userId: { workspaceId: invite.workspaceId, userId } },
-      create: { workspaceId: invite.workspaceId, userId, role: invite.role },
-      update: {},
-    }),
-    prisma.workspaceInvite.update({
-      where: { token },
-      data: { acceptedAt: new Date() },
-    }),
-  ])
-
-  return c.json({ message: 'Te uniste al workspace' })
 })
 
 workspaceRoutes.put('/:id/members/:memberId', zValidator('json', z.object({ role: z.enum(['ADMIN', 'MEMBER', 'VIEWER']) })), async (c) => {
