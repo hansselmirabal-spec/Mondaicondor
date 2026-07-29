@@ -3,7 +3,6 @@ import { AppShell } from '@/components/layout/AppShell'
 import { LoginPage } from '@/pages/LoginPage'
 import { ForgotPasswordPage } from '@/pages/ForgotPasswordPage'
 import { ResetPasswordPage } from '@/pages/ResetPasswordPage'
-import { AcceptInvitePage } from '@/pages/AcceptInvitePage'
 import { BoardsPage } from '@/pages/BoardsPage'
 import { BoardPage } from '@/pages/BoardPage'
 import { SettingsPage } from '@/pages/SettingsPage'
@@ -51,7 +50,6 @@ export const router = createBrowserRouter([
       { path: 'members', element: <MembersPage /> },
       { path: 'gerencia', element: <GerenciaPage /> },
       { path: 'mis-tareas', element: <MisTareasPage /> },
-      { path: 'workspaces/accept/:token', element: <AcceptInvitePage /> },
       { path: 'system-admin/users', element: <SystemAdminPage /> },
       {
         path: 'settings',
