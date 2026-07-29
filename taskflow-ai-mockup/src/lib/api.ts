@@ -217,14 +217,8 @@ export const api = {
     delete: (id: string) =>
       request<{ message: string }>(`/workspaces/${id}`, { method: 'DELETE' }),
 
-    invite: (id: string, email: string, role: 'ADMIN' | 'MEMBER' | 'VIEWER') =>
-      request<{ invite: { token: string }; inviteUrl: string }>(`/workspaces/${id}/invite`, {
-        method: 'POST',
-        body: JSON.stringify({ email, role }),
-      }),
-
-    addMember: (workspaceId: string, data: { email: string; role: 'ADMIN' | 'MEMBER' | 'VIEWER'; sendEmail?: boolean }) =>
-      request<{ invite: { token: string }; inviteUrl: string }>(`/workspaces/${workspaceId}/invite`, {
+    addMember: (workspaceId: string, data: { email: string; role: 'ADMIN' | 'MEMBER' | 'VIEWER'; name?: string; password?: string }) =>
+      request<{ member: ApiWorkspaceMember }>(`/admin/workspaces/${workspaceId}/users`, {
         method: 'POST',
         body: JSON.stringify(data),
       }),
@@ -285,9 +279,6 @@ export const api = {
         `/workspaces/${workspaceId}/members/${memberId}/email-notifications`,
         { method: 'PUT', body: JSON.stringify({ enabled }) }
       ),
-
-    acceptInvite: (token: string) =>
-      request<{ message: string }>(`/workspaces/accept/${token}`, { method: 'POST' }),
   },
 
   boards: {
