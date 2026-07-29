@@ -1,0 +1,57 @@
+schema: spec-driven
+
+context: |
+  Monorepo (single git repo, no npm workspaces) with two independent apps:
+  - taskflow-ai-backend: Hono 4 + Prisma 5 + PostgreSQL, TypeScript, npm, ESM.
+  - taskflow-ai-mockup: React 18 + Vite 5 + Zustand 4 + Tailwind 3 + TypeScript,
+    npm, PWA (vite-plugin-pwa).
+  Branches: main->PROD, staging->QAS, develop. Deploys via GitHub Actions
+  self-hosted runner + Docker Compose per environment.
+  Testing: backend has NO test framework. Frontend has Playwright E2E only
+  (no unit/component test runner).
+
+strict_tdd: false
+
+testing:
+  backend:
+    test_command: ""
+    framework: none
+    notes: >-
+      No jest/vitest/mocha configured, no "test" script in package.json.
+      qa_e2e.py at repo root is an ad-hoc manual Python script (uses
+      `requests`), not an integrated test runner.
+  frontend:
+    test_command: "npx playwright test"
+    framework: playwright
+    notes: >-
+      E2E only (9 specs in e2e/), no unit/component testing library.
+      Requires backend running on :3000 and frontend dev server on :5173
+      (per taskflow-ai-mockup/CLAUDE.md — never mock /api/** in tests).
+      workers: 1, retries: 1 (sequential, stateful suite).
+
+rules:
+  proposal:
+    - Include rollback plan for risky changes
+    - State which app(s) are affected: backend, frontend, or both
+  specs:
+    - Use Given/When/Then for scenarios
+    - Use RFC 2119 keywords (MUST, SHALL, SHOULD, MAY)
+  design:
+    - Document Prisma schema/migration impact when backend data model changes
+    - Note API contract changes consumed by taskflow-ai-mockup/src/lib/api.ts
+  tasks:
+    - Group by phase, use hierarchical numbering
+    - Keep tasks completable in one session
+    - Split backend and frontend work into separate task groups when both are touched
+  apply:
+    guidelines:
+      - Follow existing code patterns (routes in src/routes/, Zod validation via @hono/zod-validator)
+      - Frontend components: named exports, ComponentNameProps interface, no any, Tailwind only
+    tdd: false
+    test_command: ""
+  verify:
+    test_command: "npx playwright test"
+    build_command: "npm run build"
+    coverage_threshold: 0
+  archive:
+    - Warn before merging destructive deltas
