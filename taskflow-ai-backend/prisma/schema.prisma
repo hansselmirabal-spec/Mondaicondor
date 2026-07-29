@@ -68,7 +68,6 @@ model Workspace {
 
   members  WorkspaceMember[]
   boards   Board[]
-  invites  WorkspaceInvite[]
   settings WorkspaceSettings?
   statuses WorkspaceStatus[]
   uens     WorkspaceUen[]
@@ -102,21 +101,6 @@ model WorkspaceMember {
 
   @@unique([workspaceId, userId])
   @@index([userId])
-}
-
-model WorkspaceInvite {
-  id          String    @id @default(cuid())
-  workspaceId String
-  email       String
-  role        Role      @default(MEMBER)
-  token       String    @unique @default(cuid())
-  expiresAt   DateTime
-  acceptedAt  DateTime?
-  createdAt   DateTime  @default(now())
-
-  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
-
-  @@unique([workspaceId, email])
 }
 
 model WorkspaceSettings {
