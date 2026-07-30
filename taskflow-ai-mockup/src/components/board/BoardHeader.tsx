@@ -89,12 +89,10 @@ export function BoardHeader({ board }: BoardHeaderProps) {
     if (!inviteEmail.includes('@')) return
     setInviting(true)
     try {
+      // Adds to the WORKSPACE (not this board's member list). Board access is a
+      // separate action, so don't merge into the board-scoped apiUsers here.
       const { member } = await api.workspaces.addMember(board.workspaceId, { email: inviteEmail.trim(), role: inviteRole })
-      setApiUsers([...apiUsers, {
-        id: member.user.id, name: member.user.name, initials: member.user.initials,
-        color: member.user.color, email: member.user.email,
-      }])
-      toast(`Se agregó a ${member.user.name}`, 'success')
+      toast(`Se agregó a ${member.user.name} al espacio de trabajo`, 'success')
       setInviteEmail('')
       setInviteRole('MEMBER')
     } catch (err) {

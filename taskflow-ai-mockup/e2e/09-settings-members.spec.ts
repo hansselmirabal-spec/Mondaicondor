@@ -71,7 +71,7 @@ test.describe('Settings — Members', () => {
   test('tab "Usuario nuevo" shows direct-add form', async ({ page }) => {
     await page.getByRole('button', { name: /usuario nuevo/i }).click()
     await expect(page.locator('input[type="email"]')).toBeVisible({ timeout: 3_000 })
-    await expect(page.locator('select')).toBeVisible()
+    await expect(page.locator('select').last()).toBeVisible()
     await expect(page.getByRole('button', { name: /agregar miembro/i })).toBeVisible()
   })
 
