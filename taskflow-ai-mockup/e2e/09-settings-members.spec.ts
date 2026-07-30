@@ -56,7 +56,7 @@ test.describe('Settings — Members', () => {
     expect(totalAfter).toBeLessThan(totalBefore)
   })
 
-  test('clicking a user selects it and enables invite button', async ({ page }) => {
+  test('clicking a user selects it and enables add button', async ({ page }) => {
     await page.getByRole('button', { name: /usuario registrado/i }).click()
 
     // Find a user NOT already a member (not dimmed)
@@ -64,23 +64,24 @@ test.describe('Settings — Members', () => {
     await expect(availableUser).toBeVisible({ timeout: 8_000 })
     await availableUser.click()
 
-    const inviteBtn = page.getByRole('button', { name: /invitar a/i })
+    const inviteBtn = page.getByRole('button', { name: /agregar a/i })
     await expect(inviteBtn).toBeEnabled({ timeout: 3_000 })
   })
 
-  test('tab "Usuario nuevo" shows create form', async ({ page }) => {
+  test('tab "Usuario nuevo" shows direct-add form', async ({ page }) => {
     await page.getByRole('button', { name: /usuario nuevo/i }).click()
-    await expect(page.locator('input[placeholder="Ana García"]')).toBeVisible({ timeout: 3_000 })
-    await expect(page.locator('input[type="password"]')).toBeVisible()
-    await expect(page.getByRole('button', { name: /crear y agregar/i })).toBeVisible()
+    await expect(page.locator('input[type="email"]')).toBeVisible({ timeout: 3_000 })
+    await expect(page.locator('select')).toBeVisible()
+    await expect(page.getByRole('button', { name: /agregar miembro/i })).toBeVisible()
   })
 
-  test('create form validates password length', async ({ page }) => {
+  test('direct-add form requires a valid email', async ({ page }) => {
     await page.getByRole('button', { name: /usuario nuevo/i }).click()
-    await page.locator('input[placeholder="Ana García"]').fill('Test User')
-    await page.locator('input[type="email"]').fill('test@test.com')
-    await page.locator('input[type="password"]').fill('short')
-    await expect(page.getByText(/mínimo 8/i)).toBeVisible({ timeout: 3_000 })
-    await expect(page.getByRole('button', { name: /crear y agregar/i })).toBeDisabled()
+    const submitBtn = page.getByRole('button', { name: /agregar miembro/i })
+    await expect(submitBtn).toBeDisabled()
+    await page.locator('input[type="email"]').fill('not-an-email')
+    await expect(submitBtn).toBeDisabled()
+    await page.locator('input[type="email"]').fill('nuevo@empresa.com')
+    await expect(submitBtn).toBeEnabled({ timeout: 3_000 })
   })
 })
