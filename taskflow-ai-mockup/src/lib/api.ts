@@ -361,13 +361,18 @@ export const api = {
         method: 'POST', body: JSON.stringify(data),
       }),
 
-    updateUser: (id: string, data: { name?: string; email?: string; password?: string }) =>
+    updateUser: (id: string, data: { name?: string; email?: string }) =>
       request<{ user: SystemAdminUser }>(`/system-admin/users/${id}`, {
         method: 'PUT', body: JSON.stringify(data),
       }),
 
     deleteUser: (id: string) =>
       request<{ message: string }>(`/system-admin/users/${id}`, { method: 'DELETE' }),
+
+    resetPassword: (id: string) =>
+      request<{ tempPassword: string }>(`/system-admin/users/${id}/reset-password`, {
+        method: 'POST',
+      }),
   },
 
   tasks: {

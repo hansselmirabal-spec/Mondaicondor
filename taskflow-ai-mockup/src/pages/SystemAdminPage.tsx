@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Navigate } from 'react-router-dom'
-import { ShieldCheck, Plus, Pencil, Trash2, X, Loader2, AlertCircle } from 'lucide-react'
+import { ShieldCheck, Plus, Pencil, Trash2, X, Loader2, AlertCircle, KeyRound, Copy, Check } from 'lucide-react'
 import { api } from '@/lib/api'
 import type { SystemAdminUser } from '@/lib/api'
 import { useAuthStore } from '@/store/authStore'
@@ -167,7 +167,6 @@ interface EditModalProps {
 function EditModal({ user, onClose, onUpdated }: EditModalProps) {
   const [name, setName] = useState(user.name)
   const [email, setEmail] = useState(user.email)
-  const [password, setPassword] = useState('')
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
 
@@ -176,12 +175,10 @@ function EditModal({ user, onClose, onUpdated }: EditModalProps) {
     setError('')
 
     if (name.trim().length < 2) { setError('El nombre debe tener al menos 2 caracteres.'); return }
-    if (password && password.length < 8) { setError('La contraseña debe tener al menos 8 caracteres.'); return }
 
-    const data: { name?: string; email?: string; password?: string } = {}
+    const data: { name?: string; email?: string } = {}
     if (name.trim() !== user.name) data.name = name.trim()
     if (email.trim() !== user.email) data.email = email.trim()
-    if (password) data.password = password
 
     if (Object.keys(data).length === 0) { onClose(); return }
 
@@ -219,16 +216,6 @@ function EditModal({ user, onClose, onUpdated }: EditModalProps) {
             required
           />
         </div>
-        <div>
-          <label className="block text-xs font-medium text-gray-700 mb-1">Nueva contraseña <span className="text-gray-400 font-normal">(opcional)</span></label>
-          <input
-            type="password"
-            value={password}
-            onChange={e => setPassword(e.target.value)}
-            className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-            placeholder="Dejar vacío para no cambiar"
-          />
-        </div>
 
         {error && <FieldError message={error} />}
 
@@ -246,6 +233,115 @@ function EditModal({ user, onClose, onUpdated }: EditModalProps) {
           </button>
         </div>
       </form>
+    </Modal>
+  )
+}
+
+// ---- Reset password modal ---------------------------------------------------
+
+interface ResetPasswordModalProps {
+  user: SystemAdminUser
+  isSelf: boolean
+  onClose: () => void
+}
+
+function ResetPasswordModal({ user, isSelf, onClose }: ResetPasswordModalProps) {
+  const [phase, setPhase] = useState<'confirm' | 'revealed'>('confirm')
+  const [tempPassword, setTempPassword] = useState('')
+  const [copied, setCopied] = useState(false)
+  const [error, setError] = useState('')
+  const [loading, setLoading] = useState(false)
+
+  async function handleConfirm() {
+    setError('')
+    setLoading(true)
+    try {
+      const { tempPassword } = await api.systemAdmin.resetPassword(user.id)
+      setTempPassword(tempPassword)
+      setPhase('revealed')
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Error al restablecer la contraseña')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  async function handleCopy() {
+    await navigator.clipboard.writeText(tempPassword)
+    setCopied(true)
+  }
+
+  function handleClose() {
+    setTempPassword('')
+    onClose()
+  }
+
+  return (
+    <Modal title="Resetear contraseña" onClose={handleClose}>
+      {phase === 'confirm' && (
+        <div className="space-y-4">
+          <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
+            <Avatar initials={user.initials} color={user.color} size="sm" />
+            <div>
+              <p className="text-sm font-medium text-gray-900">{user.name}</p>
+              <p className="text-xs text-gray-500">{user.email}</p>
+            </div>
+          </div>
+          <p className="text-sm text-gray-600">
+            Se generará una contraseña temporal y se cerrarán todas las sesiones activas de este usuario. Deberá cambiarla en su próximo inicio de sesión.
+          </p>
+          {isSelf && (
+            <div className="flex items-start gap-2 p-3 bg-amber-50 rounded-lg ring-1 ring-amber-200">
+              <AlertCircle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
+              <p className="text-xs text-amber-800">
+                Estás restableciendo tu propia contraseña. Se cerrará tu sesión y deberás volver a iniciar sesión con la contraseña temporal.
+              </p>
+            </div>
+          )}
+
+          {error && <FieldError message={error} />}
+
+          <div className="flex justify-end gap-2 pt-1">
+            <button type="button" onClick={handleClose} className="px-4 py-2 text-sm text-gray-600 hover:text-gray-900 transition-colors">
+              Cancelar
+            </button>
+            <button
+              onClick={handleConfirm}
+              disabled={loading}
+              className="flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-60 text-white text-sm font-medium rounded-lg transition-colors"
+            >
+              {loading && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
+              Resetear contraseña
+            </button>
+          </div>
+        </div>
+      )}
+
+      {phase === 'revealed' && (
+        <div className="space-y-4">
+          <p className="text-sm text-gray-600">
+            Contraseña temporal generada. Cópiala ahora — no volverá a mostrarse.
+          </p>
+          <div className="flex items-center gap-2 p-3 bg-gray-50 rounded-lg border border-gray-200">
+            <code className="flex-1 text-sm font-mono text-gray-900 select-all">{tempPassword}</code>
+            <button
+              onClick={handleCopy}
+              title="Copiar"
+              className="p-1.5 text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors"
+            >
+              {copied ? <Check className="w-3.5 h-3.5 text-green-600" /> : <Copy className="w-3.5 h-3.5" />}
+            </button>
+          </div>
+          <div className="flex justify-end pt-1">
+            <button
+              onClick={handleClose}
+              className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium rounded-lg transition-colors"
+            >
+              Listo
+            </button>
+          </div>
+        </div>
+      )}
     </Modal>
   )
 }
@@ -315,6 +411,7 @@ type ModalState =
   | { type: 'create' }
   | { type: 'edit'; user: SystemAdminUser }
   | { type: 'delete'; user: SystemAdminUser }
+  | { type: 'reset'; user: SystemAdminUser }
 
 export function SystemAdminPage() {
   const currentUser = useAuthStore(state => state.user)
@@ -420,7 +517,7 @@ export function SystemAdminPage() {
                         {u.isAppAdmin && (
                           <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-indigo-50 text-indigo-700 text-xs font-medium ring-1 ring-indigo-200">
                             <ShieldCheck className="w-3 h-3" />
-                            App Admin
+                            Admin de sistema
                           </span>
                         )}
                         {u.mustChangePassword && (
@@ -436,6 +533,13 @@ export function SystemAdminPage() {
                     <td className="px-4 py-3 text-gray-500 text-xs">{formatDate(u.createdAt)}</td>
                     <td className="px-4 py-3">
                       <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <button
+                          onClick={() => setModal({ type: 'reset', user: u })}
+                          title="Resetear contraseña"
+                          className="p-1.5 text-gray-400 hover:text-amber-600 hover:bg-amber-50 rounded-lg transition-colors"
+                        >
+                          <KeyRound className="w-3.5 h-3.5" />
+                        </button>
                         <button
                           onClick={() => setModal({ type: 'edit', user: u })}
                           title="Editar"
@@ -469,6 +573,13 @@ export function SystemAdminPage() {
       )}
       {modal.type === 'delete' && (
         <DeleteModal user={modal.user} onClose={() => setModal({ type: 'none' })} onDeleted={handleDeleted} />
+      )}
+      {modal.type === 'reset' && (
+        <ResetPasswordModal
+          user={modal.user}
+          isSelf={modal.user.id === currentUser?.id}
+          onClose={() => setModal({ type: 'none' })}
+        />
       )}
     </div>
   )
