@@ -2,6 +2,7 @@ import { Hono } from 'hono'
 import { zValidator } from '@hono/zod-validator'
 import { z } from 'zod'
 import bcrypt from 'bcryptjs'
+import { randomBytes } from 'node:crypto'
 import { prisma } from '../lib/prisma.js'
 import { authMiddleware } from '../middleware/auth.js'
 import type { AppEnv } from '../lib/types.js'
@@ -60,7 +61,6 @@ systemAdminRoutes.post('/users', zValidator('json', createSchema), async (c) => 
 const updateSchema = z.object({
   name: z.string().min(2).optional(),
   email: z.string().email().optional(),
-  password: z.string().min(8).optional(),
 })
 
 systemAdminRoutes.put('/users/:id', zValidator('json', updateSchema), async (c) => {
@@ -68,7 +68,7 @@ systemAdminRoutes.put('/users/:id', zValidator('json', updateSchema), async (c) 
   if (!await assertAppAdmin(userId)) return c.json({ error: 'Sin acceso' }, 403)
 
   const { id } = c.req.param()
-  const { name, email, password } = c.req.valid('json')
+  const { name, email } = c.req.valid('json')
 
   const data: Record<string, unknown> = {}
   if (name) {
@@ -76,7 +76,6 @@ systemAdminRoutes.put('/users/:id', zValidator('json', updateSchema), async (c) 
     data.initials = name.split(' ').slice(0, 2).map((w: string) => w[0]?.toUpperCase() ?? '').join('')
   }
   if (email) data.email = email
-  if (password) { data.passwordHash = await bcrypt.hash(password, 12); data.mustChangePassword = true }
 
   try {
     const user = await prisma.user.update({
@@ -88,6 +87,30 @@ systemAdminRoutes.put('/users/:id', zValidator('json', updateSchema), async (c) 
   } catch (err: any) {
     if (err?.code === 'P2025') return c.json({ error: 'Usuario no encontrado' }, 404)
     if (err?.code === 'P2002') return c.json({ error: 'El email ya está en uso' }, 409)
+    throw err
+  }
+})
+
+// POST /system-admin/users/:id/reset-password — resetear contraseña
+systemAdminRoutes.post('/users/:id/reset-password', async (c) => {
+  const { userId } = c.get('user')
+  if (!await assertAppAdmin(userId)) return c.json({ error: 'Sin acceso' }, 403)
+
+  const { id } = c.req.param()
+  const tempPassword = randomBytes(6).toString('hex')
+  const passwordHash = await bcrypt.hash(tempPassword, 12)
+
+  try {
+    await prisma.$transaction([
+      prisma.user.update({
+        where: { id },
+        data: { passwordHash, mustChangePassword: true },
+      }),
+      prisma.refreshToken.deleteMany({ where: { userId: id } }),
+    ])
+    return c.json({ tempPassword })
+  } catch (err: any) {
+    if (err?.code === 'P2025') return c.json({ error: 'Usuario no encontrado' }, 404)
     throw err
   }
 })
