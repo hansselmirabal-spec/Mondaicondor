@@ -112,8 +112,11 @@ boardRoutes.post('/', zValidator('json', createBoardSchema), async (c) => {
   const { userId } = c.get('user')
   const { name, description, workspaceId, isPrivate } = c.req.valid('json')
 
-  const membership = await getWorkspaceMembership(workspaceId, userId)
-  if (!membership) return c.json({ error: 'Sin acceso al workspace' }, 403)
+  const [membership, user] = await Promise.all([
+    getWorkspaceMembership(workspaceId, userId),
+    prisma.user.findUnique({ where: { id: userId }, select: { isAppAdmin: true } }),
+  ])
+  if (!membership && !user?.isAppAdmin) return c.json({ error: 'Sin acceso al workspace' }, 403)
 
   const board = await prisma.board.create({
     data: {
