@@ -7,18 +7,12 @@ import type { Prisma } from '@prisma/client'
 import { prisma } from '../lib/prisma.js'
 import { authMiddleware } from '../middleware/auth.js'
 import { sendInviteEmail } from '../lib/email.js'
+import { isWorkspaceAdmin } from '../lib/authz.js'
 import type { AppEnv } from '../lib/types.js'
 
 export const adminRoutes = new Hono<AppEnv>()
 
 adminRoutes.use('*', authMiddleware)
-
-async function assertAdmin(workspaceId: string, userId: string) {
-  const m = await prisma.workspaceMember.findUnique({
-    where: { workspaceId_userId: { workspaceId, userId } },
-  })
-  return m?.role === 'ADMIN' ? m : null
-}
 
 const createUserSchema = z.object({
   email: z.string().email(),
@@ -38,7 +32,7 @@ adminRoutes.get('/workspaces/:workspaceId/users', async (c) => {
   const { userId } = c.get('user')
   const { workspaceId } = c.req.param()
 
-  if (!await assertAdmin(workspaceId, userId)) {
+  if (!await isWorkspaceAdmin(workspaceId, userId)) {
     return c.json({ error: 'Solo admins pueden ver esta sección' }, 403)
   }
 
@@ -60,7 +54,7 @@ adminRoutes.post('/workspaces/:workspaceId/users', zValidator('json', createUser
   const { workspaceId } = c.req.param()
   const { email, role, name, password } = c.req.valid('json')
 
-  if (!await assertAdmin(workspaceId, userId)) {
+  if (!await isWorkspaceAdmin(workspaceId, userId)) {
     return c.json({ error: 'Solo admins pueden agregar usuarios' }, 403)
   }
 
@@ -159,7 +153,7 @@ adminRoutes.put('/workspaces/:workspaceId/users/:targetUserId', zValidator('json
   const { workspaceId, targetUserId } = c.req.param()
   const { name, email, color, role } = c.req.valid('json')
 
-  if (!await assertAdmin(workspaceId, userId)) {
+  if (!await isWorkspaceAdmin(workspaceId, userId)) {
     return c.json({ error: 'Solo admins pueden editar usuarios' }, 403)
   }
 
@@ -193,7 +187,7 @@ adminRoutes.delete('/workspaces/:workspaceId/users/:targetUserId', async (c) => 
   const { userId } = c.get('user')
   const { workspaceId, targetUserId } = c.req.param()
 
-  if (!await assertAdmin(workspaceId, userId)) {
+  if (!await isWorkspaceAdmin(workspaceId, userId)) {
     return c.json({ error: 'Solo admins pueden eliminar usuarios' }, 403)
   }
 

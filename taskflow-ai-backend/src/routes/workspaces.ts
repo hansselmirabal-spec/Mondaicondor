@@ -3,6 +3,7 @@ import { zValidator } from '@hono/zod-validator'
 import { z } from 'zod'
 import { prisma } from '../lib/prisma.js'
 import { authMiddleware } from '../middleware/auth.js'
+import { isWorkspaceAdmin } from '../lib/authz.js'
 import type { AppEnv } from '../lib/types.js'
 
 export const workspaceRoutes = new Hono<AppEnv>()
@@ -134,10 +135,7 @@ workspaceRoutes.delete('/:id', async (c) => {
   const { userId } = c.get('user')
   const { id } = c.req.param()
 
-  const membership = await prisma.workspaceMember.findUnique({
-    where: { workspaceId_userId: { workspaceId: id, userId } },
-  })
-  if (!membership || membership.role !== 'ADMIN') {
+  if (!await isWorkspaceAdmin(id, userId)) {
     return c.json({ error: 'Solo admins pueden eliminar el workspace' }, 403)
   }
 
@@ -150,10 +148,7 @@ workspaceRoutes.put('/:id/members/:memberId', zValidator('json', z.object({ role
   const { id, memberId } = c.req.param()
   const { role } = c.req.valid('json')
 
-  const membership = await prisma.workspaceMember.findUnique({
-    where: { workspaceId_userId: { workspaceId: id, userId } },
-  })
-  if (!membership || membership.role !== 'ADMIN') {
+  if (!await isWorkspaceAdmin(id, userId)) {
     return c.json({ error: 'Solo admins pueden cambiar roles' }, 403)
   }
 
@@ -173,10 +168,7 @@ workspaceRoutes.delete('/:id/members/:memberId', async (c) => {
   const { userId } = c.get('user')
   const { id, memberId } = c.req.param()
 
-  const membership = await prisma.workspaceMember.findUnique({
-    where: { workspaceId_userId: { workspaceId: id, userId } },
-  })
-  if (!membership || membership.role !== 'ADMIN') {
+  if (!await isWorkspaceAdmin(id, userId)) {
     return c.json({ error: 'Solo admins pueden remover miembros' }, 403)
   }
 
@@ -300,10 +292,7 @@ workspaceRoutes.delete('/:id/statuses/:statusId', async (c) => {
   const { userId } = c.get('user')
   const { id, statusId } = c.req.param()
 
-  const membership = await prisma.workspaceMember.findUnique({
-    where: { workspaceId_userId: { workspaceId: id, userId } },
-  })
-  if (!membership || membership.role !== 'ADMIN') return c.json({ error: 'Solo admins pueden eliminar estados' }, 403)
+  if (!await isWorkspaceAdmin(id, userId)) return c.json({ error: 'Solo admins pueden eliminar estados' }, 403)
 
   const target = await prisma.workspaceStatus.findUnique({ where: { id: statusId } })
   if (!target || target.workspaceId !== id) return c.json({ error: 'Estado no encontrado' }, 404)
@@ -390,10 +379,7 @@ workspaceRoutes.put('/:id/members/:memberId/email-notifications',
     const { id, memberId } = c.req.param()
     const { enabled } = c.req.valid('json')
 
-    const callerMembership = await prisma.workspaceMember.findUnique({
-      where: { workspaceId_userId: { workspaceId: id, userId } },
-    })
-    if (!callerMembership || callerMembership.role !== 'ADMIN') {
+    if (!await isWorkspaceAdmin(id, userId)) {
       return c.json({ error: 'Solo admins pueden cambiar esta configuración' }, 403)
     }
 
@@ -413,10 +399,7 @@ workspaceRoutes.put('/:id/settings', zValidator('json', updateSettingsSchema), a
   const { id } = c.req.param()
   const data = c.req.valid('json')
 
-  const membership = await prisma.workspaceMember.findUnique({
-    where: { workspaceId_userId: { workspaceId: id, userId } },
-  })
-  if (!membership || membership.role !== 'ADMIN') {
+  if (!await isWorkspaceAdmin(id, userId)) {
     return c.json({ error: 'Solo admins pueden cambiar la configuración' }, 403)
   }
 

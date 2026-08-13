@@ -3,6 +3,7 @@ import { zValidator } from '@hono/zod-validator'
 import { z } from 'zod'
 import { prisma } from '../lib/prisma.js'
 import { authMiddleware } from '../middleware/auth.js'
+import { isWorkspaceAdmin } from '../lib/authz.js'
 import type { AppEnv } from '../lib/types.js'
 import { sendAlertEmail, sendTaskNotificationEmail } from '../lib/email.js'
 
@@ -606,14 +607,16 @@ taskRoutes.patch('/:id/move', zValidator('json', z.object({ groupId: z.string() 
 
   const sourceBoard = task.group.board
 
-  // Check user is workspace member
-  const membership = await prisma.workspaceMember.findUnique({
-    where: { workspaceId_userId: { workspaceId: sourceBoard.workspaceId, userId } },
-  })
-  if (!membership) return c.json({ error: 'Sin acceso al workspace' }, 403)
+  // Check user is workspace member (or a system admin)
+  const isAdmin = await isWorkspaceAdmin(sourceBoard.workspaceId, userId)
+  if (!isAdmin) {
+    const membership = await prisma.workspaceMember.findUnique({
+      where: { workspaceId_userId: { workspaceId: sourceBoard.workspaceId, userId } },
+    })
+    if (!membership) return c.json({ error: 'Sin acceso al workspace' }, 403)
+  }
 
   // Only ADMIN or creator can move
-  const isAdmin = membership.role === 'ADMIN'
   const isCreator = task.createdBy === userId
   if (!isAdmin && !isCreator) {
     return c.json({ error: 'Solo el creador o un administrador puede mover esta tarea' }, 403)

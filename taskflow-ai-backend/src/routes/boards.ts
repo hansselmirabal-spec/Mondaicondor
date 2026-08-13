@@ -3,6 +3,7 @@ import { zValidator } from '@hono/zod-validator'
 import { z } from 'zod'
 import { prisma } from '../lib/prisma.js'
 import { authMiddleware } from '../middleware/auth.js'
+import { isWorkspaceAdmin } from '../lib/authz.js'
 import type { AppEnv } from '../lib/types.js'
 
 export const boardRoutes = new Hono<AppEnv>()
@@ -42,10 +43,12 @@ const addBoardMemberSchema = z.object({ userId: z.string() })
 async function getWorkspaceMembership(workspaceId: string, userId: string) {
   return prisma.workspaceMember.findUnique({
     where: { workspaceId_userId: { workspaceId, userId } },
+    select: { role: true },
   })
 }
 
 // Returns the board if user can access it, null otherwise.
+// System (app) admins always see all boards, even without a WorkspaceMember row.
 // Workspace ADMINs always see all boards.
 // Public boards: any workspace member.
 // Private boards: workspace member + explicit BoardMember entry.
@@ -56,7 +59,13 @@ async function assertBoardAccess(boardId: string, userId: string) {
   })
   if (!board) return null
 
-  const wsMembership = await getWorkspaceMembership(board.workspaceId, userId)
+  const [wsMembership, user] = await Promise.all([
+    getWorkspaceMembership(board.workspaceId, userId),
+    prisma.user.findUnique({ where: { id: userId }, select: { isAppAdmin: true } }),
+  ])
+
+  if (user?.isAppAdmin) return { board, wsMembership: wsMembership ?? { role: 'ADMIN' as const } }
+
   if (!wsMembership) return null
 
   if (wsMembership.role === 'ADMIN') return { board, wsMembership }
@@ -71,10 +80,13 @@ boardRoutes.get('/workspace/:workspaceId', async (c) => {
   const { userId } = c.get('user')
   const { workspaceId } = c.req.param()
 
-  const membership = await getWorkspaceMembership(workspaceId, userId)
-  if (!membership) return c.json({ error: 'Sin acceso al workspace' }, 403)
+  const [membership, user] = await Promise.all([
+    getWorkspaceMembership(workspaceId, userId),
+    prisma.user.findUnique({ where: { id: userId }, select: { isAppAdmin: true } }),
+  ])
+  if (!membership && !user?.isAppAdmin) return c.json({ error: 'Sin acceso al workspace' }, 403)
 
-  const isAdmin = membership.role === 'ADMIN'
+  const isAdmin = membership?.role === 'ADMIN' || user?.isAppAdmin === true
 
   const boards = await prisma.board.findMany({
     where: {
@@ -163,7 +175,9 @@ boardRoutes.delete('/:id', async (c) => {
 
   const access = await assertBoardAccess(id, userId)
   if (!access) return c.json({ error: 'Sin acceso' }, 403)
-  if (access.wsMembership.role !== 'ADMIN') return c.json({ error: 'Solo admins pueden eliminar tableros' }, 403)
+  if (!await isWorkspaceAdmin(access.board.workspaceId, userId)) {
+    return c.json({ error: 'Solo admins pueden eliminar tableros' }, 403)
+  }
 
   await prisma.board.delete({ where: { id } })
   return c.json({ message: 'Board eliminado' })
