@@ -4,6 +4,7 @@ import { ShieldCheck, Plus, Pencil, Trash2, X, Loader2, AlertCircle, KeyRound, C
 import { api } from '@/lib/api'
 import type { SystemAdminUser } from '@/lib/api'
 import { useAuthStore } from '@/store/authStore'
+import { copyToClipboard } from '@/lib/utils'
 
 // ---- helpers ---------------------------------------------------------------
 
@@ -266,8 +267,10 @@ function ResetPasswordModal({ user, isSelf, onClose }: ResetPasswordModalProps) 
     }
   }
 
-  async function handleCopy() {
-    await navigator.clipboard.writeText(tempPassword)
+  function handleCopy() {
+    // Use the shared helper — it handles non-secure (HTTP) contexts where
+    // navigator.clipboard is unavailable, which is the case on QAS/PROD.
+    copyToClipboard(tempPassword)
     setCopied(true)
   }
 
