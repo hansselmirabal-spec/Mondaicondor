@@ -91,10 +91,13 @@ workspaceRoutes.get('/:id', async (c) => {
   const { userId } = c.get('user')
   const { id } = c.req.param()
 
-  const membership = await prisma.workspaceMember.findUnique({
-    where: { workspaceId_userId: { workspaceId: id, userId } },
-  })
-  if (!membership) return c.json({ error: 'Sin acceso' }, 403)
+  const [membership, me] = await Promise.all([
+    prisma.workspaceMember.findUnique({
+      where: { workspaceId_userId: { workspaceId: id, userId } },
+    }),
+    prisma.user.findUnique({ where: { id: userId }, select: { isAppAdmin: true } }),
+  ])
+  if (!membership && !me?.isAppAdmin) return c.json({ error: 'Sin acceso' }, 403)
 
   const workspace = await prisma.workspace.findUnique({
     where: { id },

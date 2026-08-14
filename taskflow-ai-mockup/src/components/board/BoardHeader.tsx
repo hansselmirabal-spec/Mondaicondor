@@ -62,16 +62,18 @@ export function BoardHeader({ board }: BoardHeaderProps) {
     setMembersModal(true)
     setLoadingMembers(true)
     try {
-      const [{ members }, { users }] = await Promise.all([
+      const [{ members }, { workspace }] = await Promise.all([
         api.boards.listMembers(board.id),
-        api.users.list(),
+        api.workspaces.get(board.workspaceId),
       ])
       const memberUsers = members.map(m => ({
         id: m.user.id, name: m.user.name, initials: m.user.initials,
         color: m.user.color, email: m.user.email,
       }))
       setApiUsers(memberUsers)
-      setAllUsers(users)
+      // Only workspace members can be added to a board — the board-add endpoint
+      // rejects non-members ("El usuario no pertenece al workspace").
+      setAllUsers(workspace.members.map(m => m.user))
     } catch {
       toast('Error al cargar miembros.', 'error')
     } finally {
