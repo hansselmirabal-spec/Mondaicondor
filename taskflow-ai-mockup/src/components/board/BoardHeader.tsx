@@ -21,7 +21,7 @@ export function BoardHeader({ board }: BoardHeaderProps) {
   const workspaces = useBoardStore(state => state.workspaces)
   const user = useAuthStore(state => state.user)
 
-  const isWorkspaceAdmin = workspaces
+  const isWorkspaceAdmin = user?.isAppAdmin === true || workspaces
     .find(w => w.id === board.workspaceId)
     ?.members?.find(m => m.userId === user?.id)?.role === 'ADMIN'
 

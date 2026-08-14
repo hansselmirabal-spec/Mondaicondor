@@ -46,8 +46,11 @@ const updateSettingsSchema = z.object({
 workspaceRoutes.get('/', async (c) => {
   const { userId } = c.get('user')
 
+  // System admins see every workspace; everyone else only their memberships.
+  const me = await prisma.user.findUnique({ where: { id: userId }, select: { isAppAdmin: true } })
+
   const workspaces = await prisma.workspace.findMany({
-    where: { members: { some: { userId } } },
+    where: me?.isAppAdmin ? undefined : { members: { some: { userId } } },
     include: {
       members: { select: { userId: true, role: true } },
       _count: { select: { boards: true } },

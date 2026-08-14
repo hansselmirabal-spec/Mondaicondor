@@ -10,9 +10,13 @@ import { toast } from '@/components/ui/Toast'
 export function WorkspaceSelector() {
   const navigate = useNavigate()
   const user = useAuthStore(state => state.user)
+  const isSysAdmin = user?.isAppAdmin === true
   const workspaces = useBoardStore(state => state.workspaces)
   const roleOf = (ws: { members?: { userId: string; role: string }[] }) =>
     ws.members?.find(m => m.userId === user?.id)?.role
+  // System admins can edit/delete any workspace, even without a membership row.
+  const canEdit = (ws: { members?: { userId: string; role: string }[] }) => isSysAdmin || roleOf(ws) !== 'VIEWER'
+  const canDelete = (ws: { members?: { userId: string; role: string }[] }) => isSysAdmin || roleOf(ws) === 'ADMIN'
   const workspace = useBoardStore(state => state.workspace)
   const setWorkspaces = useBoardStore(state => state.setWorkspaces)
   const setWorkspace = useBoardStore(state => state.setWorkspace)
@@ -236,7 +240,7 @@ export function WorkspaceSelector() {
                         {switchingId === ws.id && <span className="text-xs text-white/40">...</span>}
                       </button>
                       <div className="flex items-center gap-1 shrink-0 pr-2">
-                        {roleOf(ws) !== 'VIEWER' && (
+                        {canEdit(ws) && (
                           <button
                             onClick={() => { setWsMenuOpenId(null); setEditWsName(ws.name); setEditWsColor(ws.color); setEditingWsId(ws.id) }}
                             className="p-1.5 rounded text-white/50 hover:text-white hover:bg-white/10 transition-colors"
@@ -245,7 +249,7 @@ export function WorkspaceSelector() {
                             <Pencil className="w-3.5 h-3.5" />
                           </button>
                         )}
-                        {roleOf(ws) === 'ADMIN' && (
+                        {canDelete(ws) && (
                           <button
                             onClick={() => setConfirmDeleteWsId(ws.id)}
                             className="p-1.5 rounded text-red-400/80 hover:text-red-400 hover:bg-red-500/10 transition-colors"
