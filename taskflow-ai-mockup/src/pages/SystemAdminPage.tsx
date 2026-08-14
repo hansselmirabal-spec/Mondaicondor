@@ -448,6 +448,20 @@ export function SystemAdminPage() {
     setModal({ type: 'none' })
   }
 
+  async function handleToggleAppAdmin(u: SystemAdminUser) {
+    const grant = !u.isAppAdmin
+    const msg = grant
+      ? `¿Hacer a ${u.name} admin de sistema? Podrá ver y gestionar todo en la app.`
+      : `¿Quitarle a ${u.name} el rol de admin de sistema?`
+    if (!window.confirm(msg)) return
+    try {
+      const { user } = await api.systemAdmin.setAppAdmin(u.id, grant)
+      setUsers(prev => prev.map(x => x.id === user.id ? user : x))
+    } catch (err) {
+      window.alert(err instanceof Error ? err.message : 'Error al cambiar el rol')
+    }
+  }
+
   return (
     <div className="flex flex-col h-full bg-gray-50">
       {/* Header */}
@@ -536,6 +550,15 @@ export function SystemAdminPage() {
                     <td className="px-4 py-3 text-gray-500 text-xs">{formatDate(u.createdAt)}</td>
                     <td className="px-4 py-3">
                       <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                        {u.id !== currentUser?.id && (
+                          <button
+                            onClick={() => handleToggleAppAdmin(u)}
+                            title={u.isAppAdmin ? 'Quitar admin de sistema' : 'Hacer admin de sistema'}
+                            className={`p-1.5 rounded-lg transition-colors hover:bg-indigo-50 ${u.isAppAdmin ? 'text-indigo-500 hover:text-indigo-700' : 'text-gray-400 hover:text-indigo-600'}`}
+                          >
+                            <ShieldCheck className="w-3.5 h-3.5" />
+                          </button>
+                        )}
                         <button
                           onClick={() => setModal({ type: 'reset', user: u })}
                           title="Resetear contraseña"

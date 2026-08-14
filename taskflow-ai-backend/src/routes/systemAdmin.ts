@@ -115,6 +115,34 @@ systemAdminRoutes.post('/users/:id/reset-password', async (c) => {
   }
 })
 
+// PUT /system-admin/users/:id/app-admin — otorgar/quitar admin de sistema
+const appAdminSchema = z.object({ isAppAdmin: z.boolean() })
+
+systemAdminRoutes.put('/users/:id/app-admin', zValidator('json', appAdminSchema), async (c) => {
+  const { userId } = c.get('user')
+  if (!await assertAppAdmin(userId)) return c.json({ error: 'Sin acceso' }, 403)
+
+  const { id } = c.req.param()
+  const { isAppAdmin } = c.req.valid('json')
+
+  // Prevent self-lockout: a system admin can't revoke/change their own flag.
+  if (id === userId) {
+    return c.json({ error: 'No podés cambiar tu propio estado de admin de sistema' }, 400)
+  }
+
+  try {
+    const user = await prisma.user.update({
+      where: { id },
+      data: { isAppAdmin },
+      select: { id: true, name: true, email: true, initials: true, color: true, isAppAdmin: true, mustChangePassword: true, createdAt: true },
+    })
+    return c.json({ user })
+  } catch (err: any) {
+    if (err?.code === 'P2025') return c.json({ error: 'Usuario no encontrado' }, 404)
+    throw err
+  }
+})
+
 // DELETE /system-admin/users/:id — eliminar usuario
 systemAdminRoutes.delete('/users/:id', async (c) => {
   const { userId } = c.get('user')

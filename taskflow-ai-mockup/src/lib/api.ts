@@ -373,6 +373,11 @@ export const api = {
       request<{ tempPassword: string }>(`/system-admin/users/${id}/reset-password`, {
         method: 'POST',
       }),
+
+    setAppAdmin: (id: string, isAppAdmin: boolean) =>
+      request<{ user: SystemAdminUser }>(`/system-admin/users/${id}/app-admin`, {
+        method: 'PUT', body: JSON.stringify({ isAppAdmin }),
+      }),
   },
 
   tasks: {
