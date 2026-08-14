@@ -167,7 +167,9 @@ taskRoutes.post('/', zValidator('json', createTaskSchema), async (c) => {
     }
   }
 
-  const taskCount = await prisma.task.count({ where: { groupId } })
+  // New tasks go to the TOP: one below the current minimum order in the group.
+  const agg = await prisma.task.aggregate({ where: { groupId }, _min: { order: true } })
+  const order = (agg._min.order ?? 0) - 1
 
   const task = await prisma.task.create({
     data: {
@@ -178,7 +180,7 @@ taskRoutes.post('/', zValidator('json', createTaskSchema), async (c) => {
       priority: priority ?? 'Media',
       deadline: deadline ? new Date(deadline) : null,
       createdBy: userId,
-      order: taskCount,
+      order,
       assignees: assigneeIds?.length
         ? { create: assigneeIds.map((uid) => ({ userId: uid })) }
         : undefined,

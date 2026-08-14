@@ -152,7 +152,7 @@ export function BoardTable({ board }: BoardTableProps) {
         id: tempId, groupId, boardId, title,
         assigneeIds: [], status: 'Nuevo', priority: 'Media',
         deadline, fileUrl: null, text: null, description: '',
-        order: 9999,
+        order: -Date.now(), // new tasks go to the TOP (below every existing order)
         createdAt: now, updatedAt: now,
         uenIds: [],
       })
