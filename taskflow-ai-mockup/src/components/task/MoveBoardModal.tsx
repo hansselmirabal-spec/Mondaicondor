@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { X, ArrowRightLeft, ChevronDown, Loader2 } from 'lucide-react'
 import { api } from '@/lib/api'
+import type { ApiCustomFieldDefinition } from '@/lib/api'
 import { useBoardStore } from '@/store/boardStore'
 import { toast } from '@/components/ui/Toast'
 import { toMockBoard } from '@/lib/adapters'
@@ -10,12 +11,13 @@ interface MoveBoardModalProps {
   taskId: string
   taskTitle: string
   currentBoardId: string
+  customFields?: Record<string, unknown>
   onClose: () => void
   onMoved: () => void
 }
 
-export function MoveBoardModal({ taskId, taskTitle, currentBoardId, onClose, onMoved }: MoveBoardModalProps) {
-  const { workspace } = useBoardStore()
+export function MoveBoardModal({ taskId, taskTitle, currentBoardId, customFields, onClose, onMoved }: MoveBoardModalProps) {
+  const { workspace, customFieldDefinitions } = useBoardStore()
   const workspaceId = workspace?.id ?? null
 
   const [boards, setBoards] = useState<MockBoard[]>([])
@@ -25,6 +27,7 @@ export function MoveBoardModal({ taskId, taskTitle, currentBoardId, onClose, onM
   const [loadingBoards, setLoadingBoards] = useState(true)
   const [loadingGroups, setLoadingGroups] = useState(false)
   const [moving, setMoving] = useState(false)
+  const [destCustomFields, setDestCustomFields] = useState<ApiCustomFieldDefinition[]>([])
 
   useEffect(() => {
     if (!workspaceId) return
@@ -51,7 +54,27 @@ export function MoveBoardModal({ taskId, taskTitle, currentBoardId, onClose, onM
       .finally(() => setLoadingGroups(false))
   }, [selectedBoardId])
 
+  // Definitions are board-scoped (each CustomFieldDefinition.id belongs to exactly
+  // one board), so a destination board can never share a source field's id — this
+  // fetch is what lets us compute the nominal "Se perderán: ..." warning below
+  // instead of a generic always-on line.
+  useEffect(() => {
+    if (!selectedBoardId) { setDestCustomFields([]); return }
+    api.boards.listCustomFields(selectedBoardId)
+      .then(({ customFieldDefinitions }) => setDestCustomFields(customFieldDefinitions))
+      .catch(() => setDestCustomFields([]))
+  }, [selectedBoardId])
+
   const selectedBoard = boards.find(b => b.id === selectedBoardId)
+
+  const sourceCustomFieldDefs = customFieldDefinitions.filter(d => d.boardId === currentBoardId)
+  const lostCustomFieldLabels = selectedBoardId
+    ? Object.entries(customFields ?? {})
+        .filter(([, value]) => value !== null && value !== undefined)
+        .filter(([fieldId]) => !destCustomFields.some(d => d.id === fieldId && !d.archivedAt))
+        .map(([fieldId]) => sourceCustomFieldDefs.find(d => d.id === fieldId)?.label)
+        .filter((label): label is string => !!label)
+    : []
 
   async function handleMove() {
     if (!selectedGroupId) return
@@ -139,6 +162,11 @@ export function MoveBoardModal({ taskId, taskTitle, currentBoardId, onClose, onM
               <p className="text-[10px] text-gray-400 mt-1">
                 Los asignados que no pertenezcan a "{selectedBoard?.name}" serán removidos.
               </p>
+              {lostCustomFieldLabels.length > 0 && (
+                <p className="text-[10px] text-amber-600 mt-1">
+                  Se perderán: {lostCustomFieldLabels.join(', ')}.
+                </p>
+              )}
             </div>
           )}
 

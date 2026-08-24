@@ -45,7 +45,18 @@ export function BoardToolbar() {
   const apiUsers = useBoardStore(state => state.apiUsers)
   const workspaceStatuses = useBoardStore(state => state.workspaceStatuses)
   const workspaceUens = useBoardStore(state => state.workspaceUens)
+  const customFieldDefinitions = useBoardStore(state => state.customFieldDefinitions)
   const board = boards.find(b => b.id === boardId)
+
+  // Picker entries: fixed columns + this board's active custom fields as `cf:<id>`.
+  // Archived fields aren't offered here — they only keep showing (read-only) in rows
+  // that already had a value, they never become a freshly toggleable column.
+  const pickerColumns = [
+    ...ALL_COLUMNS.map(col => ({ id: col as string, label: col as string })),
+    ...customFieldDefinitions
+      .filter(d => d.boardId === boardId && !d.archivedAt)
+      .map(d => ({ id: `cf:${d.id}`, label: d.label })),
+  ]
 
   const {
     searchQuery, setSearchQuery,
@@ -314,18 +325,18 @@ export function BoardToolbar() {
         width="w-44"
       >
         <div className="p-2 space-y-0.5">
-          {ALL_COLUMNS.map(col => {
-            const hidden = hiddenColumns.includes(col)
+          {pickerColumns.map(({ id, label }) => {
+            const hidden = hiddenColumns.includes(id)
             return (
               <button
-                key={col}
-                onClick={() => toggleColumn(col)}
+                key={id}
+                onClick={() => toggleColumn(id)}
                 className="w-full flex items-center gap-2 px-2 py-1.5 text-sm text-gray-700 hover:bg-gray-50 rounded-lg transition-colors"
               >
                 <span className={`w-4 h-4 rounded border flex items-center justify-center shrink-0 ${hidden ? 'border-gray-200 bg-white' : 'border-blue-600 bg-blue-600'}`}>
                   {!hidden && <Check className="w-2.5 h-2.5 text-white" />}
                 </span>
-                {col}
+                {label}
               </button>
             )
           })}

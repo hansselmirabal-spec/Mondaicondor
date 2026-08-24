@@ -16,7 +16,7 @@ const POLL_INTERVAL_MS = 5_000
 
 export function BoardPage() {
   const { boardId } = useParams<{ boardId: string }>()
-  const { setBoards, setApiTasks, setWorkspaceStatuses, setWorkspaceUens, setApiUsers } = useBoardStore()
+  const { setBoards, setApiTasks, setWorkspaceStatuses, setWorkspaceUens, setApiUsers, setCustomFieldDefinitions } = useBoardStore()
   const boards = useBoardStore(state => state.boards)
   const activeView = useFilterStore(state => state.activeView)
 
@@ -70,6 +70,14 @@ export function BoardPage() {
           .then(({ workspace }) => {
             if (activeBoardId.current !== boardId) return
             setApiUsers(workspace.members.map(m => toMockUser(m.user)))
+          })
+          .catch(() => {})
+        // includeArchived=true: archived fields with values already loaded still
+        // need to render read-only in TaskRow (Phase 2c contract), so both active
+        // and archived definitions must be available here, not just active ones.
+        api.boards.listCustomFields(boardId!, true)
+          .then(({ customFieldDefinitions }) => {
+            if (activeBoardId.current === boardId) setCustomFieldDefinitions(customFieldDefinitions)
           })
           .catch(() => {})
       } catch {

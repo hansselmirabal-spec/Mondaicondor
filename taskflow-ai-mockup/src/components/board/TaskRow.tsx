@@ -1,7 +1,7 @@
 import { useNavigate, useSearchParams } from 'react-router-dom'
-import { MessageSquare, CheckSquare, Square, Plus, UserMinus, ArrowRightLeft, GripVertical } from 'lucide-react'
+import { MessageSquare, CheckSquare, Square, Plus, UserMinus, ArrowRightLeft, GripVertical, Check as CheckIcon, X as XIcon } from 'lucide-react'
 import { useState, useRef, useEffect } from 'react'
-import type { MockTask, PriorityType } from '@/types'
+import type { CustomFieldDefinition, MockTask, PriorityType } from '@/types'
 import { MoveBoardModal } from '@/components/task/MoveBoardModal'
 import { StatusBadge } from '@/components/ui/StatusBadge'
 import { PriorityBadge } from '@/components/ui/PriorityBadge'
@@ -9,8 +9,9 @@ import { AssigneeAvatar, AssigneeAvatarGroup } from '@/components/ui/AssigneeAva
 import { DeadlineCell } from '@/components/ui/DeadlineCell'
 import { getCommentsByTaskId } from '@/data/mockComments'
 import { useBoardStore } from '@/store/boardStore'
-import { useFilterStore, DEFAULT_WIDTHS } from '@/store/filterStore'
+import { useFilterStore, getDefaultColumnWidth } from '@/store/filterStore'
 import { api } from '@/lib/api'
+import { formatDate } from '@/lib/utils'
 
 const PRIORITIES: PriorityType[] = ['Crítica', 'Alta', 'Media', 'Baja', 'Siempre activo']
 
@@ -30,7 +31,8 @@ interface TaskRowProps {
   onDrop?: (e: React.DragEvent) => void
 }
 
-type DropdownType = 'status' | 'priority' | 'assignee' | 'uen' | null
+// 'cf:<definitionId>' opens the SELECT dropdown for that custom field
+type DropdownType = 'status' | 'priority' | 'assignee' | 'uen' | string | null
 
 
 
@@ -48,8 +50,14 @@ export function TaskRow({ task, isDragging, isOver, onDragStart, onDragEnd, onDr
   const workspaceUens = useBoardStore(state => state.workspaceUens)
   const boards = useBoardStore(state => state.boards)
   const taskOrigins = useBoardStore(state => state.taskOrigins)
+  const customFieldDefinitions = useBoardStore(state => state.customFieldDefinitions)
   const { isColumnVisible, columnOrder, columnWidths } = useFilterStore()
-  const orderedVisible = columnOrder.filter(col => isColumnVisible(col))
+  // Same board-scoping as BoardGroup's colSpan calc — keeps both in sync so a
+  // `cf:<id>` column never renders a header without a matching cell (or vice versa).
+  const orderedVisible = columnOrder.filter(col =>
+    isColumnVisible(col) &&
+    (!col.startsWith('cf:') || customFieldDefinitions.some(d => `cf:${d.id}` === col && d.boardId === task.boardId))
+  )
 
   const currentStatus = mutation.status ?? task.status
   const currentPriority = mutation.priority ?? task.priority
@@ -73,6 +81,42 @@ export function TaskRow({ task, isDragging, isOver, onDragStart, onDragEnd, onDr
     if (!trimmed || trimmed === currentTitle) return
     updateTask(task.id, { title: trimmed })
     api.tasks.update(task.id, { title: trimmed }).catch(console.error)
+  }
+
+  // Custom fields (Phase 5): a single `value === null` deletes the key, any other
+  // value sets it — mirrors the backend merge rule in `validateCustomFieldPatch`.
+  // Only the changed key is sent to the API; the full merged object is applied
+  // locally via patchApiTask so unrelated custom field values are never clobbered.
+  function saveCustomField(fieldId: string, value: unknown) {
+    const next = { ...(task.customFields ?? {}) }
+    if (value === null) delete next[fieldId]
+    else next[fieldId] = value
+    patchApiTask(task.id, { customFields: next })
+    api.tasks.update(task.id, { customFields: { [fieldId]: value } }).catch(console.error)
+  }
+
+  const [editingCfId, setEditingCfId] = useState<string | null>(null)
+  const [cfDraft, setCfDraft] = useState('')
+
+  function startEditCf(e: React.MouseEvent, fieldId: string) {
+    e.stopPropagation()
+    if (editingCfId === fieldId) return
+    const current = task.customFields?.[fieldId]
+    setCfDraft(current == null ? '' : String(current))
+    setEditingCfId(fieldId)
+  }
+
+  function commitCfEdit(field: CustomFieldDefinition) {
+    setEditingCfId(null)
+    const raw = cfDraft.trim()
+    if (field.type === 'NUMBER') {
+      if (raw === '') { saveCustomField(field.id, null); return }
+      const n = Number(raw)
+      if (!Number.isFinite(n)) return // invalid input — discard silently, keep previous value
+      saveCustomField(field.id, n)
+      return
+    }
+    saveCustomField(field.id, raw === '' ? null : raw)
   }
 
   const [openDropdown, setOpenDropdown] = useState<DropdownType>(null)
@@ -143,6 +187,118 @@ export function TaskRow({ task, isDragging, isOver, onDragStart, onDragEnd, onDr
   }
 
   const availableUsers = apiUsers.filter(u => !currentAssigneeIds.includes(u.id))
+
+  function renderCustomFieldReadOnly(field: CustomFieldDefinition, value: unknown) {
+    switch (field.type) {
+      case 'CHECKBOX':
+        return value === true
+          ? <CheckIcon className="w-3.5 h-3.5 text-gray-400" />
+          : <XIcon className="w-3.5 h-3.5 text-gray-300" />
+      case 'SELECT': {
+        const opt = typeof value === 'string' ? (field.config.options ?? []).find(o => o.id === value) : undefined
+        return opt
+          ? <span className="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium text-white opacity-70" style={{ backgroundColor: opt.color }} title="Campo archivado — solo lectura">{opt.label}</span>
+          : <span className="text-gray-300 text-xs">—</span>
+      }
+      case 'DATE':
+        return typeof value === 'string'
+          ? <span className="text-xs text-gray-400" title="Campo archivado — solo lectura">{formatDate(value)}</span>
+          : <span className="text-gray-300 text-xs">—</span>
+      default:
+        return <span className="text-xs text-gray-400" title="Campo archivado — solo lectura">{String(value)}</span>
+    }
+  }
+
+  // Custom field cell dispatch by type. Archived definitions (Phase 2c contract):
+  // no value → nothing renders (not a fresh column for tasks that never had it);
+  // has a value → read-only, no click handlers, regardless of type.
+  function renderCustomFieldCell(field: CustomFieldDefinition, w: number) {
+    const col = `cf:${field.id}`
+    const value = task.customFields?.[field.id]
+    const hasValue = value !== undefined && value !== null
+
+    if (field.archivedAt) {
+      return (
+        <td key={col} className="py-2 px-3" style={{ width: w }}>
+          {hasValue ? renderCustomFieldReadOnly(field, value) : null}
+        </td>
+      )
+    }
+
+    switch (field.type) {
+      case 'CHECKBOX': {
+        const checked = value === true
+        return (
+          <td key={col} className="py-1 px-3" style={{ width: w }} onClick={e => e.stopPropagation()}>
+            <input
+              type="checkbox"
+              checked={checked}
+              onChange={() => saveCustomField(field.id, !checked)}
+              className="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-400 cursor-pointer"
+            />
+          </td>
+        )
+      }
+      case 'DATE': {
+        const dateValue = typeof value === 'string' ? value : ''
+        return (
+          <td key={col} className="py-1.5 px-2" style={{ width: w }} onClick={e => e.stopPropagation()}>
+            <input
+              type="date"
+              value={dateValue}
+              onChange={e => saveCustomField(field.id, e.target.value || null)}
+              className="w-full text-xs text-gray-700 bg-transparent border border-transparent hover:border-gray-200 focus:border-blue-400 focus:outline-none rounded px-1 py-0.5"
+            />
+          </td>
+        )
+      }
+      case 'SELECT': {
+        const options = field.config.options ?? []
+        const selected = typeof value === 'string' ? options.find(o => o.id === value) : undefined
+        return (
+          <td key={col} className="py-1 px-2" style={{ width: w }} onClick={e => toggleDropdown(e, col)}>
+            <div className="flex items-center min-h-[28px] cursor-pointer hover:bg-gray-100 rounded px-1 -mx-1 transition-colors">
+              {selected
+                ? <span className="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium text-white truncate max-w-full" style={{ backgroundColor: selected.color }}>{selected.label}</span>
+                : <Plus className="w-3.5 h-3.5 text-gray-300" />
+              }
+            </div>
+          </td>
+        )
+      }
+      case 'TEXT':
+      case 'NUMBER':
+      default: {
+        const isEditing = editingCfId === field.id
+        if (isEditing) {
+          return (
+            <td key={col} className="py-1 px-2" style={{ width: w }} onClick={e => e.stopPropagation()}>
+              <input
+                autoFocus
+                type={field.type === 'NUMBER' ? 'number' : 'text'}
+                value={cfDraft}
+                onChange={e => setCfDraft(e.target.value)}
+                onBlur={() => commitCfEdit(field)}
+                onKeyDown={e => {
+                  if (e.key === 'Enter') { e.preventDefault(); commitCfEdit(field) }
+                  if (e.key === 'Escape') setEditingCfId(null)
+                }}
+                className="w-full text-xs text-gray-700 bg-white border border-blue-400 rounded px-1.5 py-1 focus:outline-none focus:ring-1 focus:ring-blue-400"
+              />
+            </td>
+          )
+        }
+        return (
+          <td key={col} className="py-2 px-3 cursor-text" style={{ width: w }} onClick={e => startEditCf(e, field.id)}>
+            {hasValue
+              ? <span className="text-xs text-gray-700 truncate block">{String(value)}</span>
+              : <Plus className="w-3.5 h-3.5 text-gray-300" />
+            }
+          </td>
+        )
+      }
+    }
+  }
 
   return (
     <tr
@@ -215,7 +371,12 @@ export function TaskRow({ task, isDragging, isOver, onDragStart, onDragEnd, onDr
       </td>
 
       {orderedVisible.map(col => {
-        const w = columnWidths[col] ?? DEFAULT_WIDTHS[col] ?? 112
+        const w = columnWidths[col] ?? getDefaultColumnWidth(col)
+        if (col.startsWith('cf:')) {
+          const field = customFieldDefinitions.find(d => `cf:${d.id}` === col && d.boardId === task.boardId)
+          if (!field) return <td key={col} style={{ width: w }} />
+          return renderCustomFieldCell(field, w)
+        }
         switch (col) {
           case 'Responsable':
             return (
@@ -441,12 +602,55 @@ export function TaskRow({ task, isDragging, isOver, onDragStart, onDragEnd, onDr
           </div>
         </td>
       )}
+      {openDropdown?.startsWith('cf:') && (() => {
+        const fieldId = openDropdown.slice(3)
+        const field = customFieldDefinitions.find(d => d.id === fieldId && d.boardId === task.boardId)
+        if (!field || field.type !== 'SELECT') return null
+        const options = (field.config.options ?? []).filter(o => !o.archivedAt)
+        const currentValue = task.customFields?.[fieldId]
+        return (
+          <td className="p-0 border-0">
+            <div
+              ref={dropdownRef}
+              className="fixed z-[9999] bg-white border border-gray-200 rounded-xl shadow-xl w-44 max-h-64 overflow-y-auto"
+              style={{ top: dropdownPos.top, left: dropdownPos.left }}
+              onClick={e => e.stopPropagation()}
+            >
+              <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wide px-3 py-1.5 border-b border-gray-100">{field.label}</p>
+              <button
+                onClick={() => { saveCustomField(field.id, null); setOpenDropdown(null) }}
+                className="w-full flex items-center gap-2 px-3 py-1.5 hover:bg-gray-50 transition-colors text-left"
+              >
+                <span className="text-xs text-gray-400 italic">Sin valor</span>
+              </button>
+              {options.length === 0 && (
+                <p className="text-xs text-gray-400 px-3 py-2 italic">Sin opciones configuradas</p>
+              )}
+              {options.map(o => (
+                <button
+                  key={o.id}
+                  onClick={() => { saveCustomField(field.id, o.id); setOpenDropdown(null) }}
+                  className="w-full flex items-center gap-2 px-3 py-1.5 hover:bg-gray-50 transition-colors"
+                >
+                  <span
+                    className={`w-2.5 h-2.5 rounded-sm shrink-0 ${currentValue === o.id ? 'ring-2 ring-offset-1 ring-blue-400' : ''}`}
+                    style={{ backgroundColor: o.color }}
+                  />
+                  <span className="text-xs text-gray-700 flex-1 text-left truncate">{o.label}</span>
+                  {currentValue === o.id && <span className="text-[10px] text-blue-500 font-semibold">✓</span>}
+                </button>
+              ))}
+            </div>
+          </td>
+        )
+      })()}
       {showMoveModal && (
         <td className="p-0 border-0">
           <MoveBoardModal
             taskId={task.id}
             taskTitle={task.title}
             currentBoardId={task.boardId}
+            customFields={task.customFields}
             onClose={() => setShowMoveModal(false)}
             onMoved={() => { setShowMoveModal(false); navigate('/boards') }}
           />

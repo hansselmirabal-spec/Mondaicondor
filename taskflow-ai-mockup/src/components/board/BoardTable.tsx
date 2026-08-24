@@ -155,6 +155,7 @@ export function BoardTable({ board }: BoardTableProps) {
         order: -Date.now(), // new tasks go to the TOP (below every existing order)
         createdAt: now, updatedAt: now,
         uenIds: [],
+        customFields: {},
       })
       const params = new URLSearchParams(searchParams)
       params.set('task', tempId)

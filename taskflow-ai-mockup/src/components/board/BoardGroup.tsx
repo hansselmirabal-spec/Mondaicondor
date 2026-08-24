@@ -9,7 +9,7 @@ import { PriorityBadge } from '@/components/ui/PriorityBadge'
 import { AssigneeAvatarGroup } from '@/components/ui/AssigneeAvatar'
 import { DeadlineCell } from '@/components/ui/DeadlineCell'
 import { useUIStore } from '@/store/uiStore'
-import { useFilterStore, DEFAULT_WIDTHS } from '@/store/filterStore'
+import { useFilterStore, getDefaultColumnWidth } from '@/store/filterStore'
 import { ColumnHeaderRow } from './ColumnHeaderRow'
 import { useBoardStore } from '@/store/boardStore'
 import { api } from '@/lib/api'
@@ -76,7 +76,7 @@ interface BoardGroupProps {
 export function BoardGroup({ group, tasks, label, onAddTask, isDragging, isOver, onDragStart, onDragEnd, onDragEnter, onDragLeave, onDragOver, onDrop }: BoardGroupProps) {
   const { toggleGroup, isGroupCollapsed } = useUIStore()
   const { isColumnVisible, columnOrder, columnWidths } = useFilterStore()
-  const { removeGroup, patchGroup, patchApiTask, setPendingMove, clearPendingMove, apiTasks, setTaskOrigin } = useBoardStore()
+  const { removeGroup, patchGroup, patchApiTask, setPendingMove, clearPendingMove, apiTasks, setTaskOrigin, customFieldDefinitions } = useBoardStore()
   const collapsed = isGroupCollapsed(group.id)
   const displayName = label ?? group.name
   const [adding, setAdding] = useState(false)
@@ -274,7 +274,14 @@ export function BoardGroup({ group, tasks, label, onAddTask, isDragging, isOver,
     if (e.key === 'Escape') { setNewTitle(''); setNewDeadline(''); setAdding(false) }
   }
 
-  const orderedVisible = columnOrder.filter(col => isColumnVisible(col))
+  // `cf:<id>` columns only render for the board that field actually belongs to —
+  // this drops stale entries left in columnOrder from a previously visited board
+  // (customFieldDefinitions is a single flat list, not keyed per board) so headers,
+  // cells and colSpan all stay in sync without ever mutating the saved column order.
+  const orderedVisible = columnOrder.filter(col =>
+    isColumnVisible(col) &&
+    (!col.startsWith('cf:') || customFieldDefinitions.some(d => `cf:${d.id}` === col && d.boardId === group.boardId))
+  )
   const colSpan = 2 + orderedVisible.length
 
   return (
@@ -446,7 +453,7 @@ export function BoardGroup({ group, tasks, label, onAddTask, isDragging, isOver,
                     </div>
                   </td>
                   {orderedVisible.map(col => col === 'Fecha límite' ? (
-                    <td key={col} className="py-1.5 px-2" style={{ width: columnWidths[col] ?? DEFAULT_WIDTHS[col] }}>
+                    <td key={col} className="py-1.5 px-2" style={{ width: columnWidths[col] ?? getDefaultColumnWidth(col) }}>
                       <input
                         type="date"
                         value={newDeadline}
@@ -456,7 +463,7 @@ export function BoardGroup({ group, tasks, label, onAddTask, isDragging, isOver,
                       />
                     </td>
                   ) : (
-                    <td key={col} style={{ width: columnWidths[col] ?? DEFAULT_WIDTHS[col] }} />
+                    <td key={col} style={{ width: columnWidths[col] ?? getDefaultColumnWidth(col) }} />
                   ))}
                 </tr>
               ) : (
@@ -529,7 +536,7 @@ export function BoardGroup({ group, tasks, label, onAddTask, isDragging, isOver,
           <div className="flex border-t border-gray-100 bg-gray-50 h-4">
             <div className="flex-1" />
             {orderedVisible.map(col => (
-              <div key={col} style={{ width: columnWidths[col] ?? DEFAULT_WIDTHS[col] }} className="px-1">
+              <div key={col} style={{ width: columnWidths[col] ?? getDefaultColumnWidth(col) }} className="px-1">
                 {col === 'Estado' && <div className="h-2 mt-1 rounded" style={{ backgroundColor: group.color, opacity: 0.35 }} />}
                 {col === 'Prioridad' && <div className="h-2 mt-1 rounded bg-rose-400/30" />}
               </div>

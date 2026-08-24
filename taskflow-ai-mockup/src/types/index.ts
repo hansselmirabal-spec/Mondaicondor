@@ -98,6 +98,7 @@ export interface MockTask {
   createdAt: string
   updatedAt: string
   uenIds: string[]
+  customFields: Record<string, unknown>
 }
 
 export interface MockComment {

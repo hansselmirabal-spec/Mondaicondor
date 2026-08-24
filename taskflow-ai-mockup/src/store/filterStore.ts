@@ -21,6 +21,14 @@ export const DEFAULT_WIDTHS: Record<string, number> = {
   'Grupo': 128,
 }
 
+// Custom field columns use the `cf:<definitionId>` id convention (see boardStore's
+// setCustomFieldDefinitions). They aren't part of DEFAULT_WIDTHS since their set is
+// dynamic per board, so this helper centralizes the fallback width instead of
+// duplicating the `col.startsWith('cf:')` check across every consumer.
+export function getDefaultColumnWidth(col: string): number {
+  return DEFAULT_WIDTHS[col] ?? (col.startsWith('cf:') ? 120 : 112)
+}
+
 interface FilterStore {
   searchQuery: string
   setSearchQuery: (q: string) => void

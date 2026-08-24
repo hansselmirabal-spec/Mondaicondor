@@ -1,6 +1,7 @@
 import { create } from 'zustand'
 import type { PriorityType, MockBoard, MockComment, MockTask, MockUser, WorkspaceStatus, WorkspaceUen, CustomFieldDefinition } from '@/types'
 import { mockComments } from '@/data/mockComments'
+import { useFilterStore } from './filterStore'
 
 export type WorkspaceRole = 'ADMIN' | 'MEMBER' | 'VIEWER'
 export interface WorkspaceMemberLite { userId: string; role: WorkspaceRole }
@@ -152,7 +153,20 @@ export const useBoardStore = create<BoardStore>((set, get) => ({
   setWorkspaceUens: uens => set({ workspaceUens: uens }),
 
   customFieldDefinitions: [],
-  setCustomFieldDefinitions: definitions => set({ customFieldDefinitions: definitions }),
+  setCustomFieldDefinitions: definitions => {
+    set({ customFieldDefinitions: definitions })
+    // Table columns (filterStore.columnOrder) integrate custom fields as `cf:<id>`
+    // entries. Only active definitions get auto-added as a *new* column — an
+    // archived field never becomes a fresh column, it only keeps showing (read-only)
+    // in rows that already had a value, per the Phase 2 archive contract. Existing
+    // user-saved order is never touched, new ids are only appended at the end.
+    const { columnOrder, setColumnOrder } = useFilterStore.getState()
+    const missing = definitions
+      .filter(d => !d.archivedAt)
+      .map(d => `cf:${d.id}`)
+      .filter(id => !columnOrder.includes(id))
+    if (missing.length > 0) setColumnOrder([...columnOrder, ...missing])
+  },
 
   comments: [...mockComments],
   addComment: comment => set(state => ({ comments: [...state.comments, comment] })),

@@ -39,6 +39,7 @@ export function toMockTask(t: ApiTask): MockTask {
     createdAt: t.createdAt,
     updatedAt: t.updatedAt,
     uenIds: (t.uens ?? []).map(u => u.id),
+    customFields: t.customFields ?? {},
   }
 }
 

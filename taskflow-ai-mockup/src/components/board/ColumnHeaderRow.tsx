@@ -15,7 +15,8 @@ import {
 } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
 import { GripVertical, ArrowUp, ArrowDown, ChevronsUpDown } from 'lucide-react'
-import { useFilterStore, DEFAULT_WIDTHS, type SortField } from '@/store/filterStore'
+import { useFilterStore, getDefaultColumnWidth, type SortField } from '@/store/filterStore'
+import { useBoardStore } from '@/store/boardStore'
 
 // Columns whose header doubles as a click-to-sort control
 const SORTABLE_COLUMN: Record<string, Extract<SortField, 'createdAt' | 'deadline'>> = {
@@ -28,9 +29,10 @@ const MAX_WIDTH = 600
 
 interface SortableHeaderCellProps {
   col: string
+  label: string
 }
 
-function SortableHeaderCell({ col }: SortableHeaderCellProps) {
+function SortableHeaderCell({ col, label }: SortableHeaderCellProps) {
   const columnWidths = useFilterStore(s => s.columnWidths)
   const setColumnWidth = useFilterStore(s => s.setColumnWidth)
   const sortField = useFilterStore(s => s.sortField)
@@ -39,7 +41,7 @@ function SortableHeaderCell({ col }: SortableHeaderCellProps) {
 
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: col })
 
-  const width = columnWidths[col] ?? DEFAULT_WIDTHS[col] ?? 112
+  const width = columnWidths[col] ?? getDefaultColumnWidth(col)
 
   const style: React.CSSProperties = {
     transform: CSS.Transform.toString(transform),
@@ -115,7 +117,7 @@ function SortableHeaderCell({ col }: SortableHeaderCellProps) {
               : <ChevronsUpDown className="w-3 h-3 text-gray-300 shrink-0" />}
           </button>
         ) : (
-          <span className="truncate">{col}</span>
+          <span className="truncate">{label}</span>
         )}
       </div>
 
@@ -136,6 +138,13 @@ interface ColumnHeaderRowProps {
 export function ColumnHeaderRow({ orderedVisible }: ColumnHeaderRowProps) {
   const columnOrder = useFilterStore(s => s.columnOrder)
   const setColumnOrder = useFilterStore(s => s.setColumnOrder)
+  const customFieldDefinitions = useBoardStore(s => s.customFieldDefinitions)
+
+  function labelFor(col: string): string {
+    if (!col.startsWith('cf:')) return col
+    const def = customFieldDefinitions.find(d => `cf:${d.id}` === col)
+    return def?.label ?? col
+  }
 
   // Small activation distance so a plain click (e.g. on the sort control) never starts a drag
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 5 } }))
@@ -167,7 +176,7 @@ export function ColumnHeaderRow({ orderedVisible }: ColumnHeaderRowProps) {
         >
           <SortableContext items={orderedVisible} strategy={horizontalListSortingStrategy}>
             {orderedVisible.map(col => (
-              <SortableHeaderCell key={col} col={col} />
+              <SortableHeaderCell key={col} col={col} label={labelFor(col)} />
             ))}
           </SortableContext>
         </DndContext>
