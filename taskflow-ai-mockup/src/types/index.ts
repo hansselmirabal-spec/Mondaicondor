@@ -39,7 +39,30 @@ export interface BoardMember {
   id: string
   boardId: string
   userId: string
+  role: 'ADMIN' | 'MEMBER'
   user: { id: string; name: string; email: string; initials: string; color: string; avatarUrl: string | null }
+}
+
+export type CustomFieldType = 'TEXT' | 'NUMBER' | 'DATE' | 'SELECT' | 'CHECKBOX'
+
+export interface CustomFieldOption {
+  id: string
+  label: string
+  color: string
+  order: number
+  archivedAt: string | null
+}
+
+export interface CustomFieldDefinition {
+  id: string
+  boardId: string
+  label: string
+  type: CustomFieldType
+  config: { options?: CustomFieldOption[] }
+  order: number
+  archivedAt: string | null
+  createdAt: string
+  hasValues: boolean
 }
 
 export interface MockBoard {

@@ -3,12 +3,14 @@ import { useNavigate, useSearchParams } from 'react-router-dom'
 import { useState, useRef, useEffect } from 'react'
 import type { MockBoard } from '@/types'
 import { Modal } from '@/components/ui/Modal'
+import { HelpTip } from '@/components/ui/HelpTip'
 import { AssigneeAvatar } from '@/components/ui/AssigneeAvatar'
 import { useBoardStore } from '@/store/boardStore'
 import { useAuthStore } from '@/store/authStore'
 import { toast } from '@/components/ui/Toast'
 import { api } from '@/lib/api'
 import type { ApiUser } from '@/lib/api'
+import { isBoardAdminClient } from '@/lib/permissions'
 
 interface BoardHeaderProps { board: MockBoard }
 
@@ -21,9 +23,9 @@ export function BoardHeader({ board }: BoardHeaderProps) {
   const workspaces = useBoardStore(state => state.workspaces)
   const user = useAuthStore(state => state.user)
 
-  const isWorkspaceAdmin = user?.isAppAdmin === true || workspaces
-    .find(w => w.id === board.workspaceId)
-    ?.members?.find(m => m.userId === user?.id)?.role === 'ADMIN'
+  // Real board-admin gate (not just workspace-admin): BoardMember.role === 'ADMIN'
+  // on this board, OR workspace ADMIN as fallback, OR app admin.
+  const isBoardAdmin = isBoardAdminClient(board, user, workspaces)
 
   const [titleMenuOpen, setTitleMenuOpen] = useState(false)
   const [moreMenuOpen, setMoreMenuOpen] = useState(false)
@@ -174,6 +176,10 @@ export function BoardHeader({ board }: BoardHeaderProps) {
               </button>
             </div>
           )}
+          <HelpTip title="Tablero">
+            <p>Tabla principal es la vista de trabajo diario. Kanban te deja mover tareas entre estados arrastrando la tarjeta. Gráfico muestra el avance general.</p>
+            <p>El botón Personas agrega gente al tablero, pero solo se puede sumar a quien ya sea miembro de este espacio de trabajo.</p>
+          </HelpTip>
         </div>
 
         <div className="flex items-center gap-1">
@@ -327,7 +333,7 @@ export function BoardHeader({ board }: BoardHeaderProps) {
               )}
 
               {/* Invite new member — admins only */}
-              {isWorkspaceAdmin && (
+              {isBoardAdmin && (
               <div className="border-t border-gray-100 pt-4 space-y-3">
                 <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide flex items-center gap-1.5">
                   <UserPlus className="w-3.5 h-3.5" /> Agregar miembro

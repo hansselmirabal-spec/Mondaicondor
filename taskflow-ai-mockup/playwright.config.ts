@@ -10,7 +10,7 @@ export default defineConfig({
   globalSetup: './e2e/global-setup.ts',
   reporter: [['list'], ['html', { open: 'never', outputFolder: 'playwright-report' }]],
   use: {
-    baseURL: 'http://localhost:5173',
+    baseURL: 'http://localhost:5183',
     storageState: 'e2e/auth.json',
     trace: 'on-first-retry',
     screenshot: 'only-on-failure',

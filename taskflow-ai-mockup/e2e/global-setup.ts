@@ -4,7 +4,7 @@ async function globalSetup() {
   const browser = await chromium.launch()
   const page = await browser.newPage()
 
-  await page.goto('http://localhost:5173/login')
+  await page.goto('http://localhost:5183/login')
   await page.locator('input[type="email"]').fill('tacosta@condor.com.py')
   await page.locator('input[type="password"]').fill('password123')
   await page.getByRole('button', { name: 'Ingresar' }).click()

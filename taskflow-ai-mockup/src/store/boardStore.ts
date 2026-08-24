@@ -1,5 +1,5 @@
 import { create } from 'zustand'
-import type { PriorityType, MockBoard, MockComment, MockTask, MockUser, WorkspaceStatus, WorkspaceUen } from '@/types'
+import type { PriorityType, MockBoard, MockComment, MockTask, MockUser, WorkspaceStatus, WorkspaceUen, CustomFieldDefinition } from '@/types'
 import { mockComments } from '@/data/mockComments'
 
 export type WorkspaceRole = 'ADMIN' | 'MEMBER' | 'VIEWER'
@@ -54,6 +54,9 @@ interface BoardStore {
 
   workspaceUens: WorkspaceUen[]
   setWorkspaceUens: (uens: WorkspaceUen[]) => void
+
+  customFieldDefinitions: CustomFieldDefinition[]
+  setCustomFieldDefinitions: (definitions: CustomFieldDefinition[]) => void
 
   comments: MockComment[]
   addComment: (comment: MockComment) => void
@@ -148,6 +151,9 @@ export const useBoardStore = create<BoardStore>((set, get) => ({
   workspaceUens: [],
   setWorkspaceUens: uens => set({ workspaceUens: uens }),
 
+  customFieldDefinitions: [],
+  setCustomFieldDefinitions: definitions => set({ customFieldDefinitions: definitions }),
+
   comments: [...mockComments],
   addComment: comment => set(state => ({ comments: [...state.comments, comment] })),
   setTaskComments: (taskId, incoming) => set(state => ({
@@ -202,6 +208,7 @@ export const useBoardStore = create<BoardStore>((set, get) => ({
     deadlineHistory: {},
     workspaceStatuses: [],
     workspaceUens: [],
+    customFieldDefinitions: [],
     comments: [],
     boards: [],
   }),

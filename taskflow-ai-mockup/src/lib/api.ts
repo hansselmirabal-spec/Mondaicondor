@@ -319,6 +319,51 @@ export const api = {
         method: 'PUT',
         body: JSON.stringify({ order }),
       }),
+
+    listCustomFields: (boardId: string, includeArchived?: boolean) =>
+      request<{ customFieldDefinitions: ApiCustomFieldDefinition[] }>(
+        `/boards/${boardId}/custom-fields${includeArchived ? '?includeArchived=true' : ''}`
+      ),
+
+    createCustomField: (boardId: string, data: {
+      label: string
+      type: ApiCustomFieldType
+      config?: { options?: { label: string; color: string }[] }
+    }) =>
+      request<{ customField: ApiCustomFieldDefinitionBase }>(`/boards/${boardId}/custom-fields`, {
+        method: 'POST',
+        body: JSON.stringify(data),
+      }),
+
+    updateCustomField: (boardId: string, fieldId: string, data: {
+      label?: string
+      type?: ApiCustomFieldType
+      config?: { options?: { id?: string; label: string; color: string }[] }
+    }) =>
+      request<{ customField: ApiCustomFieldDefinitionBase }>(`/boards/${boardId}/custom-fields/${fieldId}`, {
+        method: 'PUT',
+        body: JSON.stringify(data),
+      }),
+
+    archiveCustomField: (boardId: string, fieldId: string) =>
+      request<{ message: string }>(`/boards/${boardId}/custom-fields/${fieldId}`, { method: 'DELETE' }),
+
+    unarchiveCustomField: (boardId: string, fieldId: string) =>
+      request<{ customField: ApiCustomFieldDefinitionBase }>(`/boards/${boardId}/custom-fields/${fieldId}/unarchive`, {
+        method: 'PUT',
+      }),
+
+    reorderCustomFields: (boardId: string, order: string[]) =>
+      request<{ customFieldDefinitions: ApiCustomFieldDefinitionBase[] }>(`/boards/${boardId}/custom-fields/reorder`, {
+        method: 'PUT',
+        body: JSON.stringify({ order }),
+      }),
+
+    archiveCustomFieldOption: (boardId: string, fieldId: string, optionId: string) =>
+      request<{ customField: ApiCustomFieldDefinitionBase }>(
+        `/boards/${boardId}/custom-fields/${fieldId}/options/${optionId}/archive`,
+        { method: 'PUT' }
+      ),
   },
 
   groups: {
@@ -486,7 +531,36 @@ export interface ApiBoardMember {
   id: string
   boardId: string
   userId: string
+  role: 'ADMIN' | 'MEMBER'
   user: { id: string; name: string; email: string; initials: string; color: string; avatarUrl: string | null }
+}
+
+export type ApiCustomFieldType = 'TEXT' | 'NUMBER' | 'DATE' | 'SELECT' | 'CHECKBOX'
+
+export interface ApiCustomFieldOption {
+  id: string
+  label: string
+  color: string
+  order: number
+  archivedAt: string | null
+}
+
+// Raw shape returned by every write endpoint (create/update/archive-option/
+// unarchive/reorder) — those don't compute `hasValues` (that's a derived,
+// list-only field). GET /boards/:id/custom-fields adds it — see below.
+export interface ApiCustomFieldDefinitionBase {
+  id: string
+  boardId: string
+  label: string
+  type: ApiCustomFieldType
+  config: { options?: ApiCustomFieldOption[] }
+  order: number
+  archivedAt: string | null
+  createdAt: string
+}
+
+export interface ApiCustomFieldDefinition extends ApiCustomFieldDefinitionBase {
+  hasValues: boolean
 }
 
 export interface ApiBoard {
