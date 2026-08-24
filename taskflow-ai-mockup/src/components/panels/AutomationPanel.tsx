@@ -3,6 +3,7 @@ import { useState, useEffect, useRef } from 'react'
 import { useNavigate, useSearchParams, useParams } from 'react-router-dom'
 import { Modal } from '@/components/ui/Modal'
 import { AssigneeAvatar } from '@/components/ui/AssigneeAvatar'
+import { HelpTip } from '@/components/ui/HelpTip'
 import { api } from '@/lib/api'
 import type { ApiAutomation } from '@/lib/api'
 import { useBoardStore } from '@/store/boardStore'
@@ -179,7 +180,13 @@ export function AutomationPanel() {
               <Zap className="w-4 h-4 text-white" />
             </div>
             <div>
-              <h2 className="text-sm font-bold text-gray-900">Automatizaciones</h2>
+              <div className="flex items-center gap-1.5">
+                <h2 className="text-sm font-bold text-gray-900">Automatizaciones</h2>
+                <HelpTip title="Automatizaciones">
+                  <p>Reglas del tipo "cuando pase esto, hacé aquello" para este tablero.</p>
+                  <p>Cualquier miembro del espacio puede crear, activar o desactivar una regla — no hace falta ser ADMIN.</p>
+                </HelpTip>
+              </div>
               <p className="text-xs text-gray-500">Reglas activas del tablero</p>
             </div>
           </div>

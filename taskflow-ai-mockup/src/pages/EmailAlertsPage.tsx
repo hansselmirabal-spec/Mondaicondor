@@ -3,6 +3,7 @@ import { Mail, AlertCircle } from 'lucide-react'
 import { useBoardStore } from '@/store/boardStore'
 import { api } from '@/lib/api'
 import { toast } from '@/components/ui/Toast'
+import { HelpTip } from '@/components/ui/HelpTip'
 import type { ApiWorkspaceMember } from '@/lib/api'
 
 export function EmailAlertsPage() {
@@ -65,7 +66,13 @@ export function EmailAlertsPage() {
       <div className="max-w-2xl">
         {/* Header */}
         <div className="mb-6">
-          <h1 className="text-2xl font-bold text-gray-900 mb-1">Alertas por correo</h1>
+          <div className="flex items-center gap-2 mb-1">
+            <h1 className="text-2xl font-bold text-gray-900">Alertas por correo</h1>
+            <HelpTip title="Alertas por correo">
+              <p>Acá elegís, miembro por miembro, quién recibe un email cuando se dispara una automatización.</p>
+              <p>Desactivar el correo de alguien no le saca las notificaciones dentro de la app, solo el email.</p>
+            </HelpTip>
+          </div>
           <p className="text-sm text-gray-500">
             Controlá qué miembros reciben notificaciones por email cuando se disparan automatizaciones.
           </p>

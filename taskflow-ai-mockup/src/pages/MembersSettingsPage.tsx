@@ -14,6 +14,7 @@ import { useBoardStore } from '@/store/boardStore'
 import { useAuthStore } from '@/store/authStore'
 import { api, type ApiUser, type ApiWorkspaceMember } from '@/lib/api'
 import { toast } from '@/components/ui/Toast'
+import { HelpTip } from '@/components/ui/HelpTip'
 
 type Role = 'ADMIN' | 'MEMBER' | 'VIEWER'
 
@@ -365,7 +366,13 @@ export function MembersSettingsPage() {
 
         {/* Header */}
         <div>
-          <h1 className="text-2xl font-bold text-gray-900 mb-1">Miembros del workspace</h1>
+          <div className="flex items-center gap-2 mb-1">
+            <h1 className="text-2xl font-bold text-gray-900">Miembros del workspace</h1>
+            <HelpTip title="Miembros del workspace">
+              <p>Mismo criterio que la gestión de usuarios: sumá gente por email (le creamos la cuenta) o buscando entre usuarios que ya existen en otros espacios.</p>
+              <p>Solo un ADMIN del espacio ve la sección para agregar miembros.</p>
+            </HelpTip>
+          </div>
           <p className="text-sm text-gray-500">
             Gestioná quién tiene acceso a{' '}
             <span className="font-medium text-gray-700">{workspace.name}</span>.

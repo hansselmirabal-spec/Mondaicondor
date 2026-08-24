@@ -3,6 +3,7 @@ import { Loader2, Pencil, Trash2, Shield, User, Eye, Search, X } from 'lucide-re
 import { useAuthStore } from '@/store/authStore'
 import { api, type ApiWorkspaceMember } from '@/lib/api'
 import { Modal } from '@/components/ui/Modal'
+import { HelpTip } from '@/components/ui/HelpTip'
 
 type Role = 'ADMIN' | 'MEMBER' | 'VIEWER'
 
@@ -140,7 +141,13 @@ export function MembersPage() {
         {/* Header */}
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-2xl font-bold text-gray-900">Gestión de usuarios</h1>
+            <div className="flex items-center gap-2">
+              <h1 className="text-2xl font-bold text-gray-900">Gestión de usuarios</h1>
+              <HelpTip title="Miembros">
+                <p>Usá "Usuario registrado" para sumar a alguien que ya tiene cuenta en otro espacio, o "Usuario nuevo" para crearle una cuenta.</p>
+                <p>Al usuario nuevo le va a llegar una contraseña temporal por correo que tiene que cambiar en su primer ingreso.</p>
+              </HelpTip>
+            </div>
             <p className="text-sm text-gray-500 mt-0.5">{members.length} {members.length === 1 ? 'usuario' : 'usuarios'}</p>
           </div>
         </div>

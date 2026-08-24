@@ -5,6 +5,7 @@ import { api } from '@/lib/api'
 import type { SystemAdminUser } from '@/lib/api'
 import { useAuthStore } from '@/store/authStore'
 import { copyToClipboard } from '@/lib/utils'
+import { HelpTip } from '@/components/ui/HelpTip'
 
 // ---- helpers ---------------------------------------------------------------
 
@@ -470,7 +471,13 @@ export function SystemAdminPage() {
           <div className="flex items-center gap-2.5">
             <ShieldCheck className="w-5 h-5 text-indigo-600" />
             <div>
-              <h1 className="text-base font-semibold text-gray-900">Administración del sistema</h1>
+              <div className="flex items-center gap-1.5">
+                <h1 className="text-base font-semibold text-gray-900">Administración del sistema</h1>
+                <HelpTip title="Administración del sistema">
+                  <p>Estas acciones aplican a toda la instalación de Mondai, no a un solo espacio de trabajo.</p>
+                  <p>Usalas con cuidado — resetear una contraseña cierra todas las sesiones activas de esa persona, y eliminar una cuenta es permanente.</p>
+                </HelpTip>
+              </div>
               <p className="text-xs text-gray-500">Gestión global de usuarios de la aplicación</p>
             </div>
           </div>

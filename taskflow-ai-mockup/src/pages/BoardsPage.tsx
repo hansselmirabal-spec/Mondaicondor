@@ -3,6 +3,7 @@ import { LayoutGrid, Plus, Star, MoreHorizontal, Pencil, Trash2, Lock, Globe, Us
 import { useState, useEffect, useRef } from 'react'
 import { useBoardStore } from '@/store/boardStore'
 import { Modal } from '@/components/ui/Modal'
+import { HelpTip } from '@/components/ui/HelpTip'
 import { toast } from '@/components/ui/Toast'
 import { api } from '@/lib/api'
 import { toMockBoard } from '@/lib/adapters'
@@ -189,7 +190,13 @@ export function BoardsPage() {
     <div className="flex-1 overflow-auto p-6">
       <div className="max-w-4xl">
         <div className="flex items-center justify-between mb-6">
-          <h1 className="text-2xl font-bold text-gray-900">Tableros</h1>
+          <div className="flex items-center gap-2">
+            <h1 className="text-2xl font-bold text-gray-900">Tableros</h1>
+            <HelpTip title="Tableros de este espacio">
+              <p>Un tablero público lo ve cualquier miembro del espacio de trabajo. Uno privado solo lo ven las personas que agregues explícitamente.</p>
+              <p>Para sumar gente nueva al espacio, andá a Config → Miembros.</p>
+            </HelpTip>
+          </div>
           <button
             onClick={() => setShowModal(true)}
             className="flex items-center gap-1.5 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-lg transition-colors"

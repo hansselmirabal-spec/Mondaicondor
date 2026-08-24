@@ -2,6 +2,7 @@ import { X, LayoutDashboard, AlertTriangle, Zap, Wand2, Bot, ChevronRight, Loade
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { useState, useEffect } from 'react'
 import { mockAgents } from '@/data/mockAgents'
+import { HelpTip } from '@/components/ui/HelpTip'
 import type { MockAgent } from '@/types'
 
 const ICON_MAP: Record<string, React.ReactNode> = {
@@ -100,7 +101,12 @@ export function AgentPanel() {
               <Bot className="w-4 h-4 text-white" />
             </div>
             <div>
-              <h2 className="text-sm font-bold text-gray-900">Agentes IA</h2>
+              <div className="flex items-center gap-1.5">
+                <h2 className="text-sm font-bold text-gray-900">Agentes IA</h2>
+                <HelpTip title="Agentes IA">
+                  <p>Esta sección todavía está en desarrollo: por ahora es una vista previa de cómo se va a ver, sin análisis real por detrás.</p>
+                </HelpTip>
+              </div>
               <p className="text-xs text-gray-500">Insights automáticos del tablero</p>
             </div>
           </div>

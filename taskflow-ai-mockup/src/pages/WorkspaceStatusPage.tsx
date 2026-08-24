@@ -3,6 +3,7 @@ import { Plus, Trash2, GripVertical, Check, X, AlertCircle } from 'lucide-react'
 import { useBoardStore } from '@/store/boardStore'
 import { api } from '@/lib/api'
 import { toast } from '@/components/ui/Toast'
+import { HelpTip } from '@/components/ui/HelpTip'
 import type { WorkspaceStatus } from '@/types'
 
 const PRESET_COLORS = [
@@ -123,7 +124,13 @@ export function WorkspaceStatusPage() {
     <div className="flex-1 overflow-auto p-6">
       <div className="max-w-2xl">
         <div className="mb-6">
-          <h1 className="text-2xl font-bold text-gray-900 mb-1">Estados del workspace</h1>
+          <div className="flex items-center gap-2 mb-1">
+            <h1 className="text-2xl font-bold text-gray-900">Estados del workspace</h1>
+            <HelpTip title="Estados">
+              <p>Estos estados son propios de este espacio de trabajo y los usa cualquier tablero adentro.</p>
+              <p>No se puede eliminar un estado que todavía tenga tareas asignadas — primero hay que reasignarlas.</p>
+            </HelpTip>
+          </div>
           <p className="text-sm text-gray-500">Personalizá los estados disponibles para las tareas de <span className="font-medium text-gray-700">{workspace.name}</span>.</p>
         </div>
 
