@@ -40,6 +40,11 @@ export function BoardHeader({ board }: BoardHeaderProps) {
   const [inviteEmail, setInviteEmail] = useState('')
   const [inviteRole, setInviteRole] = useState<'ADMIN' | 'MEMBER' | 'VIEWER'>('MEMBER')
   const [inviting, setInviting] = useState(false)
+  // Per-board role (ADMIN/MEMBER), keyed by userId. Not part of the global
+  // apiUsers store — that one is a shared user cache across the app, this is
+  // board-membership-specific and only needed while this modal is open.
+  const [memberRoles, setMemberRoles] = useState<Record<string, 'ADMIN' | 'MEMBER'>>({})
+  const [savingRoleFor, setSavingRoleFor] = useState<string | null>(null)
 
   const titleRef = useRef<HTMLDivElement>(null)
   const moreRef = useRef<HTMLDivElement>(null)
@@ -73,6 +78,7 @@ export function BoardHeader({ board }: BoardHeaderProps) {
         color: m.user.color, email: m.user.email,
       }))
       setApiUsers(memberUsers)
+      setMemberRoles(Object.fromEntries(members.map(m => [m.userId, m.role])))
       // Only workspace members can be added to a board — the board-add endpoint
       // rejects non-members ("El usuario no pertenece al workspace").
       setAllUsers(workspace.members.map(m => m.user))
@@ -87,6 +93,7 @@ export function BoardHeader({ board }: BoardHeaderProps) {
     setMembersModal(false)
     setInviteEmail('')
     setInviteRole('MEMBER')
+    setMemberRoles({})
   }
 
   async function handleInvite() {
@@ -113,6 +120,7 @@ export function BoardHeader({ board }: BoardHeaderProps) {
         id: member.user.id, name: member.user.name, initials: member.user.initials,
         color: member.user.color, email: member.user.email,
       }])
+      setMemberRoles(prev => ({ ...prev, [member.user.id]: member.role }))
       toast('Miembro agregado.', 'success')
     } catch (err) {
       toast((err as Error).message ?? 'Error al agregar.', 'error')
@@ -123,9 +131,30 @@ export function BoardHeader({ board }: BoardHeaderProps) {
     try {
       await api.boards.removeMember(board.id, userId)
       setApiUsers(apiUsers.filter(u => u.id !== userId))
+      setMemberRoles(prev => {
+        const next = { ...prev }
+        delete next[userId]
+        return next
+      })
       toast('Miembro eliminado del tablero.', 'success')
     } catch {
       toast('Error al eliminar.', 'error')
+    }
+  }
+
+  async function handleChangeMemberRole(targetUserId: string, role: 'ADMIN' | 'MEMBER') {
+    if (targetUserId === user?.id) return
+    const previous = memberRoles[targetUserId] ?? 'MEMBER'
+    setMemberRoles(prev => ({ ...prev, [targetUserId]: role })) // optimistic
+    setSavingRoleFor(targetUserId)
+    try {
+      await api.boards.updateMemberRole(board.id, targetUserId, role)
+      toast('Rol actualizado.', 'success')
+    } catch (err) {
+      setMemberRoles(prev => ({ ...prev, [targetUserId]: previous })) // revert
+      toast((err as Error).message ?? 'Error al cambiar el rol.', 'error')
+    } finally {
+      setSavingRoleFor(null)
     }
   }
 
@@ -294,6 +323,22 @@ export function BoardHeader({ board }: BoardHeaderProps) {
                           <p className="text-sm font-medium text-gray-800 truncate">{u.name}</p>
                           <p className="text-xs text-gray-400 truncate">{u.email}</p>
                         </div>
+                        {isBoardAdmin && u.id !== user?.id ? (
+                          <select
+                            value={memberRoles[u.id] ?? 'MEMBER'}
+                            onChange={e => handleChangeMemberRole(u.id, e.target.value as 'ADMIN' | 'MEMBER')}
+                            disabled={savingRoleFor === u.id}
+                            title="Rol en este tablero"
+                            className="shrink-0 text-xs border border-gray-200 rounded-md px-1.5 py-1 bg-white text-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50"
+                          >
+                            <option value="MEMBER">Miembro</option>
+                            <option value="ADMIN">Admin</option>
+                          </select>
+                        ) : (
+                          <span className="shrink-0 text-xs text-gray-400">
+                            {(memberRoles[u.id] ?? 'MEMBER') === 'ADMIN' ? 'Admin' : 'Miembro'}
+                          </span>
+                        )}
                         <button
                           onClick={() => handleRemoveMember(u.id)}
                           className="p-1 text-gray-300 hover:text-red-500 transition-colors shrink-0"

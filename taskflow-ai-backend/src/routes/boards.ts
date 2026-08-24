@@ -41,6 +41,8 @@ const updateBoardSettingsSchema = z.object({
 
 const addBoardMemberSchema = z.object({ userId: z.string() })
 
+const updateBoardMemberRoleSchema = z.object({ role: z.enum(['ADMIN', 'MEMBER']) })
+
 const customFieldOptionInputSchema = z.object({
   label: z.string().min(1).max(40),
   color: z.string().regex(/^#[0-9a-fA-F]{6}$/),
@@ -282,6 +284,43 @@ boardRoutes.delete('/:id/members/:targetUserId', async (c) => {
   }
 
   return c.json({ message: 'Miembro eliminado del tablero' })
+})
+
+// Promote/demote a board member to this board's own ADMIN role, without
+// touching their workspace-wide role. Mirrors workspaceRoutes.put
+// ('/:id/members/:memberId') in workspaces.ts: only a board admin can do
+// this, and nobody can change their own row (avoids self-lockout/self-promote
+// races). Upserts because public boards don't always have an explicit
+// BoardMember row for every workspace member yet (see assertBoardAccess) —
+// promoting such a user needs to create their row, not just update one that
+// may not exist.
+boardRoutes.put('/:id/members/:userId/role', zValidator('json', updateBoardMemberRoleSchema), async (c) => {
+  const { userId: callerId } = c.get('user')
+  const { id, userId: targetUserId } = c.req.param()
+  const { role } = c.req.valid('json')
+
+  if (!await isBoardAdmin(id, callerId)) return c.json({ error: 'Sin permisos' }, 403)
+
+  if (targetUserId === callerId) {
+    return c.json({ error: 'No podés cambiar tu propio rol' }, 400)
+  }
+
+  const board = await prisma.board.findUnique({ where: { id }, select: { workspaceId: true } })
+  if (!board) return c.json({ error: 'Tablero no encontrado' }, 404)
+
+  // Target must have some link to this board (workspace member) before we
+  // hand them board-admin — don't promote someone with no access at all.
+  const targetMembership = await getWorkspaceMembership(board.workspaceId, targetUserId)
+  if (!targetMembership) return c.json({ error: 'El usuario no pertenece al workspace' }, 400)
+
+  const member = await prisma.boardMember.upsert({
+    where: { boardId_userId: { boardId: id, userId: targetUserId } },
+    update: { role },
+    create: { boardId: id, userId: targetUserId, role },
+    include: { user: { select: { id: true, name: true, email: true, initials: true, color: true, avatarUrl: true } } },
+  })
+
+  return c.json({ member })
 })
 
 // ── Groups ──────────────────────────────────────────────────────────────────

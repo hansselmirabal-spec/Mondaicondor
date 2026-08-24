@@ -314,6 +314,12 @@ export const api = {
     removeMember: (boardId: string, userId: string) =>
       request<{ message: string }>(`/boards/${boardId}/members/${userId}`, { method: 'DELETE' }),
 
+    updateMemberRole: (boardId: string, userId: string, role: 'ADMIN' | 'MEMBER') =>
+      request<{ member: ApiBoardMember }>(`/boards/${boardId}/members/${userId}/role`, {
+        method: 'PUT',
+        body: JSON.stringify({ role }),
+      }),
+
     reorderGroups: (boardId: string, order: string[]) =>
       request<{ message: string }>(`/boards/${boardId}/groups/reorder`, {
         method: 'PUT',
@@ -598,6 +604,7 @@ export interface ApiTask {
   assignees: Array<{ user: ApiUser }>
   group: { id: string; name: string; boardId: string }
   uens: Array<{ id: string; name: string; color: string }>
+  customFields?: Record<string, unknown>
 }
 
 export interface ApiTaskUpdate {
@@ -609,6 +616,7 @@ export interface ApiTaskUpdate {
   groupId: string
   assigneeIds: string[]
   uenIds?: string[]
+  customFields?: Record<string, unknown>
 }
 
 export interface ApiWorkspaceMember {
