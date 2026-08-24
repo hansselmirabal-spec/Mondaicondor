@@ -321,7 +321,7 @@ export function TaskRow({ task, isDragging, isOver, onDragStart, onDragEnd, onDr
         <td className="p-0 border-0">
           <div
             ref={dropdownRef}
-            className="fixed z-[9999] bg-white border border-gray-200 rounded-xl shadow-xl w-48 overflow-hidden"
+            className="fixed z-[9999] bg-white border border-gray-200 rounded-xl shadow-xl w-48 max-h-64 overflow-y-auto"
             style={{ top: dropdownPos.top, left: dropdownPos.left }}
             onClick={e => e.stopPropagation()}
           >

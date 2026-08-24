@@ -5,10 +5,12 @@ import { useBoardStore } from '@/store/boardStore'
 import { StatusBadge } from '@/components/ui/StatusBadge'
 import { PriorityBadge } from '@/components/ui/PriorityBadge'
 import { AssigneeAvatar } from '@/components/ui/AssigneeAvatar'
+import { HelpTip } from '@/components/ui/HelpTip'
 import { CommentList } from './CommentList'
 import { ActivityTimeline } from './ActivityTimeline'
 import { formatDate } from '@/lib/utils'
 import { api } from '@/lib/api'
+import { toMockUser } from '@/lib/adapters'
 import { useAuthStore } from '@/store/authStore'
 import { MoveBoardModal } from './MoveBoardModal'
 import type { StatusType, PriorityType } from '@/types'
@@ -93,13 +95,12 @@ export function TaskDetailDrawer() {
   // Load workspace members if the store is empty (e.g. direct URL open or navigation from outside board)
   useEffect(() => {
     if (!task || apiUsers.length > 0) return
-    api.users.list()
-      .then(({ users }) => setApiUsers(users.map(u => ({
-        id: u.id, name: u.name, initials: u.initials,
-        color: u.color, email: u.email, avatarUrl: u.avatarUrl,
-      }))))
+    const board = boards.find(b => b.id === task.boardId)
+    if (!board) return
+    api.workspaces.get(board.workspaceId)
+      .then(({ workspace }) => setApiUsers(workspace.members.map(m => toMockUser(m.user))))
       .catch(() => {})
-  }, [task?.id, apiUsers.length])
+  }, [task?.id, apiUsers.length, boards])
 
   const [editingDesc, setEditingDesc] = useState(false)
   const [descDraft, setDescDraft] = useState('')
@@ -238,17 +239,22 @@ export function TaskDetailDrawer() {
           {/* Metadata */}
           <div className="grid grid-cols-2 gap-3">
             <div ref={pickerRef} className="relative">
+              <div className="flex items-center gap-1 mb-1.5">
+                <p className="text-xs text-gray-400 font-medium flex items-center gap-1">
+                  <User className="w-3 h-3" /> Responsables
+                </p>
+                <HelpTip title="Responsables">
+                  <p>Solo aparecen acá las personas que ya pertenecen a este espacio de trabajo.</p>
+                  <p>Si no ves a alguien en la lista, primero sumalo al espacio desde Config → Miembros y después vas a poder asignarle tareas.</p>
+                </HelpTip>
+              </div>
               <button
                 onClick={() => setAssigneePicker(o => !o)}
                 className="w-full text-left group"
               >
-                <p className="text-xs text-gray-400 font-medium mb-1.5 flex items-center gap-1 group-hover:text-blue-500 transition-colors">
-                  <User className="w-3 h-3" /> Responsables
-                  <Plus className="w-3 h-3 ml-auto opacity-0 group-hover:opacity-100 transition-opacity" />
-                </p>
                 <div className="flex flex-wrap gap-1 items-center min-h-[24px]">
                   {currentAssigneeIds.length === 0
-                    ? <span className="text-xs text-gray-400 italic">Sin asignar — click para agregar</span>
+                    ? <span className="text-xs text-gray-400 italic group-hover:text-blue-500 transition-colors">Sin asignar — click para agregar</span>
                     : currentAssigneeIds.map(id => {
                         const u = apiUsers.find(user => user.id === id)
                         return u ? (
@@ -259,6 +265,7 @@ export function TaskDetailDrawer() {
                         ) : null
                       })
                   }
+                  <Plus className="w-3 h-3 ml-auto opacity-0 group-hover:opacity-100 transition-opacity text-gray-400" />
                 </div>
               </button>
               {assigneePicker && (

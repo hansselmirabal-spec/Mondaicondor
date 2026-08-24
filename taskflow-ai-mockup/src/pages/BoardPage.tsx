@@ -9,7 +9,7 @@ import { BoardTable } from '@/components/board/BoardTable'
 import { KanbanView } from '@/components/board/KanbanView'
 import { ChartView } from '@/components/board/ChartView'
 import { api } from '@/lib/api'
-import { toMockBoard, extractTasks, toMockTask } from '@/lib/adapters'
+import { toMockBoard, extractTasks, toMockTask, toMockUser } from '@/lib/adapters'
 import type { MockBoard, WorkspaceStatus } from '@/types'
 
 const POLL_INTERVAL_MS = 5_000
@@ -66,13 +66,10 @@ export function BoardPage() {
             if (activeBoardId.current === boardId) setWorkspaceUens(uens)
           })
           .catch(() => {})
-        api.users.list()
-          .then(({ users }) => {
+        api.workspaces.get(apiBoard.workspaceId)
+          .then(({ workspace }) => {
             if (activeBoardId.current !== boardId) return
-            setApiUsers(users.map(u => ({
-              id: u.id, name: u.name, initials: u.initials,
-              color: u.color, email: u.email, avatarUrl: u.avatarUrl,
-            })))
+            setApiUsers(workspace.members.map(m => toMockUser(m.user)))
           })
           .catch(() => {})
       } catch {
