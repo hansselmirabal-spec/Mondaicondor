@@ -21,13 +21,26 @@ enum TaskPriority {
   AlwaysOn
 }
 
+enum CustomFieldType {
+  TEXT
+  NUMBER
+  DATE
+  SELECT
+  CHECKBOX
+}
+
+enum BoardMemberRole {
+  ADMIN
+  MEMBER
+}
+
 model User {
-  id           String   @id @default(cuid())
-  email        String   @unique
-  name         String
-  initials     String   @db.VarChar(2)
-  color        String   @default("#6366f1")
-  passwordHash String
+  id                 String   @id @default(cuid())
+  email              String   @unique
+  name               String
+  initials           String   @db.VarChar(2)
+  color              String   @default("#6366f1")
+  passwordHash       String
   avatarUrl          String?
   mustChangePassword Boolean  @default(false)
   isAppAdmin         Boolean  @default(false)
@@ -38,7 +51,7 @@ model User {
   memberships   WorkspaceMember[]
   boardMembers  BoardMember[]
   assignedTasks TaskAssignee[]
-  createdTasks  Task[]          @relation("TaskCreator")
+  createdTasks  Task[]               @relation("TaskCreator")
   comments      Comment[]
   activities    Activity[]
   preferences   UserPreference?
@@ -136,19 +149,21 @@ model Board {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
-  workspace    Workspace      @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
-  groups       Group[]
-  automations  Automation[]
-  settings     BoardSettings?
-  boardMembers BoardMember[]
+  workspace              Workspace               @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  groups                 Group[]
+  automations            Automation[]
+  settings               BoardSettings?
+  boardMembers           BoardMember[]
+  customFieldDefinitions CustomFieldDefinition[]
 
   @@index([workspaceId])
 }
 
 model BoardMember {
-  id      String @id @default(cuid())
+  id      String          @id @default(cuid())
   boardId String
   userId  String
+  role    BoardMemberRole @default(MEMBER)
 
   board Board @relation(fields: [boardId], references: [id], onDelete: Cascade)
   user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -156,6 +171,21 @@ model BoardMember {
   @@unique([boardId, userId])
   @@index([boardId])
   @@index([userId])
+}
+
+model CustomFieldDefinition {
+  id         String          @id @default(cuid())
+  boardId    String
+  label      String
+  type       CustomFieldType
+  config     Json            @default("{}")
+  order      Int             @default(0)
+  archivedAt DateTime?
+  createdAt  DateTime        @default(now())
+
+  board Board @relation(fields: [boardId], references: [id], onDelete: Cascade)
+
+  @@index([boardId, archivedAt])
 }
 
 model BoardSettings {
@@ -182,18 +212,19 @@ model Group {
 }
 
 model Task {
-  id          String       @id @default(cuid())
-  groupId     String
-  title       String
-  description String?
-  status      String       @default("Nuevo")
-  priority    TaskPriority @default(Media)
-  deadline    DateTime?
-  fileUrl     String?
-  createdBy   String?
-  order       Int          @default(0)
-  createdAt   DateTime     @default(now())
-  updatedAt   DateTime     @updatedAt
+  id           String       @id @default(cuid())
+  groupId      String
+  title        String
+  description  String?
+  status       String       @default("Nuevo")
+  priority     TaskPriority @default(Media)
+  deadline     DateTime?
+  fileUrl      String?
+  createdBy    String?
+  order        Int          @default(0)
+  customFields Json         @default("{}")
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
 
   group      Group          @relation(fields: [groupId], references: [id], onDelete: Cascade)
   creator    User?          @relation("TaskCreator", fields: [createdBy], references: [id], onDelete: SetNull)

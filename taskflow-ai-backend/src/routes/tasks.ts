@@ -1,6 +1,7 @@
 import { Hono } from 'hono'
 import { zValidator } from '@hono/zod-validator'
 import { z } from 'zod'
+import type { Prisma } from '@prisma/client'
 import { prisma } from '../lib/prisma.js'
 import { authMiddleware } from '../middleware/auth.js'
 import { isWorkspaceAdmin } from '../lib/authz.js'
@@ -33,6 +34,7 @@ const updateTaskSchema = z.object({
   groupId: z.string().optional(),
   assigneeIds: z.array(z.string()).optional(),
   uenIds: z.array(z.string()).optional(),
+  customFields: z.record(z.string(), z.unknown()).optional(),
 })
 
 const taskInclude = {
@@ -245,10 +247,95 @@ taskRoutes.get('/:id', async (c) => {
   return c.json({ task })
 })
 
+// Strict YYYY-MM-DD (ISO date-only) check: the regex only confirms shape, so
+// this also rejects calendar overflow (e.g. "2024-02-30") that a bare
+// `new Date(value)` would silently roll forward instead of flagging.
+function isValidCalendarDate(value: string): boolean {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) return false
+  const [year, month, day] = value.split('-').map(Number)
+  if (month < 1 || month > 12) return false
+  const date = new Date(Date.UTC(year, month - 1, day))
+  return date.getUTCFullYear() === year && date.getUTCMonth() === month - 1 && date.getUTCDate() === day
+}
+
+function getActiveOptionIds(config: unknown): Set<string> {
+  const options = config && typeof config === 'object' && !Array.isArray(config)
+    ? (config as { options?: { id: string; archivedAt: string | null }[] }).options
+    : undefined
+  return new Set(Array.isArray(options) ? options.filter((o) => !o.archivedAt).map((o) => o.id) : [])
+}
+
+// Validates a customFields patch against the board's active definitions.
+// A `null` value always passes through untouched — it means "delete this
+// key" and is handled by the merge rule in the PUT handler, not here.
+async function validateCustomFieldPatch(
+  boardId: string,
+  patch: Record<string, unknown>,
+): Promise<{ error: string } | { data: Record<string, unknown> }> {
+  const definitions = await prisma.customFieldDefinition.findMany({
+    where: { boardId, archivedAt: null },
+  })
+  const byId = new Map(definitions.map((d) => [d.id, d]))
+
+  const data: Record<string, unknown> = {}
+  for (const [fieldId, value] of Object.entries(patch)) {
+    const def = byId.get(fieldId)
+    if (!def) return { error: 'Campo personalizado no encontrado o archivado' }
+
+    if (value === null) {
+      data[fieldId] = null
+      continue
+    }
+
+    switch (def.type) {
+      case 'TEXT': {
+        if (typeof value !== 'string') return { error: `El campo "${def.label}" debe ser texto` }
+        data[fieldId] = value
+        break
+      }
+      case 'NUMBER': {
+        if (
+          typeof value !== 'number'
+          || Number.isNaN(value)
+          || !Number.isFinite(value)
+          || Math.abs(value) >= 1e12
+        ) {
+          return { error: `El campo "${def.label}" debe ser un número válido` }
+        }
+        data[fieldId] = value
+        break
+      }
+      case 'DATE': {
+        if (typeof value !== 'string' || !isValidCalendarDate(value)) {
+          return { error: `El campo "${def.label}" debe tener formato YYYY-MM-DD` }
+        }
+        data[fieldId] = value
+        break
+      }
+      case 'CHECKBOX': {
+        if (typeof value !== 'boolean') return { error: `El campo "${def.label}" debe ser verdadero o falso` }
+        data[fieldId] = value
+        break
+      }
+      case 'SELECT': {
+        if (typeof value !== 'string' || !getActiveOptionIds(def.config).has(value)) {
+          return { error: `El campo "${def.label}" tiene una opción inválida o archivada` }
+        }
+        data[fieldId] = value
+        break
+      }
+      default:
+        return { error: 'Tipo de campo desconocido' }
+    }
+  }
+
+  return { data }
+}
+
 taskRoutes.put('/:id', zValidator('json', updateTaskSchema), async (c) => {
   const { userId } = c.get('user')
   const { id } = c.req.param()
-  const { assigneeIds, deadline, uenIds, ...rest } = c.req.valid('json')
+  const { assigneeIds, deadline, uenIds, customFields, ...rest } = c.req.valid('json')
 
   const existing = await prisma.task.findUnique({
     where: { id },
@@ -268,8 +355,9 @@ taskRoutes.put('/:id', zValidator('json', updateTaskSchema), async (c) => {
   if (membership?.role === 'VIEWER') return c.json({ error: 'Sin permisos' }, 403)
 
   // Assignees who are not workspace members can only change status/priority/description/deadline
+  // or custom fields — `customFields` deliberately doesn't participate in this condition.
   if (!membership && isAssignee && (assigneeIds || rest.groupId || uenIds !== undefined)) {
-    return c.json({ error: 'Solo podés actualizar el estado, prioridad, descripción o fecha límite de esta tarea' }, 403)
+    return c.json({ error: 'Solo podés actualizar el estado, prioridad, descripción, fecha límite o campos personalizados de esta tarea' }, 403)
   }
 
   if (assigneeIds && assigneeIds.length > 0) {
@@ -284,8 +372,9 @@ taskRoutes.put('/:id', zValidator('json', updateTaskSchema), async (c) => {
     }
   }
 
+  let targetGroup: { boardId: string; board: { workspaceId: string } } | null = null
   if (rest.groupId) {
-    const targetGroup = await prisma.group.findUnique({
+    targetGroup = await prisma.group.findUnique({
       where: { id: rest.groupId },
       include: { board: { select: { workspaceId: true } } },
     })
@@ -297,6 +386,41 @@ taskRoutes.put('/:id', zValidator('json', updateTaskSchema), async (c) => {
       where: { workspaceId_userId: { workspaceId: targetGroup.board.workspaceId, userId } },
     })
     if (!targetMembership) return c.json({ error: 'Sin acceso al workspace destino' }, 403)
+  }
+
+  // Custom fields: start from the existing stored object (guarded — Prisma's
+  // JsonValue can be null/string/array, never a blind `as object` cast),
+  // apply the patch's null-deletes-key / value-overwrites-key rule, then —
+  // if this PUT also moves the task cross-board via groupId — drop any key
+  // that isn't an active definition on the destination board.
+  const customFieldsBase: Record<string, unknown> = typeof existing.customFields === 'object'
+    && existing.customFields !== null
+    && !Array.isArray(existing.customFields)
+    ? existing.customFields
+    : {}
+  const mergedCustomFields: Record<string, unknown> = { ...customFieldsBase }
+  let customFieldsChanged = false
+
+  if (customFields !== undefined) {
+    const validated = await validateCustomFieldPatch(existing.group.board.id, customFields)
+    if ('error' in validated) return c.json({ error: validated.error }, 400)
+    for (const [key, value] of Object.entries(validated.data)) {
+      if (value === null) delete mergedCustomFields[key]
+      else mergedCustomFields[key] = value
+    }
+    customFieldsChanged = true
+  }
+
+  if (targetGroup && targetGroup.boardId !== existing.group.boardId) {
+    const targetDefinitions = await prisma.customFieldDefinition.findMany({
+      where: { boardId: targetGroup.boardId, archivedAt: null },
+      select: { id: true },
+    })
+    const activeFieldIds = new Set(targetDefinitions.map((d) => d.id))
+    for (const key of Object.keys(mergedCustomFields)) {
+      if (!activeFieldIds.has(key)) delete mergedCustomFields[key]
+    }
+    customFieldsChanged = true
   }
 
   const changes: string[] = []
@@ -316,6 +440,7 @@ taskRoutes.put('/:id', zValidator('json', updateTaskSchema), async (c) => {
           create: assigneeIds.map((uid) => ({ userId: uid })),
         },
       }),
+      ...(customFieldsChanged && { customFields: mergedCustomFields as Prisma.InputJsonValue }),
     },
     include: taskInclude,
   })
@@ -653,6 +778,15 @@ taskRoutes.patch('/:id/move', zValidator('json', z.object({ groupId: z.string() 
   const validSlugs = new Set(targetStatuses.map(s => s.slug))
   const newStatus = validSlugs.has(task.status) ? task.status : null
 
+  // Load the destination board's active custom field definitions so orphaned
+  // values (fields not defined there) get dropped silently on move, same
+  // criterion already applied above to removedAssigneeIds.
+  const targetCustomFieldDefs = await prisma.customFieldDefinition.findMany({
+    where: { boardId: targetGroup.boardId, archivedAt: null },
+    select: { id: true },
+  })
+  const activeFieldIds = new Set(targetCustomFieldDefs.map(d => d.id))
+
   // Execute move in a transaction
   const updated = await prisma.$transaction(async (tx) => {
     // Remove assignees not in target board
@@ -662,11 +796,23 @@ taskRoutes.patch('/:id/move', zValidator('json', z.object({ groupId: z.string() 
       })
     }
 
+    // Drop customFields keys with no active definition on the target board
+    const customFieldsBase: Record<string, unknown> = typeof task.customFields === 'object'
+      && task.customFields !== null
+      && !Array.isArray(task.customFields)
+      ? task.customFields
+      : {}
+    const filteredCustomFields: Record<string, unknown> = {}
+    for (const [key, value] of Object.entries(customFieldsBase)) {
+      if (activeFieldIds.has(key)) filteredCustomFields[key] = value
+    }
+
     // Update task group and status
     const moved = await tx.task.update({
       where: { id },
       data: {
         groupId: targetGroupId,
+        customFields: filteredCustomFields as Prisma.InputJsonValue,
         ...(newStatus !== task.status && { status: newStatus ?? 'Nuevo' }),
         activities: {
           create: {

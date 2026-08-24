@@ -1,9 +1,10 @@
 import { Hono } from 'hono'
 import { zValidator } from '@hono/zod-validator'
 import { z } from 'zod'
+import { randomUUID } from 'node:crypto'
 import { prisma } from '../lib/prisma.js'
 import { authMiddleware } from '../middleware/auth.js'
-import { isWorkspaceAdmin } from '../lib/authz.js'
+import { isWorkspaceAdmin, isBoardAdmin } from '../lib/authz.js'
 import type { AppEnv } from '../lib/types.js'
 
 export const boardRoutes = new Hono<AppEnv>()
@@ -39,6 +40,27 @@ const updateBoardSettingsSchema = z.object({
 })
 
 const addBoardMemberSchema = z.object({ userId: z.string() })
+
+const customFieldOptionInputSchema = z.object({
+  label: z.string().min(1).max(40),
+  color: z.string().regex(/^#[0-9a-fA-F]{6}$/),
+})
+
+const createCustomFieldSchema = z.object({
+  label: z.string().min(1).max(60),
+  type: z.enum(['TEXT', 'NUMBER', 'DATE', 'SELECT', 'CHECKBOX']),
+  config: z.object({ options: z.array(customFieldOptionInputSchema).optional() }).optional(),
+})
+
+const updateCustomFieldSchema = z.object({
+  label: z.string().min(1).max(60).optional(),
+  type: z.enum(['TEXT', 'NUMBER', 'DATE', 'SELECT', 'CHECKBOX']).optional(),
+  config: z.object({
+    options: z.array(customFieldOptionInputSchema.extend({ id: z.string().optional() })).optional(),
+  }).optional(),
+})
+
+const reorderCustomFieldsSchema = z.object({ order: z.array(z.string()) })
 
 async function getWorkspaceMembership(workspaceId: string, userId: string) {
   return prisma.workspaceMember.findUnique({
@@ -127,7 +149,8 @@ boardRoutes.post('/', zValidator('json', createBoardSchema), async (c) => {
       settings: { create: { updatedAt: new Date() } },
       groups: { create: [{ name: 'Tareas', color: '#6366f1', order: 0 }] },
       // creator is always a board member (so they keep access if it's private)
-      boardMembers: { create: { userId } },
+      // and is the real ADMIN of this board from the moment it's created.
+      boardMembers: { create: { userId, role: 'ADMIN' } },
     },
     include: { settings: true, groups: { orderBy: { order: 'asc' } }, boardMembers: true },
   })
@@ -345,4 +368,234 @@ boardRoutes.put('/:boardId/groups/reorder', zValidator('json', z.object({ order:
   )
 
   return c.json({ message: 'Orden actualizado' })
+})
+
+// ── Custom Field Definitions ────────────────────────────────────────────────
+// Read endpoints use assertBoardAccess (any member with board access can list).
+// Write endpoints use isBoardAdmin (real board ADMIN, or workspace ADMIN as
+// fallback for public boards without an explicit BoardMember row).
+
+type CustomFieldOption = {
+  id: string
+  label: string
+  color: string
+  order: number
+  archivedAt: string | null
+}
+
+type CustomFieldConfig = {
+  options?: CustomFieldOption[]
+}
+
+function asCustomFieldConfig(config: unknown): CustomFieldConfig {
+  return config && typeof config === 'object' && !Array.isArray(config) ? (config as CustomFieldConfig) : {}
+}
+
+function getConfigOptions(config: unknown): CustomFieldOption[] {
+  const options = asCustomFieldConfig(config).options
+  return Array.isArray(options) ? options : []
+}
+
+// Whether any task on this board has a stored value for fieldId, using
+// Postgres's jsonb "?" key-exists operator instead of pulling every task in
+// the board and filtering in JS. Verified against this project's Prisma
+// version (5.22, default query engine): a bare "?" here is NOT parsed as a
+// bind placeholder by $queryRaw (only "${}" is), so it passes through as
+// literal SQL. Doubling it as "??" (per some Prisma docs for older/other
+// engines) instead produces a real Postgres syntax error here
+// ("operator does not exist: jsonb ?? text") — confirmed by manual testing.
+async function fieldHasValues(boardId: string, fieldId: string): Promise<boolean> {
+  const rows = await prisma.$queryRaw<{ exists: boolean }[]>`
+    SELECT EXISTS(
+      SELECT 1 FROM "Task" t
+      JOIN "Group" g ON g.id = t."groupId"
+      WHERE g."boardId" = ${boardId} AND t."customFields" ? ${fieldId}
+    ) as exists
+  `
+  return rows[0]?.exists ?? false
+}
+
+boardRoutes.get('/:id/custom-fields', async (c) => {
+  const { userId } = c.get('user')
+  const { id } = c.req.param()
+  const includeArchived = c.req.query('includeArchived') === 'true'
+
+  const access = await assertBoardAccess(id, userId)
+  if (!access) return c.json({ error: 'Sin acceso' }, 403)
+
+  const definitions = await prisma.customFieldDefinition.findMany({
+    where: includeArchived ? { boardId: id } : { boardId: id, archivedAt: null },
+    orderBy: { order: 'asc' },
+  })
+
+  // hasValues for every definition in one query (avoid N+1).
+  const rows = await prisma.$queryRaw<{ key: string }[]>`
+    SELECT DISTINCT jsonb_object_keys(t."customFields") as key
+    FROM "Task" t
+    JOIN "Group" g ON g.id = t."groupId"
+    WHERE g."boardId" = ${id}
+  `
+  const fieldIdsWithValues = new Set(rows.map(r => r.key))
+
+  const customFieldDefinitions = definitions.map(def => ({
+    ...def,
+    hasValues: fieldIdsWithValues.has(def.id),
+  }))
+
+  return c.json({ customFieldDefinitions })
+})
+
+boardRoutes.post('/:id/custom-fields', zValidator('json', createCustomFieldSchema), async (c) => {
+  const { userId } = c.get('user')
+  const { id } = c.req.param()
+  const { label, type, config } = c.req.valid('json')
+
+  if (!await isBoardAdmin(id, userId)) return c.json({ error: 'Sin permisos' }, 403)
+
+  const count = await prisma.customFieldDefinition.count({ where: { boardId: id } })
+
+  const finalConfig: CustomFieldConfig =
+    type === 'SELECT' && config?.options
+      ? {
+          options: config.options.map((opt, idx) => ({
+            id: randomUUID(),
+            label: opt.label,
+            color: opt.color,
+            order: idx,
+            archivedAt: null,
+          })),
+        }
+      : {}
+
+  const customField = await prisma.customFieldDefinition.create({
+    data: { boardId: id, label, type, config: finalConfig, order: count },
+  })
+
+  return c.json({ customField }, 201)
+})
+
+// Static path registered before the dynamic :fieldId routes below so it
+// can't be shadowed by them.
+boardRoutes.put('/:id/custom-fields/reorder', zValidator('json', reorderCustomFieldsSchema), async (c) => {
+  const { userId } = c.get('user')
+  const { id } = c.req.param()
+  const { order } = c.req.valid('json')
+
+  if (!await isBoardAdmin(id, userId)) return c.json({ error: 'Sin permisos' }, 403)
+
+  await prisma.$transaction(
+    order.map((fieldId, idx) =>
+      prisma.customFieldDefinition.updateMany({ where: { id: fieldId, boardId: id }, data: { order: idx } })
+    )
+  )
+
+  const customFieldDefinitions = await prisma.customFieldDefinition.findMany({
+    where: { boardId: id },
+    orderBy: { order: 'asc' },
+  })
+
+  return c.json({ customFieldDefinitions })
+})
+
+boardRoutes.put('/:id/custom-fields/:fieldId', zValidator('json', updateCustomFieldSchema), async (c) => {
+  const { userId } = c.get('user')
+  const { id, fieldId } = c.req.param()
+  const data = c.req.valid('json')
+
+  if (!await isBoardAdmin(id, userId)) return c.json({ error: 'Sin permisos' }, 403)
+
+  const target = await prisma.customFieldDefinition.findUnique({ where: { id: fieldId } })
+  if (!target || target.boardId !== id) return c.json({ error: 'Campo no encontrado' }, 404)
+
+  if (data.type && data.type !== target.type && await fieldHasValues(id, fieldId)) {
+    return c.json(
+      { error: 'No se puede cambiar el tipo de un campo que ya tiene valores cargados. Creá un campo nuevo y archivá este.' },
+      409
+    )
+  }
+
+  // Merge SELECT options by id: options with a known id get label/color
+  // updated in place, options without an id are created new. No option is
+  // ever removed here — archiving an option is a separate endpoint.
+  let nextConfig: CustomFieldConfig | undefined
+  if (data.config?.options) {
+    const existingOptions = getConfigOptions(target.config)
+    const byId = new Map(existingOptions.map(o => [o.id, o]))
+    let nextOrder = existingOptions.length
+
+    for (const opt of data.config.options) {
+      if (opt.id && byId.has(opt.id)) {
+        const current = byId.get(opt.id)!
+        byId.set(opt.id, { ...current, label: opt.label, color: opt.color })
+      } else {
+        const optId = randomUUID()
+        byId.set(optId, { id: optId, label: opt.label, color: opt.color, order: nextOrder, archivedAt: null })
+        nextOrder += 1
+      }
+    }
+
+    nextConfig = { ...asCustomFieldConfig(target.config), options: Array.from(byId.values()).sort((a, b) => a.order - b.order) }
+  }
+
+  const customField = await prisma.customFieldDefinition.update({
+    where: { id: fieldId },
+    data: {
+      ...(data.label !== undefined ? { label: data.label } : {}),
+      ...(data.type !== undefined ? { type: data.type } : {}),
+      ...(nextConfig !== undefined ? { config: nextConfig } : {}),
+    },
+  })
+
+  return c.json({ customField })
+})
+
+boardRoutes.put('/:id/custom-fields/:fieldId/options/:optionId/archive', async (c) => {
+  const { userId } = c.get('user')
+  const { id, fieldId, optionId } = c.req.param()
+
+  if (!await isBoardAdmin(id, userId)) return c.json({ error: 'Sin permisos' }, 403)
+
+  const target = await prisma.customFieldDefinition.findUnique({ where: { id: fieldId } })
+  if (!target || target.boardId !== id) return c.json({ error: 'Campo no encontrado' }, 404)
+
+  const options = getConfigOptions(target.config)
+  if (!options.some(o => o.id === optionId)) return c.json({ error: 'Opción no encontrada' }, 404)
+
+  const nextOptions = options.map(o => (o.id === optionId ? { ...o, archivedAt: new Date().toISOString() } : o))
+
+  const customField = await prisma.customFieldDefinition.update({
+    where: { id: fieldId },
+    data: { config: { ...asCustomFieldConfig(target.config), options: nextOptions } },
+  })
+
+  return c.json({ customField })
+})
+
+boardRoutes.put('/:id/custom-fields/:fieldId/unarchive', async (c) => {
+  const { userId } = c.get('user')
+  const { id, fieldId } = c.req.param()
+
+  if (!await isBoardAdmin(id, userId)) return c.json({ error: 'Sin permisos' }, 403)
+
+  const target = await prisma.customFieldDefinition.findUnique({ where: { id: fieldId } })
+  if (!target || target.boardId !== id) return c.json({ error: 'Campo no encontrado' }, 404)
+
+  const customField = await prisma.customFieldDefinition.update({ where: { id: fieldId }, data: { archivedAt: null } })
+  return c.json({ customField })
+})
+
+boardRoutes.delete('/:id/custom-fields/:fieldId', async (c) => {
+  const { userId } = c.get('user')
+  const { id, fieldId } = c.req.param()
+
+  if (!await isBoardAdmin(id, userId)) return c.json({ error: 'Sin permisos' }, 403)
+
+  const target = await prisma.customFieldDefinition.findUnique({ where: { id: fieldId } })
+  if (!target || target.boardId !== id) return c.json({ error: 'Campo no encontrado' }, 404)
+
+  // Soft delete: unlike WorkspaceStatus, this never blocks on usage — an
+  // archived field just stops being listed/editable by default; its values
+  // stay in Task.customFields.
+  await prisma.customFieldDefinition.update({ where: { id: fieldId }, data: { archivedAt: new Date() } })
+  return c.json({ message: 'Campo archivado' })
 })
