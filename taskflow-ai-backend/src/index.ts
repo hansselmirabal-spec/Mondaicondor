@@ -57,6 +57,7 @@ const allowedOrigins = [
   'http://localhost:5173',
   'http://localhost:4173',
   ...(process.env.APP_URL ? [process.env.APP_URL] : []),
+  ...(process.env.CORS_ORIGINS ? process.env.CORS_ORIGINS.split(',') : []),
 ]
 app.use('*', cors({ origin: allowedOrigins, credentials: true }))
 
