@@ -1,5 +1,5 @@
 import { useNavigate, useSearchParams } from 'react-router-dom'
-import { MessageSquare, CheckSquare, Square, Plus, UserMinus, ArrowRightLeft, GripVertical, Check as CheckIcon, X as XIcon } from 'lucide-react'
+import { MessageSquare, CheckSquare, Square, Plus, UserMinus, ArrowRightLeft, GripVertical, Check as CheckIcon, X as XIcon, Lock, Repeat } from 'lucide-react'
 import { useState, useRef, useEffect } from 'react'
 import type { CustomFieldDefinition, MockTask, PriorityType } from '@/types'
 import { MoveBoardModal } from '@/components/task/MoveBoardModal'
@@ -11,6 +11,7 @@ import { getCommentsByTaskId } from '@/data/mockComments'
 import { useBoardStore } from '@/store/boardStore'
 import { useFilterStore, getDefaultColumnWidth } from '@/store/filterStore'
 import { api } from '@/lib/api'
+import { toMockTask } from '@/lib/adapters'
 import { formatDate } from '@/lib/utils'
 
 const PRIORITIES: PriorityType[] = ['Crítica', 'Alta', 'Media', 'Baja', 'Siempre activo']
@@ -146,7 +147,17 @@ export function TaskRow({ task, isDragging, isOver, onDragStart, onDragEnd, onDr
     e.stopPropagation()
     const next = isCompleted ? 'Asignado' : 'Completado'
     updateTask(task.id, { status: next })
-    api.tasks.update(task.id, { status: next }).catch(console.error)
+    // A recurring task doesn't come back as "Completado" — the backend resets
+    // status to the workspace default and advances the deadline in the same
+    // response. Apply that response back onto the mutation overlay instead of
+    // trusting the pre-request optimistic value, or the row would keep showing
+    // "Completado" with the stale deadline until a full refetch.
+    api.tasks.update(task.id, { status: next })
+      .then(({ task: updated }) => {
+        const mock = toMockTask(updated)
+        updateTask(task.id, { status: mock.status, deadline: mock.deadline })
+      })
+      .catch(console.error)
   }
 
   function toggleDropdown(e: React.MouseEvent, name: DropdownType) {
@@ -352,6 +363,16 @@ export function TaskRow({ task, isDragging, isOver, onDragStart, onDragEnd, onDr
               className={`text-sm whitespace-normal break-words ${isCompleted ? 'line-through text-gray-400' : 'text-gray-800'}`}
             >
               {currentTitle}
+            </span>
+          )}
+          {task.isPrivate && (
+            <span title="Tarea privada" className="mt-0.5 text-gray-400 shrink-0">
+              <Lock className="w-3 h-3" />
+            </span>
+          )}
+          {task.recurrenceRule && (
+            <span title="Tarea recurrente" className="mt-0.5 text-gray-400 shrink-0">
+              <Repeat className="w-3 h-3" />
             </span>
           )}
           <button

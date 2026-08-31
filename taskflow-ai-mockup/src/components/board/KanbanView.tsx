@@ -7,7 +7,7 @@ import { DeadlineCell } from '@/components/ui/DeadlineCell'
 import { PriorityBadge } from '@/components/ui/PriorityBadge'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { api } from '@/lib/api'
-import { CalendarDays } from 'lucide-react'
+import { CalendarDays, Lock, Repeat } from 'lucide-react'
 
 interface KanbanCardProps {
   task: MockTask
@@ -42,7 +42,19 @@ function KanbanCard({ task, isDragging, onDragStart, onDragEnd }: KanbanCardProp
           : 'border-gray-200 hover:border-blue-300 hover:shadow-sm'
       }`}
     >
-      <p className="text-sm font-medium text-gray-900 mb-2.5 leading-snug">{task.title}</p>
+      <p className="text-sm font-medium text-gray-900 mb-2.5 leading-snug flex items-start gap-1">
+        <span>{task.title}</span>
+        {task.isPrivate && (
+          <span title="Tarea privada" className="text-gray-400 shrink-0 mt-0.5">
+            <Lock className="w-3 h-3" />
+          </span>
+        )}
+        {task.recurrenceRule && (
+          <span title="Tarea recurrente" className="text-gray-400 shrink-0 mt-0.5">
+            <Repeat className="w-3 h-3" />
+          </span>
+        )}
+      </p>
       <div className="flex items-center justify-between gap-2">
         <AssigneeAvatarGroup userIds={task.assigneeIds} max={2} />
         <DeadlineCell deadline={task.deadline} />

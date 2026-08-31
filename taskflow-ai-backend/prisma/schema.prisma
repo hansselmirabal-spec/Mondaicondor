@@ -212,19 +212,21 @@ model Group {
 }
 
 model Task {
-  id           String       @id @default(cuid())
-  groupId      String
-  title        String
-  description  String?
-  status       String       @default("Nuevo")
-  priority     TaskPriority @default(Media)
-  deadline     DateTime?
-  fileUrl      String?
-  createdBy    String?
-  order        Int          @default(0)
-  customFields Json         @default("{}")
-  createdAt    DateTime     @default(now())
-  updatedAt    DateTime     @updatedAt
+  id             String       @id @default(cuid())
+  groupId        String
+  title          String
+  description    String?
+  status         String       @default("Nuevo")
+  priority       TaskPriority @default(Media)
+  deadline       DateTime?
+  recurrenceRule Json? // { unit: 'days' | 'weeks' | 'months', interval: number }
+  fileUrl        String?
+  createdBy      String?
+  order          Int          @default(0)
+  isPrivate      Boolean      @default(false)
+  customFields   Json         @default("{}")
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
 
   group      Group          @relation(fields: [groupId], references: [id], onDelete: Cascade)
   creator    User?          @relation("TaskCreator", fields: [createdBy], references: [id], onDelete: SetNull)
@@ -250,12 +252,13 @@ model TaskAssignee {
 }
 
 model Comment {
-  id        String   @id @default(cuid())
-  taskId    String
-  authorId  String
-  content   String
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id               String   @id @default(cuid())
+  taskId           String
+  authorId         String
+  content          String
+  mentionedUserIds Json     @default("[]")
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
 
   task   Task @relation(fields: [taskId], references: [id], onDelete: Cascade)
   author User @relation(fields: [authorId], references: [id], onDelete: Cascade)

@@ -432,7 +432,7 @@ export const api = {
   },
 
   tasks: {
-    create: (data: { groupId: string; title: string; status?: string; priority?: string; deadline?: string; uenIds?: string[] }) =>
+    create: (data: { groupId: string; title: string; status?: string; priority?: string; deadline?: string; uenIds?: string[]; isPrivate?: boolean; recurrenceRule?: { unit: 'days' | 'weeks' | 'months'; interval: number } | null }) =>
       request<{ task: ApiTask }>('/tasks', { method: 'POST', body: JSON.stringify(data) }),
 
     listByBoard: (boardId: string, filters?: Record<string, string>) => {
@@ -461,10 +461,10 @@ export const api = {
         body: JSON.stringify({ order }),
       }),
 
-    addComment: (taskId: string, content: string) =>
+    addComment: (taskId: string, content: string, mentionedUserIds?: string[]) =>
       request<{ comment: ApiComment }>(`/tasks/${taskId}/comments`, {
         method: 'POST',
-        body: JSON.stringify({ content }),
+        body: JSON.stringify(mentionedUserIds?.length ? { content, mentionedUserIds } : { content }),
       }),
   },
 
@@ -605,6 +605,8 @@ export interface ApiTask {
   group: { id: string; name: string; boardId: string }
   uens: Array<{ id: string; name: string; color: string }>
   customFields?: Record<string, unknown>
+  isPrivate: boolean
+  recurrenceRule: { unit: 'days' | 'weeks' | 'months'; interval: number } | null
 }
 
 export interface ApiTaskUpdate {
@@ -617,6 +619,8 @@ export interface ApiTaskUpdate {
   assigneeIds: string[]
   uenIds?: string[]
   customFields?: Record<string, unknown>
+  isPrivate?: boolean
+  recurrenceRule?: { unit: 'days' | 'weeks' | 'months'; interval: number } | null
 }
 
 export interface ApiWorkspaceMember {
@@ -640,6 +644,7 @@ export interface ApiComment {
   id: string
   taskId: string
   content: string
+  mentionedUserIds: string[]
   createdAt: string
   author: ApiUser
 }
@@ -708,6 +713,7 @@ export interface ApiTaskDetail extends ApiTask {
     id: string
     taskId: string
     content: string
+    mentionedUserIds: string[]
     createdAt: string
     author: ApiUser
   }>

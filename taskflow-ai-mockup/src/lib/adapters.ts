@@ -40,6 +40,9 @@ export function toMockTask(t: ApiTask): MockTask {
     updatedAt: t.updatedAt,
     uenIds: (t.uens ?? []).map(u => u.id),
     customFields: t.customFields ?? {},
+    isPrivate: t.isPrivate ?? false,
+    createdBy: t.createdBy ?? null,
+    recurrenceRule: t.recurrenceRule ?? null,
   }
 }
 

@@ -1,5 +1,5 @@
 import {
-  Plus, Search, User, Filter, ArrowUpDown, EyeOff, Rows3, Zap, MoreHorizontal, Check, X, Calendar, Flag, SlidersHorizontal
+  Plus, Search, User, Filter, ArrowUpDown, EyeOff, Rows3, Zap, MoreHorizontal, Check, X, Calendar, Flag, SlidersHorizontal, Lock
 } from 'lucide-react'
 import { useNavigate, useSearchParams, useParams } from 'react-router-dom'
 import { useState } from 'react'
@@ -84,6 +84,7 @@ export function BoardToolbar() {
   const [newTaskDeadline, setNewTaskDeadline] = useState(today)
   const [newTaskDescription, setNewTaskDescription] = useState('')
   const [newTaskUenIds, setNewTaskUenIds] = useState<string[]>([])
+  const [newTaskIsPrivate, setNewTaskIsPrivate] = useState(false)
 
   function toggleNewAssignee(userId: string) {
     setNewTaskAssigneeIds(prev =>
@@ -99,6 +100,7 @@ export function BoardToolbar() {
     setNewTaskDeadline(new Date().toISOString().slice(0, 10))
     setNewTaskDescription('')
     setNewTaskUenIds([])
+    setNewTaskIsPrivate(false)
     setSaveError(null)
   }
 
@@ -116,6 +118,7 @@ export function BoardToolbar() {
         priority: PRIORITY_TO_API[newTaskPriority] ?? 'Media',
         ...(deadlineIso && { deadline: deadlineIso }),
         ...(newTaskUenIds.length > 0 && { uenIds: newTaskUenIds }),
+        ...(newTaskIsPrivate && { isPrivate: true }),
       })
       const updates: { assigneeIds?: string[]; description?: string } = {}
       if (newTaskAssigneeIds.length > 0) updates.assigneeIds = newTaskAssigneeIds
@@ -511,6 +514,20 @@ export function BoardToolbar() {
             className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
           />
         </div>
+
+        {/* Privada */}
+        <label className="flex items-center gap-2 cursor-pointer select-none">
+          <input
+            type="checkbox"
+            checked={newTaskIsPrivate}
+            onChange={e => setNewTaskIsPrivate(e.target.checked)}
+            className="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-400 cursor-pointer"
+          />
+          <span className="text-xs font-medium text-gray-700 flex items-center gap-1">
+            <Lock className="w-3 h-3" /> Tarea privada
+          </span>
+          <span className="text-xs text-gray-400">— solo vos, los responsables y administradores del tablero la verán</span>
+        </label>
 
         {saveError && (
           <p className="text-xs text-red-600 bg-red-50 border border-red-200 rounded-lg px-3 py-2">{saveError}</p>

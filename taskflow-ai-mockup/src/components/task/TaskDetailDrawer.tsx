@@ -1,4 +1,4 @@
-import { X, Calendar, Flag, User, FileText, MessageSquare, Clock, ChevronDown, Plus, UserMinus, Pencil, History, Trash2, ArrowRightLeft } from 'lucide-react'
+import { X, Calendar, Flag, User, FileText, MessageSquare, Clock, ChevronDown, Plus, UserMinus, Pencil, History, Trash2, ArrowRightLeft, Lock, Repeat } from 'lucide-react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { useState, useEffect, useRef } from 'react'
 import { useBoardStore } from '@/store/boardStore'
@@ -13,7 +13,8 @@ import { api } from '@/lib/api'
 import { toMockUser } from '@/lib/adapters'
 import { useAuthStore } from '@/store/authStore'
 import { MoveBoardModal } from './MoveBoardModal'
-import type { StatusType, PriorityType } from '@/types'
+import { isBoardAdminClient } from '@/lib/permissions'
+import type { StatusType, PriorityType, RecurrenceRule } from '@/types'
 
 const STATUS_TO_API: Record<StatusType, string> = {
   'Nuevo': 'Nuevo',
@@ -83,6 +84,7 @@ export function TaskDetailDrawer() {
   const patchApiTask = useBoardStore(state => state.patchApiTask)
   const setTaskOrigin = useBoardStore(state => state.setTaskOrigin)
   const boards = useBoardStore(state => state.boards)
+  const workspaces = useBoardStore(state => state.workspaces)
   const task = taskId ? (apiTasks.find(t => t.id === taskId) ?? newTasks.find(t => t.id === taskId) ?? null) : null
 
   const currentUser = useAuthStore(state => state.user)
@@ -108,6 +110,8 @@ export function TaskDetailDrawer() {
   const [editingDeadline, setEditingDeadline] = useState(false)
   const [deadlineDraft, setDeadlineDraft] = useState('')
   const [showDeadlineHistory, setShowDeadlineHistory] = useState(false)
+  const [recurrenceIntervalDraft, setRecurrenceIntervalDraft] = useState('7')
+  const [recurrenceUnitDraft, setRecurrenceUnitDraft] = useState<RecurrenceRule['unit']>('days')
   const [confirmDelete, setConfirmDelete] = useState(false)
   const [showMoveModal, setShowMoveModal] = useState(false)
   const pickerRef = useRef<HTMLDivElement>(null)
@@ -133,12 +137,37 @@ export function TaskDetailDrawer() {
     navigate('?' + params.toString())
   }
 
+  // Keep the interval/unit draft in sync with the loaded task's rule (e.g. on
+  // opening the drawer, or after switching to a different task).
+  useEffect(() => {
+    if (task?.recurrenceRule) {
+      setRecurrenceIntervalDraft(String(task.recurrenceRule.interval))
+      setRecurrenceUnitDraft(task.recurrenceRule.unit)
+    }
+  }, [task?.id, task?.recurrenceRule])
+
   if (!task) return null
 
   const currentStatus = mutation.status ?? task.status
   const currentPriority = mutation.priority ?? task.priority
   const currentDesc = mutation.description ?? task.description
   const currentDeadline = mutation.deadline !== undefined ? mutation.deadline : task.deadline
+
+  // Client-side mirror only — the backend re-checks creator-or-board-admin on
+  // every PUT (see tasks.ts's ownership gate). This just avoids a doomed
+  // network round-trip and gives better error messaging in the UI.
+  const drawerBoard = boards.find(b => b.id === task.boardId)
+  const canChangePrivacy = task.createdBy === currentUser?.id
+    || isBoardAdminClient(drawerBoard, currentUser, workspaces)
+
+  function togglePrivate() {
+    if (!task || !canChangePrivacy) return
+    const next = !task.isPrivate
+    patchApiTask(task.id, { isPrivate: next })
+    api.tasks.update(task.id, { isPrivate: next }).catch(() => {
+      patchApiTask(task.id, { isPrivate: !next })
+    })
+  }
 
   function saveDeadline(value: string) {
     if (!task) return
@@ -148,6 +177,46 @@ export function TaskDetailDrawer() {
     const isoDeadline = newDeadline ? new Date(newDeadline + 'T00:00:00.000Z').toISOString() : null
     setDeadline(task.id, currentDeadline, newDeadline, currentUser?.id ?? '', currentUser?.name ?? '')
     api.tasks.update(task.id, { deadline: isoDeadline }).catch(console.error)
+  }
+
+  // Direct-patch pattern (mirrors togglePrivate above) rather than the
+  // taskMutations overlay — recurrenceRule isn't part of that mutation type,
+  // and this field doesn't need optimistic-then-reconciled UX beyond a revert
+  // on API failure.
+  function saveRecurrence(rule: RecurrenceRule | null) {
+    if (!task) return
+    const previous = task.recurrenceRule
+    patchApiTask(task.id, { recurrenceRule: rule })
+    api.tasks.update(task.id, { recurrenceRule: rule }).catch(() => {
+      patchApiTask(task.id, { recurrenceRule: previous })
+    })
+  }
+
+  function toggleRecurring() {
+    if (!task) return
+    if (task.recurrenceRule) {
+      saveRecurrence(null)
+      return
+    }
+    const interval = Math.max(1, parseInt(recurrenceIntervalDraft, 10) || 1)
+    saveRecurrence({ unit: recurrenceUnitDraft, interval })
+  }
+
+  // Draft updates on every keystroke (controlled input); the actual save only
+  // fires on blur/Enter, mirroring the deadline and custom-field NUMBER inputs
+  // elsewhere in this drawer.
+  function commitRecurrenceInterval() {
+    if (!task?.recurrenceRule) return
+    const interval = Math.max(1, parseInt(recurrenceIntervalDraft, 10) || 1)
+    setRecurrenceIntervalDraft(String(interval))
+    if (interval === task.recurrenceRule.interval) return
+    saveRecurrence({ unit: task.recurrenceRule.unit, interval })
+  }
+
+  function commitRecurrenceUnit(unit: RecurrenceRule['unit']) {
+    setRecurrenceUnitDraft(unit)
+    if (!task?.recurrenceRule || unit === task.recurrenceRule.unit) return
+    saveRecurrence({ unit, interval: task.recurrenceRule.interval })
   }
 
   function formatHistoryDate(iso: string) {
@@ -210,6 +279,20 @@ export function TaskDetailDrawer() {
           </button>
           <h2 className="text-base font-semibold text-gray-900 leading-snug pt-0.5 flex-1">{task.title}</h2>
           <div className="flex items-center gap-1 shrink-0">
+            <button
+              onClick={togglePrivate}
+              disabled={!canChangePrivacy}
+              title={
+                canChangePrivacy
+                  ? (task.isPrivate ? 'Tarea privada — click para hacerla pública' : 'Hacer tarea privada')
+                  : 'Solo el creador o un administrador del tablero puede cambiar la privacidad'
+              }
+              className={`p-1.5 rounded-lg transition-colors ${
+                task.isPrivate ? 'text-indigo-600 bg-indigo-50' : 'text-gray-400'
+              } ${canChangePrivacy ? 'hover:text-indigo-600 hover:bg-indigo-50 cursor-pointer' : 'opacity-50 cursor-not-allowed'}`}
+            >
+              <Lock className="w-4 h-4" />
+            </button>
             <button
               onClick={() => setShowMoveModal(true)}
               title="Mover a otro tablero"
@@ -364,6 +447,54 @@ export function TaskDetailDrawer() {
                     ))}
                   </div>
                 </div>
+              )}
+            </div>
+
+            <div className="col-span-2">
+              <div className="flex items-center justify-between mb-1">
+                <p className="text-xs text-gray-400 font-medium flex items-center gap-1">
+                  <Repeat className="w-3 h-3" /> Tarea recurrente
+                </p>
+                <button
+                  onClick={toggleRecurring}
+                  role="switch"
+                  aria-checked={!!task.recurrenceRule}
+                  title={task.recurrenceRule ? 'Desactivar recurrencia' : 'Repetir esta tarea al completarla'}
+                  className={`relative inline-flex h-4 w-7 items-center rounded-full transition-colors ${
+                    task.recurrenceRule ? 'bg-blue-600' : 'bg-gray-200'
+                  }`}
+                >
+                  <span
+                    className={`inline-block h-3 w-3 transform rounded-full bg-white transition-transform ${
+                      task.recurrenceRule ? 'translate-x-3.5' : 'translate-x-0.5'
+                    }`}
+                  />
+                </button>
+              </div>
+              {task.recurrenceRule ? (
+                <div className="flex items-center gap-2">
+                  <span className="text-xs text-gray-500">Cada</span>
+                  <input
+                    type="number"
+                    min={1}
+                    value={recurrenceIntervalDraft}
+                    onChange={e => setRecurrenceIntervalDraft(e.target.value)}
+                    onBlur={commitRecurrenceInterval}
+                    onKeyDown={e => { if (e.key === 'Enter') (e.target as HTMLInputElement).blur() }}
+                    className="w-14 text-sm border border-gray-200 rounded-lg px-2 py-1 focus:outline-none focus:ring-2 focus:ring-blue-400"
+                  />
+                  <select
+                    value={recurrenceUnitDraft}
+                    onChange={e => commitRecurrenceUnit(e.target.value as RecurrenceRule['unit'])}
+                    className="text-sm border border-gray-200 rounded-lg px-2 py-1 bg-white focus:outline-none focus:ring-2 focus:ring-blue-400"
+                  >
+                    <option value="days">día(s)</option>
+                    <option value="weeks">semana(s)</option>
+                    <option value="months">mes(es)</option>
+                  </select>
+                </div>
+              ) : (
+                <p className="text-xs text-gray-400 italic">Al completarla, se reprograma en vez de cerrarse</p>
               )}
             </div>
 

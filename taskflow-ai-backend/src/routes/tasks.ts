@@ -1,10 +1,10 @@
 import { Hono } from 'hono'
 import { zValidator } from '@hono/zod-validator'
 import { z } from 'zod'
-import type { Prisma } from '@prisma/client'
+import { Prisma } from '@prisma/client'
 import { prisma } from '../lib/prisma.js'
 import { authMiddleware } from '../middleware/auth.js'
-import { isWorkspaceAdmin } from '../lib/authz.js'
+import { isWorkspaceAdmin, isBoardAdmin } from '../lib/authz.js'
 import type { AppEnv } from '../lib/types.js'
 import { sendAlertEmail, sendTaskNotificationEmail } from '../lib/email.js'
 
@@ -13,6 +13,14 @@ export const taskRoutes = new Hono<AppEnv>()
 taskRoutes.use('*', authMiddleware)
 
 const priorityValues = ['Baja', 'Media', 'Alta', 'Critica', 'AlwaysOn'] as const
+
+const recurrenceRuleSchema = z
+  .object({
+    unit: z.enum(['days', 'weeks', 'months']),
+    interval: z.number().int().positive(),
+  })
+  .nullable()
+  .optional()
 
 const createTaskSchema = z.object({
   groupId: z.string(),
@@ -23,6 +31,8 @@ const createTaskSchema = z.object({
   deadline: z.string().datetime().nullable().optional(),
   assigneeIds: z.array(z.string()).optional(),
   uenIds: z.array(z.string()).optional(),
+  isPrivate: z.boolean().optional(),
+  recurrenceRule: recurrenceRuleSchema,
 })
 
 const updateTaskSchema = z.object({
@@ -35,7 +45,36 @@ const updateTaskSchema = z.object({
   assigneeIds: z.array(z.string()).optional(),
   uenIds: z.array(z.string()).optional(),
   customFields: z.record(z.string(), z.unknown()).optional(),
+  isPrivate: z.boolean().optional(),
+  recurrenceRule: recurrenceRuleSchema,
 })
+
+type RecurrenceRule = { unit: 'days' | 'weeks' | 'months'; interval: number }
+
+// Pure — no I/O — so it's trivially unit-testable and reused by the
+// completion-transition logic in PUT /:id.
+function computeNextDeadline(from: Date, rule: RecurrenceRule): Date {
+  const next = new Date(from)
+  if (rule.unit === 'days') next.setDate(next.getDate() + rule.interval)
+  if (rule.unit === 'weeks') next.setDate(next.getDate() + rule.interval * 7)
+  if (rule.unit === 'months') next.setMonth(next.getMonth() + rule.interval)
+  return next
+}
+
+// Single source of truth for the "can this user see this private task" rule.
+// Public tasks (`!isPrivate`) are visible to anyone with board access already —
+// callers must still gate on board access separately before calling this.
+async function canSeeTask(
+  task: { isPrivate: boolean; createdBy: string | null },
+  boardId: string,
+  userId: string,
+  isAssignee: boolean,
+): Promise<boolean> {
+  if (!task.isPrivate) return true
+  if (task.createdBy === userId) return true
+  if (isAssignee) return true
+  return isBoardAdmin(boardId, userId)
+}
 
 const taskInclude = {
   assignees: {
@@ -125,13 +164,32 @@ taskRoutes.get('/board/:boardId', async (c) => {
   })
   if (!membership) return c.json({ error: 'Sin acceso' }, 403)
 
+  // Board admins (and workspace/app admins) bypass the privacy filter entirely —
+  // matching the moderation-bypass requirement. Everyone else only sees public
+  // tasks plus their own private tasks (creator or assignee).
+  const isAdmin = await isBoardAdmin(boardId, userId)
+  const visibilityFilter: Prisma.TaskWhereInput = isAdmin
+    ? {}
+    : {
+        OR: [
+          { isPrivate: false },
+          { isPrivate: true, createdBy: userId },
+          { isPrivate: true, assignees: { some: { userId } } },
+        ],
+      }
+
   const tasks = await prisma.task.findMany({
     where: {
-      group: { boardId },
-      ...(status && { status }),
-      ...(priority && { priority: priority as typeof priorityValues[number] }),
-      ...(groupId && { groupId }),
-      ...(assigneeId && { assignees: { some: { userId: assigneeId } } }),
+      AND: [
+        {
+          group: { boardId },
+          ...(status && { status }),
+          ...(priority && { priority: priority as typeof priorityValues[number] }),
+          ...(groupId && { groupId }),
+          ...(assigneeId && { assignees: { some: { userId: assigneeId } } }),
+        },
+        visibilityFilter,
+      ],
     },
     include: taskInclude,
     orderBy: { order: 'asc' },
@@ -142,7 +200,7 @@ taskRoutes.get('/board/:boardId', async (c) => {
 
 taskRoutes.post('/', zValidator('json', createTaskSchema), async (c) => {
   const { userId } = c.get('user')
-  const { groupId, title, description, status, priority, deadline, assigneeIds, uenIds } = c.req.valid('json')
+  const { groupId, title, description, status, priority, deadline, assigneeIds, uenIds, isPrivate, recurrenceRule } = c.req.valid('json')
 
   const group = await prisma.group.findUnique({
     where: { id: groupId },
@@ -183,6 +241,8 @@ taskRoutes.post('/', zValidator('json', createTaskSchema), async (c) => {
       deadline: deadline ? new Date(deadline) : null,
       createdBy: userId,
       order,
+      isPrivate: isPrivate ?? false,
+      recurrenceRule: (recurrenceRule ?? undefined) as Prisma.InputJsonValue | undefined,
       assignees: assigneeIds?.length
         ? { create: assigneeIds.map((uid) => ({ userId: uid })) }
         : undefined,
@@ -243,6 +303,13 @@ taskRoutes.get('/:id', async (c) => {
     prisma.taskAssignee.findUnique({ where: { taskId_userId: { taskId: task.id, userId } } }),
   ])
   if (!membership && !assignee) return c.json({ error: 'Sin acceso' }, 403)
+
+  // Privacy check: a board member with legitimate board access must not be able
+  // to distinguish "doesn't exist" from "exists but is private" — 404, not 403.
+  if (task.isPrivate) {
+    const visible = await canSeeTask(task, board.id, userId, !!assignee)
+    if (!visible) return c.json({ error: 'Tarea no encontrada' }, 404)
+  }
 
   return c.json({ task })
 })
@@ -335,7 +402,7 @@ async function validateCustomFieldPatch(
 taskRoutes.put('/:id', zValidator('json', updateTaskSchema), async (c) => {
   const { userId } = c.get('user')
   const { id } = c.req.param()
-  const { assigneeIds, deadline, uenIds, customFields, ...rest } = c.req.valid('json')
+  const { assigneeIds, deadline, uenIds, customFields, isPrivate, recurrenceRule, ...rest } = c.req.valid('json')
 
   const existing = await prisma.task.findUnique({
     where: { id },
@@ -353,6 +420,25 @@ taskRoutes.put('/:id', zValidator('json', updateTaskSchema), async (c) => {
 
   if (!membership && !isAssignee) return c.json({ error: 'Sin permisos' }, 403)
   if (membership?.role === 'VIEWER') return c.json({ error: 'Sin permisos' }, 403)
+
+  // Visibility gate: a caller who can't see this private task can't edit any
+  // field of it, not just read it — 404, not 403, to not confirm existence.
+  if (existing.isPrivate) {
+    const visible = await canSeeTask(existing, existing.group.board.id, userId, isAssignee)
+    if (!visible) return c.json({ error: 'Tarea no encontrada' }, 404)
+  }
+
+  // Ownership gate: toggling isPrivate itself is a governance action, stricter
+  // than the general edit permission plain assignees have for status/priority/
+  // description/deadline/customFields — only the creator or a board admin may
+  // change it.
+  if (isPrivate !== undefined && isPrivate !== existing.isPrivate) {
+    const canChangePrivacy = existing.createdBy === userId
+      || await isBoardAdmin(existing.group.board.id, userId)
+    if (!canChangePrivacy) {
+      return c.json({ error: 'Solo el creador o un administrador puede cambiar la privacidad de esta tarea' }, 403)
+    }
+  }
 
   // Assignees who are not workspace members can only change status/priority/description/deadline
   // or custom fields — `customFields` deliberately doesn't participate in this condition.
@@ -423,16 +509,45 @@ taskRoutes.put('/:id', zValidator('json', updateTaskSchema), async (c) => {
     customFieldsChanged = true
   }
 
+  // Recurring tasks: completing a task with a `recurrenceRule` set doesn't persist
+  // "Completado" — the same row is reused indefinitely. Instead the status is reset
+  // to the workspace's default WorkspaceStatus and the deadline is advanced to the
+  // next occurrence. Resolved synchronously here since there's no job runner in this
+  // backend (see IMPLEMENTATION_PLAN_tareas-recurrentes.md).
+  const isCompleting = rest.status === 'Completado' && existing.status !== 'Completado'
+  const hasRecurrence = existing.recurrenceRule != null
+  let recurrenceNextDeadline: Date | null = null
+
+  if (isCompleting && hasRecurrence) {
+    const defaultStatus = await prisma.workspaceStatus.findFirst({
+      where: { workspaceId: existing.group.board.workspaceId, isDefault: true },
+    })
+    if (!defaultStatus) {
+      console.warn(`[recurrence] workspace ${existing.group.board.workspaceId} has no default WorkspaceStatus; falling back to "Nuevo"`)
+    }
+    const rule = existing.recurrenceRule as unknown as RecurrenceRule
+    recurrenceNextDeadline = computeNextDeadline(existing.deadline ?? new Date(), rule)
+    rest.status = defaultStatus?.slug ?? 'Nuevo'
+  }
+
   const changes: string[] = []
   if (rest.status && rest.status !== existing.status) changes.push(`Estado: ${existing.status} → ${rest.status}`)
   if (rest.priority && rest.priority !== existing.priority) changes.push(`Prioridad: ${existing.priority} → ${rest.priority}`)
   if (rest.title && rest.title !== existing.title) changes.push(`Título actualizado`)
 
+  // A recurrence cycle always wins over whatever `deadline` was in the request body
+  // for this PUT — the caller only asked to mark the task complete, the recomputed
+  // next-occurrence date is authoritative.
+  const effectiveDeadline = recurrenceNextDeadline !== null
+    ? recurrenceNextDeadline
+    : deadline !== undefined ? (deadline ? new Date(deadline) : null) : undefined
+
   const taskUpdateOp = prisma.task.update({
     where: { id },
     data: {
       ...rest,
-      ...(deadline !== undefined && { deadline: deadline ? new Date(deadline) : null }),
+      ...(isPrivate !== undefined && { isPrivate }),
+      ...(effectiveDeadline !== undefined && { deadline: effectiveDeadline }),
       ...(uenIds !== undefined && { uens: { set: uenIds.map((id) => ({ id })) } }),
       ...(assigneeIds && {
         assignees: {
@@ -441,16 +556,40 @@ taskRoutes.put('/:id', zValidator('json', updateTaskSchema), async (c) => {
         },
       }),
       ...(customFieldsChanged && { customFields: mergedCustomFields as Prisma.InputJsonValue }),
+      ...(recurrenceRule !== undefined && {
+        recurrenceRule: (recurrenceRule ?? Prisma.DbNull) as Prisma.InputJsonValue | typeof Prisma.DbNull,
+      }),
     },
     include: taskInclude,
   })
 
-  const [task] = changes.length > 0
-    ? await prisma.$transaction([
-        taskUpdateOp,
-        prisma.activity.create({ data: { taskId: id, userId, action: changes.join(' | ') } }),
-      ])
+  const activityCreates: Prisma.PrismaPromise<unknown>[] = []
+  if (changes.length > 0) {
+    activityCreates.push(prisma.activity.create({ data: { taskId: id, userId, action: changes.join(' | ') } }))
+  }
+  if (recurrenceNextDeadline !== null) {
+    const dateLabel = recurrenceNextDeadline.toLocaleDateString('es-PY', { day: 'numeric', month: 'short', year: 'numeric' })
+    activityCreates.push(prisma.activity.create({
+      data: {
+        taskId: id,
+        userId,
+        action: `Tarea recurrente reprogramada para ${dateLabel}`,
+        metadata: {
+          previousDeadline: existing.deadline ? existing.deadline.toISOString() : null,
+          newDeadline: recurrenceNextDeadline.toISOString(),
+          recurrenceRule: existing.recurrenceRule as Prisma.InputJsonValue,
+        },
+      },
+    }))
+  }
+
+  // `activityCreates` is a plain array (not a tuple), so spreading it into the
+  // transaction call would widen `$transaction`'s return type and lose the precise
+  // `Task` type on the first element — cast it back explicitly instead.
+  const txResults = activityCreates.length > 0
+    ? await prisma.$transaction([taskUpdateOp, ...activityCreates])
     : [await taskUpdateOp]
+  const task = txResults[0] as Awaited<typeof taskUpdateOp>
 
   const boardId = existing.group.board.id
   const workspaceId = existing.group.board.workspaceId
@@ -651,9 +790,15 @@ taskRoutes.delete('/:id', async (c) => {
 
   const task = await prisma.task.findUnique({
     where: { id },
-    include: { group: { include: { board: true } } },
+    include: { group: { include: { board: true } }, assignees: { select: { userId: true } } },
   })
   if (!task) return c.json({ error: 'Tarea no encontrada' }, 404)
+
+  if (task.isPrivate) {
+    const isAssignee = task.assignees.some((a) => a.userId === userId)
+    const visible = await canSeeTask(task, task.group.board.id, userId, isAssignee)
+    if (!visible) return c.json({ error: 'Tarea no encontrada' }, 404)
+  }
 
   const membership = await prisma.workspaceMember.findUnique({
     where: { workspaceId_userId: { workspaceId: task.group.board.workspaceId, userId } },
@@ -666,13 +811,15 @@ taskRoutes.delete('/:id', async (c) => {
   return c.json({ message: 'Tarea eliminada' })
 })
 
-taskRoutes.post('/:id/comments', async (c) => {
+const createCommentSchema = z.object({
+  content: z.string().min(1).max(4000),
+  mentionedUserIds: z.array(z.string()).max(20).optional(),
+})
+
+taskRoutes.post('/:id/comments', zValidator('json', createCommentSchema), async (c) => {
   const { userId } = c.get('user')
   const { id } = c.req.param()
-  const body = await c.req.json().catch(() => null)
-  const result = z.string().min(1).max(4000).safeParse(body?.content)
-  if (!result.success) return c.json({ error: 'Contenido requerido' }, 400)
-  const content = result.data
+  const { content, mentionedUserIds } = c.req.valid('json')
 
   const task = await prisma.task.findUnique({
     where: { id },
@@ -691,9 +838,25 @@ taskRoutes.post('/:id/comments', async (c) => {
   ])
   if (!membership && !assignee) return c.json({ error: 'Sin acceso' }, 403)
 
+  if (task.isPrivate) {
+    const visible = await canSeeTask(task, task.group.board.id, userId, !!assignee)
+    if (!visible) return c.json({ error: 'Tarea no encontrada' }, 404)
+  }
+
+  // Silently drop mentioned ids that aren't workspace members — never reject the whole request.
+  let validMentionedIds: string[] = []
+  if (mentionedUserIds && mentionedUserIds.length > 0) {
+    const validMembers = await prisma.workspaceMember.findMany({
+      where: { workspaceId: task.group.board.workspaceId, userId: { in: mentionedUserIds } },
+      select: { userId: true },
+    })
+    const validSet = new Set(validMembers.map(m => m.userId))
+    validMentionedIds = mentionedUserIds.filter(uid => validSet.has(uid))
+  }
+
   const [comment] = await prisma.$transaction([
     prisma.comment.create({
-      data: { taskId: id, authorId: userId, content },
+      data: { taskId: id, authorId: userId, content, mentionedUserIds: validMentionedIds },
       include: { author: { select: { id: true, name: true, initials: true, color: true } } },
     }),
     prisma.activity.create({
@@ -712,6 +875,20 @@ taskRoutes.post('/:id/comments', async (c) => {
     boardId: task.group.board.id,
     workspaceId: task.group.board.workspaceId,
   })
+
+  // Notify mentioned users, excluding anyone already an assignee (they already got the comment notification above).
+  const mentionOnlyIds = validMentionedIds.filter(uid => !assigneeIds.includes(uid))
+  if (mentionOnlyIds.length > 0) {
+    await notifyUsers({
+      userIds: mentionOnlyIds,
+      actorId: userId,
+      title: 'Te mencionaron en un comentario',
+      body: `${actor?.name ?? 'Alguien'} te mencionó en "${task.title}"`,
+      taskId: id,
+      boardId: task.group.board.id,
+      workspaceId: task.group.board.workspaceId,
+    })
+  }
 
   return c.json({ comment }, 201)
 })
@@ -733,6 +910,12 @@ taskRoutes.patch('/:id/move', zValidator('json', z.object({ groupId: z.string() 
   if (!task) return c.json({ error: 'Tarea no encontrada' }, 404)
 
   const sourceBoard = task.group.board
+
+  if (task.isPrivate) {
+    const isAssignee = task.assignees.some((a) => a.userId === userId)
+    const visible = await canSeeTask(task, sourceBoard.id, userId, isAssignee)
+    if (!visible) return c.json({ error: 'Tarea no encontrada' }, 404)
+  }
 
   // Check user is workspace member (or a system admin)
   const isAdmin = await isWorkspaceAdmin(sourceBoard.workspaceId, userId)

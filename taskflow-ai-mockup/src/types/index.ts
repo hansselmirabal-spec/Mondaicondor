@@ -99,6 +99,14 @@ export interface MockTask {
   updatedAt: string
   uenIds: string[]
   customFields: Record<string, unknown>
+  isPrivate: boolean
+  createdBy: string | null
+  recurrenceRule: RecurrenceRule | null
+}
+
+export interface RecurrenceRule {
+  unit: 'days' | 'weeks' | 'months'
+  interval: number
 }
 
 export interface MockComment {
@@ -106,6 +114,7 @@ export interface MockComment {
   taskId: string
   authorId: string
   content: string
+  mentionedUserIds: string[]
   createdAt: string
 }
 

@@ -156,6 +156,9 @@ export function BoardTable({ board }: BoardTableProps) {
         createdAt: now, updatedAt: now,
         uenIds: [],
         customFields: {},
+        isPrivate: false, // quick-add has no privacy field — editable afterward via the row/detail view
+        createdBy: null,
+        recurrenceRule: null, // quick-add has no recurrence field either — set afterward via the detail drawer
       })
       const params = new URLSearchParams(searchParams)
       params.set('task', tempId)
