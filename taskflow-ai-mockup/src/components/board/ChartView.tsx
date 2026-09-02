@@ -71,7 +71,7 @@ export function ChartView({ board }: ChartViewProps) {
           { label: 'Total tareas',   value: total,              color: 'text-gray-800' },
           { label: 'Completadas',    value: completed,           color: 'text-green-600' },
           { label: 'Bloqueadas',     value: blocked,             color: 'text-red-600' },
-          { label: '% Avance',       value: `${completedPct}%`, color: 'text-blue-600' },
+          { label: '% Avance',       value: `${completedPct}%`, color: 'text-primary-600' },
         ].map(kpi => (
           <div key={kpi.label} className="bg-white rounded-xl border border-gray-200 px-5 py-4">
             <p className="text-xs text-gray-400 font-medium">{kpi.label}</p>

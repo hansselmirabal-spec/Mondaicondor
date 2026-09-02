@@ -3,6 +3,8 @@ services:
     build:
       context: ./taskflow-ai-mockup
       dockerfile: Dockerfile
+      args:
+        VITE_APP_ENV: qas
     image: taskflow-frontend:qas
     ports:
       - "5302:80"

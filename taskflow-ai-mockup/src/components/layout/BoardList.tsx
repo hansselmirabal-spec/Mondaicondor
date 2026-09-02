@@ -99,7 +99,7 @@ export function BoardList() {
                 onClick={() => navigate(`/boards/${board.id}`)}
                 className="flex items-center gap-2 flex-1 min-w-0 px-1 py-1.5"
               >
-                <LayoutGrid className="w-4 h-4 shrink-0 text-blue-400" />
+                <LayoutGrid className="w-4 h-4 shrink-0 text-primary-400" />
                 <span className={`text-sm truncate ${isActive ? 'text-white font-medium' : 'text-white/70'}`}>
                   {board.name}
                 </span>
@@ -142,7 +142,7 @@ export function BoardList() {
               if (e.key === 'Escape') { setAdding(false); setNewName(''); setNewPrivate(false) }
             }}
             placeholder="Nombre del panel..."
-            className="w-full px-2 py-1.5 text-xs text-white bg-white/10 border border-white/20 rounded-md focus:outline-none focus:border-blue-400 placeholder-white/30"
+            className="w-full px-2 py-1.5 text-xs text-white bg-white/10 border border-white/20 rounded-md focus:outline-none focus:border-primary-400 placeholder-white/30"
           />
           <button
             type="button"
@@ -160,7 +160,7 @@ export function BoardList() {
             <button
               onClick={handleCreate}
               disabled={!newName.trim() || saving}
-              className="flex-1 py-1 text-xs bg-blue-600 hover:bg-blue-700 disabled:opacity-40 text-white font-medium rounded-md transition-colors"
+              className="flex-1 py-1 text-xs bg-primary-600 hover:bg-primary-700 disabled:opacity-40 text-white font-medium rounded-md transition-colors"
             >
               {saving ? '...' : 'Crear'}
             </button>

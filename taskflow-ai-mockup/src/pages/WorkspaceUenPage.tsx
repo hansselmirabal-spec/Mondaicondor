@@ -130,7 +130,7 @@ export function WorkspaceUenPage() {
             </span>
             <button
               onClick={() => setShowNewForm(true)}
-              className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-medium rounded-lg transition-colors"
+              className="flex items-center gap-1.5 px-3 py-1.5 bg-primary-600 hover:bg-primary-700 text-white text-xs font-medium rounded-lg transition-colors"
             >
               <Plus className="w-3.5 h-3.5" />
               Nueva UEN
@@ -152,7 +152,7 @@ export function WorkspaceUenPage() {
                       value={editing.name}
                       onChange={e => setEditing({ ...editing, name: e.target.value })}
                       onKeyDown={e => { if (e.key === 'Enter') handleSaveEdit(); if (e.key === 'Escape') setEditing(null) }}
-                      className="flex-1 min-w-[120px] px-2 py-1 border border-blue-400 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
+                      className="flex-1 min-w-[120px] px-2 py-1 border border-primary-400 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-400"
                     />
                     <div className="flex flex-wrap gap-1">
                       {PRESET_COLORS.map(c => (
@@ -185,7 +185,7 @@ export function WorkspaceUenPage() {
                   <>
                     <button
                       onClick={() => setEditing({ id: uen.id, name: uen.name, color: uen.color })}
-                      className="flex-1 text-left text-sm font-medium text-gray-800 hover:text-blue-600 transition-colors truncate"
+                      className="flex-1 text-left text-sm font-medium text-gray-800 hover:text-primary-600 transition-colors truncate"
                     >
                       {uen.name}
                     </button>
@@ -204,17 +204,17 @@ export function WorkspaceUenPage() {
 
             {/* New UEN form */}
             {showNewForm && (
-              <div className="px-4 py-3 bg-blue-50 border-t border-blue-100 space-y-3">
-                <p className="text-xs font-semibold text-blue-700">Nueva UEN</p>
+              <div className="px-4 py-3 bg-primary-50 border-t border-primary-100 space-y-3">
+                <p className="text-xs font-semibold text-primary-700">Nueva UEN</p>
                 <div className="flex items-center gap-2">
-                  <span className="w-4 h-4 rounded-full shrink-0 ring-2 ring-offset-1 ring-blue-400" style={{ backgroundColor: newColor }} />
+                  <span className="w-4 h-4 rounded-full shrink-0 ring-2 ring-offset-1 ring-primary-400" style={{ backgroundColor: newColor }} />
                   <input
                     autoFocus
                     value={newName}
                     onChange={e => setNewName(e.target.value)}
                     onKeyDown={e => { if (e.key === 'Enter') handleCreate(); if (e.key === 'Escape') setShowNewForm(false) }}
                     placeholder="Nombre de la UEN..."
-                    className="flex-1 px-2 py-1 border border-blue-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 bg-white"
+                    className="flex-1 px-2 py-1 border border-primary-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-400 bg-white"
                   />
                 </div>
                 <div className="flex flex-wrap gap-1.5">
@@ -231,7 +231,7 @@ export function WorkspaceUenPage() {
                   <button
                     onClick={handleCreate}
                     disabled={!newName.trim() || saving}
-                    className="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-200 text-white text-xs font-medium rounded-lg transition-colors"
+                    className="px-3 py-1.5 bg-primary-600 hover:bg-primary-700 disabled:bg-primary-200 text-white text-xs font-medium rounded-lg transition-colors"
                   >
                     Crear
                   </button>

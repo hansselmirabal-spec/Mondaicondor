@@ -112,8 +112,8 @@ function SortableHeaderCell({ col, label }: SortableHeaderCellProps) {
             {col === 'Fecha creación' ? 'Creado' : col}
             {sortField === sortable
               ? (sortDir === 'asc'
-                  ? <ArrowUp className="w-3 h-3 text-blue-600 shrink-0" />
-                  : <ArrowDown className="w-3 h-3 text-blue-600 shrink-0" />)
+                  ? <ArrowUp className="w-3 h-3 text-primary-600 shrink-0" />
+                  : <ArrowDown className="w-3 h-3 text-primary-600 shrink-0" />)
               : <ChevronsUpDown className="w-3 h-3 text-gray-300 shrink-0" />}
           </button>
         ) : (
@@ -125,7 +125,7 @@ function SortableHeaderCell({ col, label }: SortableHeaderCellProps) {
       <div
         onMouseDown={startResize}
         title="Arrastrar para redimensionar"
-        className="absolute right-0 top-1/2 -translate-y-1/2 h-5 w-1 rounded cursor-col-resize bg-gray-200 group-hover/col:bg-gray-300 hover:!bg-blue-500 transition-colors"
+        className="absolute right-0 top-1/2 -translate-y-1/2 h-5 w-1 rounded cursor-col-resize bg-gray-200 group-hover/col:bg-gray-300 hover:!bg-primary-500 transition-colors"
       />
     </th>
   )

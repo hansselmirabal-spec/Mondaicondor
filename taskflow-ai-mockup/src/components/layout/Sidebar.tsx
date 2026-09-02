@@ -174,7 +174,7 @@ export function Sidebar() {
                   Notificaciones {unreadCount > 0 && <span className="text-red-500">({unreadCount} nuevas)</span>}
                 </p>
                 {unreadCount > 0 && (
-                  <button onClick={markAllRead} className="text-xs text-blue-600 hover:underline">
+                  <button onClick={markAllRead} className="text-xs text-primary-600 hover:underline">
                     Marcar todas
                   </button>
                 )}
@@ -185,7 +185,7 @@ export function Sidebar() {
                 ) : notifications.map(n => (
                   <div
                     key={n.id}
-                    className={`flex items-start gap-2.5 px-3 py-2.5 group transition-colors ${n.read ? 'bg-white' : 'bg-blue-50'}`}
+                    className={`flex items-start gap-2.5 px-3 py-2.5 group transition-colors ${n.read ? 'bg-white' : 'bg-primary-50'}`}
                   >
                     <div className="w-2 h-2 rounded-full mt-1.5 shrink-0" style={{ backgroundColor: n.read ? '#e5e7eb' : '#3b82f6' }} />
                     <div className="flex-1 min-w-0">
@@ -195,7 +195,7 @@ export function Sidebar() {
                     </div>
                     <div className="flex gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
                       {!n.read && (
-                        <button onClick={() => markRead(n.id)} title="Marcar como leída" className="p-1 text-gray-400 hover:text-blue-600 rounded">
+                        <button onClick={() => markRead(n.id)} title="Marcar como leída" className="p-1 text-gray-400 hover:text-primary-600 rounded">
                           <Check className="w-3 h-3" />
                         </button>
                       )}

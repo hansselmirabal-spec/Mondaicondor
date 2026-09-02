@@ -122,7 +122,7 @@ export function ProfileModal({ isOpen, onClose }: ProfileModalProps) {
           </div>
           <button
             onClick={() => fileRef.current?.click()}
-            className="text-xs text-blue-600 hover:text-blue-700 font-medium transition-colors"
+            className="text-xs text-primary-600 hover:text-primary-700 font-medium transition-colors"
           >
             Cambiar foto
           </button>
@@ -141,7 +141,7 @@ export function ProfileModal({ isOpen, onClose }: ProfileModalProps) {
             <input
               value={name}
               onChange={e => setName(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
             />
           </div>
           <div>
@@ -171,7 +171,7 @@ export function ProfileModal({ isOpen, onClose }: ProfileModalProps) {
           <button
             onClick={handleSaveProfile}
             disabled={!name.trim() || saving}
-            className="w-full py-2 text-sm bg-blue-600 hover:bg-blue-700 disabled:bg-blue-200 text-white font-medium rounded-lg transition-colors flex items-center justify-center gap-2"
+            className="w-full py-2 text-sm bg-primary-600 hover:bg-primary-700 disabled:bg-primary-200 text-white font-medium rounded-lg transition-colors flex items-center justify-center gap-2"
           >
             {saving && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
             Guardar cambios
@@ -189,7 +189,7 @@ export function ProfileModal({ isOpen, onClose }: ProfileModalProps) {
               value={currentPwd}
               onChange={e => setCurrentPwd(e.target.value)}
               placeholder="Contraseña actual"
-              className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 pr-9"
+              className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 pr-9"
             />
           </div>
           <div className="relative">
@@ -198,7 +198,7 @@ export function ProfileModal({ isOpen, onClose }: ProfileModalProps) {
               value={newPwd}
               onChange={e => setNewPwd(e.target.value)}
               placeholder="Nueva contraseña (mín. 8 caracteres)"
-              className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 pr-9"
+              className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 pr-9"
             />
             <button onClick={() => setShowPwd(v => !v)} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
               {showPwd ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
@@ -209,7 +209,7 @@ export function ProfileModal({ isOpen, onClose }: ProfileModalProps) {
             value={confirmPwd}
             onChange={e => setConfirmPwd(e.target.value)}
             placeholder="Confirmar nueva contraseña"
-            className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
           />
           {pwdError && <p className="text-xs text-red-600">{pwdError}</p>}
           {pwdSuccess && (

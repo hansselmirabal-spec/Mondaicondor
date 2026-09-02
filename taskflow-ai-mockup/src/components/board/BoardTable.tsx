@@ -182,7 +182,7 @@ export function BoardTable({ board }: BoardTableProps) {
   const addGroupBar = (
     <div className="mt-2">
       {addingGroup ? (
-        <div className="flex items-center gap-2 px-4 py-2 bg-white border border-blue-300 rounded-lg shadow-sm">
+        <div className="flex items-center gap-2 px-4 py-2 bg-white border border-primary-300 rounded-lg shadow-sm">
           <input
             ref={groupInputRef}
             value={groupName}
@@ -195,7 +195,7 @@ export function BoardTable({ board }: BoardTableProps) {
           <button
             onClick={handleCreateGroup}
             disabled={!groupName.trim()}
-            className="p-1 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-200 text-white rounded transition-colors"
+            className="p-1 bg-primary-600 hover:bg-primary-700 disabled:bg-primary-200 text-white rounded transition-colors"
           >
             <Check className="w-3.5 h-3.5" />
           </button>

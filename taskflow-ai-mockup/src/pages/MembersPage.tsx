@@ -10,7 +10,7 @@ type Role = 'ADMIN' | 'MEMBER' | 'VIEWER'
 const ROLE_LABEL: Record<Role, string> = { ADMIN: 'Admin', MEMBER: 'Miembro', VIEWER: 'Visualizador' }
 const ROLE_COLORS: Record<Role, string> = {
   ADMIN: 'bg-purple-100 text-purple-700',
-  MEMBER: 'bg-blue-100 text-blue-700',
+  MEMBER: 'bg-primary-100 text-primary-700',
   VIEWER: 'bg-gray-100 text-gray-600',
 }
 const ROLE_ICON: Record<Role, React.ReactNode> = {
@@ -129,7 +129,7 @@ export function MembersPage() {
   if (loading) {
     return (
       <div className="flex-1 flex items-center justify-center">
-        <Loader2 className="w-8 h-8 text-blue-500 animate-spin" />
+        <Loader2 className="w-8 h-8 text-primary-500 animate-spin" />
       </div>
     )
   }
@@ -159,7 +159,7 @@ export function MembersPage() {
             value={search}
             onChange={e => setSearch(e.target.value)}
             placeholder="Buscar por nombre o email..."
-            className="w-full pl-9 pr-9 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+            className="w-full pl-9 pr-9 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 bg-white"
           />
           {search && (
             <button onClick={() => setSearch('')} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
@@ -194,7 +194,7 @@ export function MembersPage() {
               return (
                 <div
                   key={member.userId}
-                  className={`grid grid-cols-[auto_1fr_1fr_140px_100px] gap-4 items-center px-5 py-3.5 transition-colors ${isMe ? 'bg-blue-50/30' : 'hover:bg-gray-50/50'}`}
+                  className={`grid grid-cols-[auto_1fr_1fr_140px_100px] gap-4 items-center px-5 py-3.5 transition-colors ${isMe ? 'bg-primary-50/30' : 'hover:bg-gray-50/50'}`}
                 >
                   {/* Avatar */}
                   <div
@@ -247,7 +247,7 @@ export function MembersPage() {
                         <>
                           <button
                             onClick={() => openEdit(member)}
-                            className="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded transition-colors"
+                            className="p-1.5 text-gray-400 hover:text-primary-600 hover:bg-primary-50 rounded transition-colors"
                             title="Editar"
                           >
                             <Pencil className="w-3.5 h-3.5" />
@@ -280,7 +280,7 @@ export function MembersPage() {
             <input
               value={form.name}
               onChange={e => setForm(f => ({ ...f, name: e.target.value }))}
-              className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
               autoFocus
             />
           </div>
@@ -290,7 +290,7 @@ export function MembersPage() {
               type="email"
               value={form.email}
               onChange={e => setForm(f => ({ ...f, email: e.target.value }))}
-              className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
             />
           </div>
           {editingMember?.userId !== currentUser?.id && (
@@ -299,7 +299,7 @@ export function MembersPage() {
               <select
                 value={form.role}
                 onChange={e => setForm(f => ({ ...f, role: e.target.value as Role }))}
-                className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+                className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 bg-white"
               >
                 <option value="MEMBER">Miembro</option>
                 <option value="VIEWER">Visualizador</option>
@@ -326,7 +326,7 @@ export function MembersPage() {
             <button
               onClick={handleEdit}
               disabled={!form.name.trim() || !form.email.trim() || submitting}
-              className="flex-1 py-2 text-sm bg-blue-600 hover:bg-blue-700 disabled:bg-blue-200 text-white font-medium rounded-lg transition-colors flex items-center justify-center gap-2"
+              className="flex-1 py-2 text-sm bg-primary-600 hover:bg-primary-700 disabled:bg-primary-200 text-white font-medium rounded-lg transition-colors flex items-center justify-center gap-2"
             >
               {submitting && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
               Guardar cambios

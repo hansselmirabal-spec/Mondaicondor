@@ -38,8 +38,8 @@ function KanbanCard({ task, isDragging, onDragStart, onDragEnd }: KanbanCardProp
       onClick={open}
       className={`bg-white rounded-lg border p-3 cursor-grab active:cursor-grabbing select-none transition-all ${
         isDragging
-          ? 'border-blue-400 shadow-lg opacity-50 rotate-1 scale-95'
-          : 'border-gray-200 hover:border-blue-300 hover:shadow-sm'
+          ? 'border-primary-400 shadow-lg opacity-50 rotate-1 scale-95'
+          : 'border-gray-200 hover:border-primary-300 hover:shadow-sm'
       }`}
     >
       <p className="text-sm font-medium text-gray-900 mb-2.5 leading-snug flex items-start gap-1">
@@ -190,7 +190,7 @@ export function KanbanView({ board }: KanbanViewProps) {
             <div
               className={`flex flex-col gap-2 flex-1 min-h-[120px] rounded-xl p-2 transition-all duration-150 ${
                 isOver && !draggingFromThisCol
-                  ? 'bg-blue-50 border-2 border-blue-300 border-dashed'
+                  ? 'bg-primary-50 border-2 border-primary-300 border-dashed'
                   : 'bg-transparent border-2 border-transparent'
               }`}
             >
@@ -211,8 +211,8 @@ export function KanbanView({ board }: KanbanViewProps) {
               )}
 
               {isOver && !draggingFromThisCol && (
-                <div className="border-2 border-dashed border-blue-300 rounded-lg h-16 flex items-center justify-center bg-blue-50/50">
-                  <span className="text-xs text-blue-400 font-medium">Soltar aquí</span>
+                <div className="border-2 border-dashed border-primary-300 rounded-lg h-16 flex items-center justify-center bg-primary-50/50">
+                  <span className="text-xs text-primary-400 font-medium">Soltar aquí</span>
                 </div>
               )}
             </div>

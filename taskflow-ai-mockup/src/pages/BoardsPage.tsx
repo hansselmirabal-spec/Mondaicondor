@@ -199,7 +199,7 @@ export function BoardsPage() {
           </div>
           <button
             onClick={() => setShowModal(true)}
-            className="flex items-center gap-1.5 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-lg transition-colors"
+            className="flex items-center gap-1.5 px-4 py-2 bg-primary-600 hover:bg-primary-700 text-white text-sm font-medium rounded-lg transition-colors"
           >
             <Plus className="w-4 h-4" />
             Nuevo tablero
@@ -219,7 +219,7 @@ export function BoardsPage() {
                 className={`relative bg-white rounded-xl border p-5 transition-all group ${
                   isConfirmingDelete
                     ? 'border-red-300 shadow-md cursor-default'
-                    : 'border-gray-200 hover:border-blue-300 hover:shadow-md cursor-pointer'
+                    : 'border-gray-200 hover:border-primary-300 hover:shadow-md cursor-pointer'
                 }`}
               >
                 {isConfirmingDelete ? (
@@ -294,7 +294,7 @@ export function BoardsPage() {
                       </div>
                     </div>
                     <div className="flex items-center gap-1.5 mb-1">
-                      <h3 className="text-sm font-semibold text-gray-900 group-hover:text-blue-600 transition-colors">{board.name}</h3>
+                      <h3 className="text-sm font-semibold text-gray-900 group-hover:text-primary-600 transition-colors">{board.name}</h3>
                       {board.isPrivate && <Lock className="w-3 h-3 text-gray-400 shrink-0" />}
                     </div>
                     <p className="text-xs text-gray-500 mb-3 line-clamp-2">{board.description}</p>
@@ -315,7 +315,7 @@ export function BoardsPage() {
 
           <button
             onClick={() => setShowModal(true)}
-            className="bg-white rounded-xl border-2 border-dashed border-gray-200 p-5 hover:border-blue-300 hover:text-blue-600 transition-all flex flex-col items-center justify-center gap-2 min-h-[160px] text-gray-400 cursor-pointer"
+            className="bg-white rounded-xl border-2 border-dashed border-gray-200 p-5 hover:border-primary-300 hover:text-primary-600 transition-all flex flex-col items-center justify-center gap-2 min-h-[160px] text-gray-400 cursor-pointer"
           >
             <Plus className="w-8 h-8" />
             <span className="text-sm font-medium">Nuevo tablero</span>
@@ -332,7 +332,7 @@ export function BoardsPage() {
               value={boardName}
               onChange={e => setBoardName(e.target.value)}
               onKeyDown={e => { if (e.key === 'Enter') handleCreate() }}
-              className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
               placeholder="Mi tablero"
               autoFocus
             />
@@ -343,7 +343,7 @@ export function BoardsPage() {
               value={boardDesc}
               onChange={e => setBoardDesc(e.target.value)}
               rows={2}
-              className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+              className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 resize-none"
               placeholder="Descripción opcional"
             />
           </div>
@@ -355,7 +355,7 @@ export function BoardsPage() {
                 type="button"
                 onClick={() => setBoardPrivate(false)}
                 className={`flex flex-col items-center gap-1.5 py-3 rounded-lg border-2 transition-colors text-sm ${
-                  !boardPrivate ? 'border-blue-500 bg-blue-50 text-blue-700' : 'border-gray-200 text-gray-500 hover:bg-gray-50'
+                  !boardPrivate ? 'border-primary-500 bg-primary-50 text-primary-700' : 'border-gray-200 text-gray-500 hover:bg-gray-50'
                 }`}
               >
                 <Globe className="w-5 h-5" />
@@ -378,7 +378,7 @@ export function BoardsPage() {
 
           <div className="flex gap-2 pt-1">
             <button onClick={() => { setShowModal(false); setBoardPrivate(false) }} className="flex-1 py-2 text-sm text-gray-600 border border-gray-200 rounded-lg hover:bg-gray-50">Cancelar</button>
-            <button onClick={handleCreate} disabled={!boardName.trim()} className="flex-1 py-2 text-sm bg-blue-600 hover:bg-blue-700 disabled:bg-blue-200 text-white font-medium rounded-lg transition-colors">
+            <button onClick={handleCreate} disabled={!boardName.trim()} className="flex-1 py-2 text-sm bg-primary-600 hover:bg-primary-700 disabled:bg-primary-200 text-white font-medium rounded-lg transition-colors">
               Crear
             </button>
           </div>
@@ -394,7 +394,7 @@ export function BoardsPage() {
               value={editName}
               onChange={e => setEditName(e.target.value)}
               onKeyDown={e => { if (e.key === 'Enter') handleEdit() }}
-              className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
               autoFocus
             />
           </div>
@@ -404,13 +404,13 @@ export function BoardsPage() {
               value={editDesc}
               onChange={e => setEditDesc(e.target.value)}
               rows={2}
-              className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+              className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 resize-none"
               placeholder="Descripción opcional"
             />
           </div>
           <div className="flex gap-2 pt-2">
             <button onClick={() => setEditingBoard(null)} className="flex-1 py-2 text-sm text-gray-600 border border-gray-200 rounded-lg hover:bg-gray-50">Cancelar</button>
-            <button onClick={handleEdit} disabled={!editName.trim()} className="flex-1 py-2 text-sm bg-blue-600 hover:bg-blue-700 disabled:bg-blue-200 text-white font-medium rounded-lg transition-colors">
+            <button onClick={handleEdit} disabled={!editName.trim()} className="flex-1 py-2 text-sm bg-primary-600 hover:bg-primary-700 disabled:bg-primary-200 text-white font-medium rounded-lg transition-colors">
               Guardar
             </button>
           </div>
@@ -429,7 +429,7 @@ export function BoardsPage() {
                   type="button"
                   onClick={() => !privacyBoard.isPrivate || handleTogglePrivacy()}
                   className={`flex items-center gap-3 px-4 py-3 rounded-lg border-2 transition-colors text-sm ${
-                    !privacyBoard.isPrivate ? 'border-blue-500 bg-blue-50 text-blue-700' : 'border-gray-200 text-gray-500 hover:bg-gray-50'
+                    !privacyBoard.isPrivate ? 'border-primary-500 bg-primary-50 text-primary-700' : 'border-gray-200 text-gray-500 hover:bg-gray-50'
                   }`}
                 >
                   <Globe className="w-5 h-5 shrink-0" />

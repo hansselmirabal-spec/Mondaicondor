@@ -152,7 +152,7 @@ export function CommentList({ taskId }: CommentListProps) {
 
     return parts.map((part, i) =>
       sorted.some(n => part === `@${n}`)
-        ? <span key={i} className="text-blue-600 font-medium bg-blue-50 rounded px-1">{part}</span>
+        ? <span key={i} className="text-primary-600 font-medium bg-primary-50 rounded px-1">{part}</span>
         : <span key={i}>{part}</span>,
     )
   }
@@ -182,7 +182,7 @@ export function CommentList({ taskId }: CommentListProps) {
       {currentUser && (
         <div className="flex gap-2 pt-1">
           <AssigneeAvatar userId={currentUser.id} size="sm" />
-          <div className="relative flex-1 flex items-center border border-gray-200 rounded-lg px-3 py-2 bg-white focus-within:ring-2 focus-within:ring-blue-500 focus-within:border-transparent">
+          <div className="relative flex-1 flex items-center border border-gray-200 rounded-lg px-3 py-2 bg-white focus-within:ring-2 focus-within:ring-primary-500 focus-within:border-transparent">
             <input
               ref={inputRef}
               type="text"
@@ -195,7 +195,7 @@ export function CommentList({ taskId }: CommentListProps) {
             <button
               onClick={send}
               disabled={!draft.trim()}
-              className="text-blue-600 hover:text-blue-700 ml-2 disabled:opacity-40 disabled:cursor-not-allowed"
+              className="text-primary-600 hover:text-primary-700 ml-2 disabled:opacity-40 disabled:cursor-not-allowed"
             >
               <Send className="w-3.5 h-3.5" />
             </button>
@@ -213,7 +213,7 @@ export function CommentList({ taskId }: CommentListProps) {
                     key={u.id}
                     type="button"
                     onMouseDown={(e) => { e.preventDefault(); selectMention(u) }}
-                    className="w-full flex items-center gap-2 px-3 py-1.5 hover:bg-blue-50 transition-colors"
+                    className="w-full flex items-center gap-2 px-3 py-1.5 hover:bg-primary-50 transition-colors"
                   >
                     <AssigneeAvatar userId={u.id} size="sm" />
                     <span className="text-xs text-gray-700">{u.name}</span>

@@ -198,14 +198,14 @@ export function WorkspaceSelector() {
                           if (e.key === 'Enter') handleEditWorkspace()
                           if (e.key === 'Escape') setEditingWsId(null)
                         }}
-                        className="w-full px-2 py-1.5 text-xs text-white bg-white/10 border border-white/20 rounded-md focus:outline-none focus:border-blue-400 placeholder-white/30"
+                        className="w-full px-2 py-1.5 text-xs text-white bg-white/10 border border-white/20 rounded-md focus:outline-none focus:border-primary-400 placeholder-white/30"
                       />
                       <div className="flex items-center gap-2">
                         <label className="text-[10px] text-white/40">Color:</label>
                         <input type="color" value={editWsColor} onChange={e => setEditWsColor(e.target.value)} className="w-6 h-6 rounded cursor-pointer border-0 bg-transparent" />
                       </div>
                       <div className="flex gap-1.5">
-                        <button onClick={handleEditWorkspace} disabled={editWsSaving || !editWsName.trim()} className="flex-1 py-1 text-xs bg-blue-600 hover:bg-blue-700 disabled:opacity-40 text-white font-medium rounded-md transition-colors">
+                        <button onClick={handleEditWorkspace} disabled={editWsSaving || !editWsName.trim()} className="flex-1 py-1 text-xs bg-primary-600 hover:bg-primary-700 disabled:opacity-40 text-white font-medium rounded-md transition-colors">
                           {editWsSaving ? '...' : 'Guardar'}
                         </button>
                         <button onClick={() => setEditingWsId(null)} className="flex-1 py-1 text-xs text-white/60 border border-white/20 hover:bg-white/10 rounded-md transition-colors">
@@ -236,7 +236,7 @@ export function WorkspaceSelector() {
                           {ws.name[0]}
                         </span>
                         <span className="truncate flex-1 text-left">{ws.name}</span>
-                        {ws.id === workspace?.id && <Check className="w-3.5 h-3.5 text-blue-400 shrink-0" />}
+                        {ws.id === workspace?.id && <Check className="w-3.5 h-3.5 text-primary-400 shrink-0" />}
                         {switchingId === ws.id && <span className="text-xs text-white/40">...</span>}
                       </button>
                       <div className="flex items-center gap-1 shrink-0 pr-2">
@@ -276,7 +276,7 @@ export function WorkspaceSelector() {
                         if (e.key === 'Escape') { setWsFormOpen(false); setWsName('') }
                       }}
                       placeholder="Nombre del workspace..."
-                      className="w-full px-2 py-1.5 text-xs text-white bg-white/10 border border-white/20 rounded-md focus:outline-none focus:border-blue-400 placeholder-white/30"
+                      className="w-full px-2 py-1.5 text-xs text-white bg-white/10 border border-white/20 rounded-md focus:outline-none focus:border-primary-400 placeholder-white/30"
                     />
                     <div className="flex items-center gap-2">
                       <label className="text-[10px] text-white/40">Color:</label>
@@ -291,7 +291,7 @@ export function WorkspaceSelector() {
                       <button
                         onClick={handleCreateWorkspace}
                         disabled={!wsName.trim() || wsSaving}
-                        className="flex-1 py-1 text-xs bg-blue-600 hover:bg-blue-700 disabled:opacity-40 text-white font-medium rounded-md transition-colors"
+                        className="flex-1 py-1 text-xs bg-primary-600 hover:bg-primary-700 disabled:opacity-40 text-white font-medium rounded-md transition-colors"
                       >
                         {wsSaving ? '...' : 'Crear'}
                       </button>
@@ -339,13 +339,13 @@ export function WorkspaceSelector() {
               if (e.key === 'Escape') { setCreateOpen(false); setPanelName('') }
             }}
             placeholder="Nombre del panel..."
-            className="w-full px-2 py-1.5 text-sm text-white bg-white/10 border border-white/20 rounded-md focus:outline-none focus:border-blue-400 placeholder-white/30"
+            className="w-full px-2 py-1.5 text-sm text-white bg-white/10 border border-white/20 rounded-md focus:outline-none focus:border-primary-400 placeholder-white/30"
           />
           <div className="flex gap-2">
             <button
               onClick={handleCreate}
               disabled={!panelName.trim() || saving}
-              className="flex-1 py-1 text-xs bg-blue-600 hover:bg-blue-700 disabled:opacity-40 text-white font-medium rounded-md transition-colors"
+              className="flex-1 py-1 text-xs bg-primary-600 hover:bg-primary-700 disabled:opacity-40 text-white font-medium rounded-md transition-colors"
             >
               {saving ? 'Creando...' : 'Crear'}
             </button>

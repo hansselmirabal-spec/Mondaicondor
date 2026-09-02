@@ -214,13 +214,13 @@ export function SettingsPage() {
               onClick={() => setActive(s.id)}
               className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-left transition-colors ${
                 active === s.id
-                  ? 'bg-blue-50 text-blue-700'
+                  ? 'bg-primary-50 text-primary-700'
                   : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
               }`}
             >
-              <span className={active === s.id ? 'text-blue-600' : 'text-gray-400'}>{s.icon}</span>
+              <span className={active === s.id ? 'text-primary-600' : 'text-gray-400'}>{s.icon}</span>
               <span className="text-sm font-medium">{s.label}</span>
-              {active === s.id && <ChevronRight className="w-3.5 h-3.5 ml-auto text-blue-400" />}
+              {active === s.id && <ChevronRight className="w-3.5 h-3.5 ml-auto text-primary-400" />}
             </button>
           ))}
         </nav>
@@ -244,7 +244,7 @@ export function SettingsPage() {
                     <input
                       value={boardName}
                       onChange={e => setBoardName(e.target.value)}
-                      className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
                     />
                   </div>
                   <div>
@@ -253,7 +253,7 @@ export function SettingsPage() {
                       value={boardDesc}
                       onChange={e => setBoardDesc(e.target.value)}
                       rows={3}
-                      className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+                      className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 resize-none"
                       placeholder="Descripción del tablero..."
                     />
                   </div>
@@ -262,7 +262,7 @@ export function SettingsPage() {
                   <button
                     onClick={saveGeneral}
                     disabled={savingGeneral || !boardName.trim()}
-                    className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-200 text-white text-sm font-medium rounded-lg transition-colors"
+                    className="flex items-center gap-2 px-4 py-2 bg-primary-600 hover:bg-primary-700 disabled:bg-primary-200 text-white text-sm font-medium rounded-lg transition-colors"
                   >
                     {savingGeneral ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Save className="w-3.5 h-3.5" />}
                     Guardar cambios
@@ -345,7 +345,7 @@ export function SettingsPage() {
                 </div>
                 <button
                   onClick={() => navigate('/members')}
-                  className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-lg transition-colors"
+                  className="flex items-center gap-2 px-4 py-2 bg-primary-600 hover:bg-primary-700 text-white text-sm font-medium rounded-lg transition-colors"
                 >
                   <Users className="w-3.5 h-3.5" />
                   Gestionar usuarios
@@ -374,7 +374,7 @@ export function SettingsPage() {
                 ))}
                 {apiUsers.length > 8 && (
                   <div className="px-4 py-3 text-center">
-                    <button onClick={() => navigate('/members')} className="text-xs text-blue-600 hover:underline">
+                    <button onClick={() => navigate('/members')} className="text-xs text-primary-600 hover:underline">
                       Ver los {apiUsers.length - 8} más →
                     </button>
                   </div>
@@ -397,7 +397,7 @@ export function SettingsPage() {
                     <tr className="bg-gray-50 border-b border-gray-200">
                       <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Acción</th>
                       <th className="px-4 py-3 text-center text-xs font-semibold text-purple-600 uppercase tracking-wide">Admin</th>
-                      <th className="px-4 py-3 text-center text-xs font-semibold text-blue-600 uppercase tracking-wide">Miembro</th>
+                      <th className="px-4 py-3 text-center text-xs font-semibold text-primary-600 uppercase tracking-wide">Miembro</th>
                       <th className="px-4 py-3 text-center text-xs font-semibold text-gray-500 uppercase tracking-wide">Visualizador</th>
                     </tr>
                   </thead>
@@ -450,7 +450,7 @@ export function SettingsPage() {
                 <select
                   value={prefs?.language ?? 'es'}
                   onChange={e => togglePref('language', e.target.value)}
-                  className="px-3 py-2 border border-gray-200 rounded-lg text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="px-3 py-2 border border-gray-200 rounded-lg text-sm bg-white focus:outline-none focus:ring-2 focus:ring-primary-500"
                 >
                   <option value="es">Español</option>
                   <option value="en">English</option>
@@ -479,7 +479,7 @@ export function SettingsPage() {
                 <button
                   onClick={saveColor}
                   disabled={savingColor || selectedColor === currentUser?.color}
-                  className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-200 text-white text-sm font-medium rounded-lg transition-colors"
+                  className="flex items-center gap-2 px-4 py-2 bg-primary-600 hover:bg-primary-700 disabled:bg-primary-200 text-white text-sm font-medium rounded-lg transition-colors"
                 >
                   {savingColor ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Save className="w-3.5 h-3.5" />}
                   Guardar color
@@ -518,7 +518,7 @@ function ToggleRow({ label, description, checked, loading, onChange }: ToggleRow
         onClick={() => !loading && onChange(!checked)}
         disabled={loading}
         className={`relative w-10 h-6 rounded-full transition-colors shrink-0 ${
-          checked ? 'bg-blue-600' : 'bg-gray-200'
+          checked ? 'bg-primary-600' : 'bg-gray-200'
         } ${loading ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
       >
         <span
@@ -749,7 +749,7 @@ function CustomFieldsSection({ boardId, isAdmin }: CustomFieldsSectionProps) {
         {isAdmin && !isEmpty && (
           <button
             onClick={() => setShowNewForm(true)}
-            className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-medium rounded-lg transition-colors"
+            className="flex items-center gap-1.5 px-3 py-1.5 bg-primary-600 hover:bg-primary-700 text-white text-xs font-medium rounded-lg transition-colors"
           >
             <Plus className="w-3.5 h-3.5" />
             Nuevo campo
@@ -765,7 +765,7 @@ function CustomFieldsSection({ boardId, isAdmin }: CustomFieldsSectionProps) {
           {isAdmin && (
             <button
               onClick={() => setShowNewForm(true)}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-medium rounded-lg transition-colors"
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-primary-600 hover:bg-primary-700 text-white text-xs font-medium rounded-lg transition-colors"
             >
               <Plus className="w-3.5 h-3.5" />
               Crear el primero
@@ -784,13 +784,13 @@ function CustomFieldsSection({ boardId, isAdmin }: CustomFieldsSectionProps) {
                       value={editing.label}
                       onChange={e => setEditing({ ...editing, label: e.target.value })}
                       onKeyDown={e => { if (e.key === 'Escape') setEditing(null) }}
-                      className="flex-1 min-w-[140px] px-2 py-1 border border-blue-400 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
+                      className="flex-1 min-w-[140px] px-2 py-1 border border-primary-400 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-400"
                     />
                     <select
                       value={editing.type}
                       disabled={editing.hasValues}
                       onChange={e => setEditing({ ...editing, type: e.target.value as CustomFieldType })}
-                      className="px-2 py-1 border border-gray-200 rounded-lg text-sm bg-white disabled:bg-gray-50 disabled:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-400"
+                      className="px-2 py-1 border border-gray-200 rounded-lg text-sm bg-white disabled:bg-gray-50 disabled:text-gray-400 focus:outline-none focus:ring-2 focus:ring-primary-400"
                     >
                       {CUSTOM_FIELD_TYPES.map(t => (
                         <option key={t} value={t}>{CUSTOM_FIELD_TYPE_LABELS[t]}</option>
@@ -844,7 +844,7 @@ function CustomFieldsSection({ boardId, isAdmin }: CustomFieldsSectionProps) {
                           onChange={e => setEditOptionLabel(e.target.value)}
                           onKeyDown={e => { if (e.key === 'Enter') handleAddOptionToEditing() }}
                           placeholder="Nueva opción..."
-                          className="flex-1 min-w-[120px] px-2 py-1 border border-gray-200 rounded-lg text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-400"
+                          className="flex-1 min-w-[120px] px-2 py-1 border border-gray-200 rounded-lg text-sm bg-white focus:outline-none focus:ring-2 focus:ring-primary-400"
                         />
                         <div className="flex flex-wrap gap-1">
                           {PRESET_COLORS.map(c => (
@@ -859,7 +859,7 @@ function CustomFieldsSection({ boardId, isAdmin }: CustomFieldsSectionProps) {
                         <button
                           onClick={handleAddOptionToEditing}
                           disabled={!editOptionLabel.trim() || addingOption}
-                          className="px-2.5 py-1 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-200 text-white text-xs font-medium rounded-lg transition-colors"
+                          className="px-2.5 py-1 bg-primary-600 hover:bg-primary-700 disabled:bg-primary-200 text-white text-xs font-medium rounded-lg transition-colors"
                         >
                           Agregar
                         </button>
@@ -911,7 +911,7 @@ function CustomFieldsSection({ boardId, isAdmin }: CustomFieldsSectionProps) {
                       <button
                         onClick={() => startEdit(field)}
                         title="Editar"
-                        className="p-1.5 text-gray-300 hover:text-blue-500 hover:bg-blue-50 rounded-lg transition-colors"
+                        className="p-1.5 text-gray-300 hover:text-primary-500 hover:bg-primary-50 rounded-lg transition-colors"
                       >
                         <Pencil className="w-3.5 h-3.5" />
                       </button>
@@ -932,8 +932,8 @@ function CustomFieldsSection({ boardId, isAdmin }: CustomFieldsSectionProps) {
 
           {/* New field form */}
           {showNewForm && (
-            <div className="px-4 py-3 bg-blue-50 border-t border-blue-100 space-y-3">
-              <p className="text-xs font-semibold text-blue-700">Nuevo campo</p>
+            <div className="px-4 py-3 bg-primary-50 border-t border-primary-100 space-y-3">
+              <p className="text-xs font-semibold text-primary-700">Nuevo campo</p>
               <div className="flex items-center gap-2 flex-wrap">
                 <input
                   autoFocus
@@ -941,12 +941,12 @@ function CustomFieldsSection({ boardId, isAdmin }: CustomFieldsSectionProps) {
                   onChange={e => setNewLabel(e.target.value)}
                   onKeyDown={e => { if (e.key === 'Escape') resetNewForm() }}
                   placeholder="Nombre del campo..."
-                  className="flex-1 min-w-[140px] px-2 py-1 border border-blue-300 rounded-lg text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-400"
+                  className="flex-1 min-w-[140px] px-2 py-1 border border-primary-300 rounded-lg text-sm bg-white focus:outline-none focus:ring-2 focus:ring-primary-400"
                 />
                 <select
                   value={newType}
                   onChange={e => setNewType(e.target.value as CustomFieldType)}
-                  className="px-2 py-1 border border-blue-300 rounded-lg text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-400"
+                  className="px-2 py-1 border border-primary-300 rounded-lg text-sm bg-white focus:outline-none focus:ring-2 focus:ring-primary-400"
                 >
                   {CUSTOM_FIELD_TYPES.map(t => (
                     <option key={t} value={t}>{CUSTOM_FIELD_TYPE_LABELS[t]}</option>
@@ -955,7 +955,7 @@ function CustomFieldsSection({ boardId, isAdmin }: CustomFieldsSectionProps) {
               </div>
 
               {newType === 'SELECT' && (
-                <div className="bg-white rounded-lg p-3 space-y-2 border border-blue-100">
+                <div className="bg-white rounded-lg p-3 space-y-2 border border-primary-100">
                   <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Opciones</p>
                   {newOptions.length > 0 && (
                     <div className="space-y-1.5">
@@ -976,7 +976,7 @@ function CustomFieldsSection({ boardId, isAdmin }: CustomFieldsSectionProps) {
                       onChange={e => setNewOptionLabel(e.target.value)}
                       onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); addDraftOption() } }}
                       placeholder="Nueva opción..."
-                      className="flex-1 min-w-[120px] px-2 py-1 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
+                      className="flex-1 min-w-[120px] px-2 py-1 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-400"
                     />
                     <div className="flex flex-wrap gap-1">
                       {PRESET_COLORS.map(c => (
@@ -1003,7 +1003,7 @@ function CustomFieldsSection({ boardId, isAdmin }: CustomFieldsSectionProps) {
                 <button
                   onClick={handleCreate}
                   disabled={!newLabel.trim() || creating}
-                  className="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-200 text-white text-xs font-medium rounded-lg transition-colors"
+                  className="px-3 py-1.5 bg-primary-600 hover:bg-primary-700 disabled:bg-primary-200 text-white text-xs font-medium rounded-lg transition-colors"
                 >
                   Crear
                 </button>
@@ -1036,7 +1036,7 @@ function CustomFieldsSection({ boardId, isAdmin }: CustomFieldsSectionProps) {
                 <button
                   onClick={() => handleUnarchiveField(field.id)}
                   disabled={unarchivingFieldId === field.id}
-                  className="flex items-center gap-1.5 px-2.5 py-1 text-xs font-medium text-blue-600 hover:bg-blue-50 rounded-lg transition-colors shrink-0"
+                  className="flex items-center gap-1.5 px-2.5 py-1 text-xs font-medium text-primary-600 hover:bg-primary-50 rounded-lg transition-colors shrink-0"
                 >
                   <RotateCcw className="w-3 h-3" />
                   Desarchivar

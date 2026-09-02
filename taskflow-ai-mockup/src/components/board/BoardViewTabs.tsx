@@ -22,7 +22,7 @@ export function BoardViewTabs() {
             onClick={() => setActiveView(tab.key)}
             className={`flex items-center gap-1.5 px-3 py-2.5 text-sm border-b-2 transition-colors mr-1 ${
               activeView === tab.key
-                ? 'border-blue-600 text-blue-600 font-medium'
+                ? 'border-primary-600 text-primary-600 font-medium'
                 : 'border-transparent text-gray-500 hover:text-gray-700 hover:bg-gray-50'
             }`}
           >
@@ -44,11 +44,11 @@ export function BoardViewTabs() {
           <p className="text-sm text-gray-600">Creá una vista personalizada para este tablero.</p>
           <div>
             <label className="block text-xs font-semibold text-gray-700 mb-1">Nombre de la vista</label>
-            <input className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="Mi vista personalizada" />
+            <input className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-500" placeholder="Mi vista personalizada" />
           </div>
           <div>
             <label className="block text-xs font-semibold text-gray-700 mb-1">Tipo de vista</label>
-            <select className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+            <select className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-500">
               <option>Tabla</option>
               <option>Kanban</option>
               <option>Gráfico</option>
@@ -58,7 +58,7 @@ export function BoardViewTabs() {
           </div>
           <div className="flex gap-2 pt-2">
             <button onClick={() => setAddViewModal(false)} className="flex-1 py-2 text-sm text-gray-600 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">Cancelar</button>
-            <button onClick={() => setAddViewModal(false)} className="flex-1 py-2 text-sm bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-colors">Crear vista</button>
+            <button onClick={() => setAddViewModal(false)} className="flex-1 py-2 text-sm bg-primary-600 hover:bg-primary-700 text-white font-medium rounded-lg transition-colors">Crear vista</button>
           </div>
         </div>
       </Modal>

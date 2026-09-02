@@ -50,7 +50,7 @@ function SelectDropdown<T extends string>({ value, options, onChange, renderBadg
     <div className="relative">
       <button
         onClick={() => setOpen(o => !o)}
-        className="flex items-center gap-1 rounded hover:ring-2 hover:ring-blue-400 transition-all"
+        className="flex items-center gap-1 rounded hover:ring-2 hover:ring-primary-400 transition-all"
       >
         <span className="w-28">{renderBadge(value)}</span>
         <ChevronDown className="w-3 h-3 text-gray-400" />
@@ -61,7 +61,7 @@ function SelectDropdown<T extends string>({ value, options, onChange, renderBadg
             <button
               key={opt}
               onClick={() => { onChange(opt); setOpen(false) }}
-              className={`w-full px-2 py-1.5 text-left hover:bg-gray-50 transition-colors ${opt === value ? 'bg-blue-50' : ''}`}
+              className={`w-full px-2 py-1.5 text-left hover:bg-gray-50 transition-colors ${opt === value ? 'bg-primary-50' : ''}`}
             >
               <span className="block">{renderBadge(opt)}</span>
             </button>
@@ -337,11 +337,11 @@ export function TaskDetailDrawer() {
               >
                 <div className="flex flex-wrap gap-1 items-center min-h-[24px]">
                   {currentAssigneeIds.length === 0
-                    ? <span className="text-xs text-gray-400 italic group-hover:text-blue-500 transition-colors">Sin asignar — click para agregar</span>
+                    ? <span className="text-xs text-gray-400 italic group-hover:text-primary-500 transition-colors">Sin asignar — click para agregar</span>
                     : currentAssigneeIds.map(id => {
                         const u = apiUsers.find(user => user.id === id)
                         return u ? (
-                          <div key={id} className="flex items-center gap-1 bg-blue-50 rounded-full px-2 py-0.5">
+                          <div key={id} className="flex items-center gap-1 bg-primary-50 rounded-full px-2 py-0.5">
                             <AssigneeAvatar userId={id} size="sm" />
                             <span className="text-xs text-gray-700">{u.name}</span>
                           </div>
@@ -365,13 +365,13 @@ export function TaskDetailDrawer() {
                       <button
                         key={u.id}
                         onClick={() => assigned ? removeAssignee(u.id) : addAssignee(u.id)}
-                        className={`w-full flex items-center gap-2 px-3 py-1.5 transition-colors ${assigned ? 'bg-blue-50 hover:bg-red-50' : 'hover:bg-blue-50'}`}
+                        className={`w-full flex items-center gap-2 px-3 py-1.5 transition-colors ${assigned ? 'bg-primary-50 hover:bg-red-50' : 'hover:bg-primary-50'}`}
                       >
                         <AssigneeAvatar userId={u.id} size="sm" />
                         <span className="text-xs text-gray-700 flex-1 text-left truncate">{u.name}</span>
                         {assigned
                           ? <UserMinus className="w-3 h-3 text-red-400 shrink-0" />
-                          : <Plus className="w-3 h-3 text-blue-400 shrink-0" />
+                          : <Plus className="w-3 h-3 text-primary-400 shrink-0" />
                         }
                       </button>
                     )
@@ -387,7 +387,7 @@ export function TaskDetailDrawer() {
                 {deadlineHistory.length > 0 && (
                   <button
                     onClick={() => setShowDeadlineHistory(o => !o)}
-                    className="ml-auto flex items-center gap-0.5 text-gray-400 hover:text-blue-500 transition-colors"
+                    className="ml-auto flex items-center gap-0.5 text-gray-400 hover:text-primary-500 transition-colors"
                     title="Ver historial"
                   >
                     <History className="w-3 h-3" />
@@ -407,7 +407,7 @@ export function TaskDetailDrawer() {
                     if (e.key === 'Enter') { saveDeadline((e.target as HTMLInputElement).value); setEditingDeadline(false) }
                     if (e.key === 'Escape') setEditingDeadline(false)
                   }}
-                  className="w-full text-sm border border-blue-400 rounded-lg px-2 py-1.5 focus:outline-none focus:ring-2 focus:ring-blue-400"
+                  className="w-full text-sm border border-primary-400 rounded-lg px-2 py-1.5 focus:outline-none focus:ring-2 focus:ring-primary-400"
                 />
               ) : (
                 <button
@@ -461,7 +461,7 @@ export function TaskDetailDrawer() {
                   aria-checked={!!task.recurrenceRule}
                   title={task.recurrenceRule ? 'Desactivar recurrencia' : 'Repetir esta tarea al completarla'}
                   className={`relative inline-flex h-4 w-7 items-center rounded-full transition-colors ${
-                    task.recurrenceRule ? 'bg-blue-600' : 'bg-gray-200'
+                    task.recurrenceRule ? 'bg-primary-600' : 'bg-gray-200'
                   }`}
                 >
                   <span
@@ -481,12 +481,12 @@ export function TaskDetailDrawer() {
                     onChange={e => setRecurrenceIntervalDraft(e.target.value)}
                     onBlur={commitRecurrenceInterval}
                     onKeyDown={e => { if (e.key === 'Enter') (e.target as HTMLInputElement).blur() }}
-                    className="w-14 text-sm border border-gray-200 rounded-lg px-2 py-1 focus:outline-none focus:ring-2 focus:ring-blue-400"
+                    className="w-14 text-sm border border-gray-200 rounded-lg px-2 py-1 focus:outline-none focus:ring-2 focus:ring-primary-400"
                   />
                   <select
                     value={recurrenceUnitDraft}
                     onChange={e => commitRecurrenceUnit(e.target.value as RecurrenceRule['unit'])}
-                    className="text-sm border border-gray-200 rounded-lg px-2 py-1 bg-white focus:outline-none focus:ring-2 focus:ring-blue-400"
+                    className="text-sm border border-gray-200 rounded-lg px-2 py-1 bg-white focus:outline-none focus:ring-2 focus:ring-primary-400"
                   >
                     <option value="days">día(s)</option>
                     <option value="weeks">semana(s)</option>
@@ -542,7 +542,7 @@ export function TaskDetailDrawer() {
                         patchApiTask(task.id, { groupId: task.groupId })
                       })
                     }}
-                    className="w-full text-xs border border-gray-200 rounded-lg px-2 py-1.5 bg-white focus:outline-none focus:ring-2 focus:ring-blue-400"
+                    className="w-full text-xs border border-gray-200 rounded-lg px-2 py-1.5 bg-white focus:outline-none focus:ring-2 focus:ring-primary-400"
                   >
                     {board.groups.map(g => (
                       <option key={g.id} value={g.id}>{g.name}</option>
@@ -565,7 +565,7 @@ export function TaskDetailDrawer() {
                           patchApiTask(task.id, { uenIds: newIds })
                           api.tasks.update(task.id, { uenIds: newIds }).catch(console.error)
                         }}
-                        className={`px-2 py-0.5 rounded text-xs font-medium border transition-colors ${active ? 'text-white border-transparent' : 'border-gray-200 text-gray-600 hover:border-blue-400'}`}
+                        className={`px-2 py-0.5 rounded text-xs font-medium border transition-colors ${active ? 'text-white border-transparent' : 'border-gray-200 text-gray-600 hover:border-primary-400'}`}
                         style={active ? { backgroundColor: u.color, borderColor: u.color } : {}}
                       >
                         {u.name}
@@ -598,10 +598,10 @@ export function TaskDetailDrawer() {
                   onChange={e => setDescDraft(e.target.value)}
                   onBlur={saveDesc}
                   rows={4}
-                  className="w-full text-sm text-gray-700 leading-relaxed bg-white border border-blue-400 rounded-lg p-3 focus:outline-none resize-none"
+                  className="w-full text-sm text-gray-700 leading-relaxed bg-white border border-primary-400 rounded-lg p-3 focus:outline-none resize-none"
                 />
                 <div className="flex gap-2 mt-1">
-                  <button onClick={saveDesc} className="text-xs px-3 py-1 bg-blue-600 text-white rounded-lg hover:bg-blue-700">Guardar</button>
+                  <button onClick={saveDesc} className="text-xs px-3 py-1 bg-primary-600 text-white rounded-lg hover:bg-primary-700">Guardar</button>
                   <button onClick={() => setEditingDesc(false)} className="text-xs px-3 py-1 text-gray-600 border border-gray-200 rounded-lg hover:bg-gray-50">Cancelar</button>
                 </div>
               </div>

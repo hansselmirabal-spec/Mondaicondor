@@ -230,9 +230,9 @@ export function AutomationPanel() {
                     </div>
                   </div>
                   <div className="space-y-1.5">
-                    <div className="flex items-start gap-2 bg-blue-50 px-3 py-2 rounded-lg">
-                      <span className="text-xs font-semibold text-blue-600 w-16 shrink-0 mt-0.5">Cuando</span>
-                      <span className="text-xs text-blue-800">{TRIGGER_LABEL[auto.triggerEvent] ?? auto.triggerEvent}</span>
+                    <div className="flex items-start gap-2 bg-primary-50 px-3 py-2 rounded-lg">
+                      <span className="text-xs font-semibold text-primary-600 w-16 shrink-0 mt-0.5">Cuando</span>
+                      <span className="text-xs text-primary-800">{TRIGGER_LABEL[auto.triggerEvent] ?? auto.triggerEvent}</span>
                     </div>
                     <div className="flex items-center justify-center"><ArrowRight className="w-4 h-4 text-gray-400" /></div>
                     <div className="flex items-start gap-2 bg-green-50 px-3 py-2 rounded-lg">

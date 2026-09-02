@@ -14,7 +14,7 @@ export function FilterButton({ icon, label, onClick, active = false }: FilterBut
       onClick={onClick}
       className={`flex items-center gap-1 px-2 py-1.5 text-sm rounded-md transition-colors ${
         active
-          ? 'bg-blue-50 text-blue-600 font-medium'
+          ? 'bg-primary-50 text-primary-600 font-medium'
           : 'text-gray-600 hover:bg-gray-100'
       }`}
     >

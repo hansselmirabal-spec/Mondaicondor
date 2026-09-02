@@ -125,7 +125,7 @@ export function EmailAlertsPage() {
                     member.role === 'ADMIN'
                       ? 'bg-purple-100 text-purple-700'
                       : member.role === 'MEMBER'
-                      ? 'bg-blue-50 text-blue-600'
+                      ? 'bg-primary-50 text-primary-600'
                       : 'bg-gray-100 text-gray-500'
                   }`}>
                     {member.role === 'ADMIN' ? 'Admin' : member.role === 'MEMBER' ? 'Miembro' : 'Visualizador'}

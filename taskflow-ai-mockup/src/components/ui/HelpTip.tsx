@@ -31,7 +31,7 @@ export function HelpTip({ title, children, side = 'bottom' }: HelpTipProps) {
         onClick={() => setOpen(o => !o)}
         title={title}
         aria-label={`Ayuda: ${title}`}
-        className="inline-flex items-center justify-center w-[18px] h-[18px] rounded-full text-gray-400 hover:text-blue-600 transition-colors"
+        className="inline-flex items-center justify-center w-[18px] h-[18px] rounded-full text-gray-400 hover:text-primary-600 transition-colors"
       >
         <Info className="w-[18px] h-[18px]" />
       </button>

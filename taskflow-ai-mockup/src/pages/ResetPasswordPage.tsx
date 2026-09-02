@@ -20,7 +20,7 @@ export function ResetPasswordPage() {
       <div className="min-h-screen bg-gradient-to-br from-[#1a1a2e] to-[#292944] flex items-center justify-center p-4">
         <div className="w-full max-w-sm">
           <div className="flex items-center justify-center gap-2 mb-8">
-            <div className="w-10 h-10 rounded-xl bg-blue-600 flex items-center justify-center">
+            <div className="w-10 h-10 rounded-xl bg-primary-600 flex items-center justify-center">
               <Zap className="w-6 h-6 text-white" />
             </div>
             <span className="text-2xl font-bold text-white">TaskFlow AI</span>
@@ -35,7 +35,7 @@ export function ResetPasswordPage() {
             </p>
             <Link
               to="/forgot-password"
-              className="inline-block w-full py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg transition-colors text-sm text-center"
+              className="inline-block w-full py-2.5 bg-primary-600 hover:bg-primary-700 text-white font-semibold rounded-lg transition-colors text-sm text-center"
             >
               Solicitar nuevo enlace
             </Link>
@@ -68,7 +68,7 @@ export function ResetPasswordPage() {
     <div className="min-h-screen bg-gradient-to-br from-[#1a1a2e] to-[#292944] flex items-center justify-center p-4">
       <div className="w-full max-w-sm">
         <div className="flex items-center justify-center gap-2 mb-8">
-          <div className="w-10 h-10 rounded-xl bg-blue-600 flex items-center justify-center">
+          <div className="w-10 h-10 rounded-xl bg-primary-600 flex items-center justify-center">
             <Zap className="w-6 h-6 text-white" />
           </div>
           <span className="text-2xl font-bold text-white">TaskFlow AI</span>
@@ -103,7 +103,7 @@ export function ResetPasswordPage() {
                   required
                   disabled={isLoading}
                   placeholder="Mínimo 8 caracteres"
-                  className={`w-full px-3 py-2.5 pr-10 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:opacity-50 ${
+                  className={`w-full px-3 py-2.5 pr-10 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent disabled:opacity-50 ${
                     passwordTooShort ? 'border-red-300 bg-red-50' : 'border-gray-200'
                   }`}
                 />
@@ -133,7 +133,7 @@ export function ResetPasswordPage() {
                   required
                   disabled={isLoading}
                   placeholder="Repetí la contraseña"
-                  className={`w-full px-3 py-2.5 pr-10 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:opacity-50 ${
+                  className={`w-full px-3 py-2.5 pr-10 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent disabled:opacity-50 ${
                     passwordMismatch ? 'border-red-300 bg-red-50' : 'border-gray-200'
                   }`}
                 />
@@ -154,7 +154,7 @@ export function ResetPasswordPage() {
             <button
               type="submit"
               disabled={isLoading || !isValid}
-              className="w-full py-2.5 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white font-semibold rounded-lg transition-colors text-sm flex items-center justify-center gap-2"
+              className="w-full py-2.5 bg-primary-600 hover:bg-primary-700 disabled:bg-primary-400 text-white font-semibold rounded-lg transition-colors text-sm flex items-center justify-center gap-2"
             >
               {isLoading ? (
                 <>

@@ -245,7 +245,7 @@ export function TaskRow({ task, isDragging, isOver, onDragStart, onDragEnd, onDr
               type="checkbox"
               checked={checked}
               onChange={() => saveCustomField(field.id, !checked)}
-              className="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-400 cursor-pointer"
+              className="w-4 h-4 rounded border-gray-300 text-primary-600 focus:ring-primary-400 cursor-pointer"
             />
           </td>
         )
@@ -258,7 +258,7 @@ export function TaskRow({ task, isDragging, isOver, onDragStart, onDragEnd, onDr
               type="date"
               value={dateValue}
               onChange={e => saveCustomField(field.id, e.target.value || null)}
-              className="w-full text-xs text-gray-700 bg-transparent border border-transparent hover:border-gray-200 focus:border-blue-400 focus:outline-none rounded px-1 py-0.5"
+              className="w-full text-xs text-gray-700 bg-transparent border border-transparent hover:border-gray-200 focus:border-primary-400 focus:outline-none rounded px-1 py-0.5"
             />
           </td>
         )
@@ -294,7 +294,7 @@ export function TaskRow({ task, isDragging, isOver, onDragStart, onDragEnd, onDr
                   if (e.key === 'Enter') { e.preventDefault(); commitCfEdit(field) }
                   if (e.key === 'Escape') setEditingCfId(null)
                 }}
-                className="w-full text-xs text-gray-700 bg-white border border-blue-400 rounded px-1.5 py-1 focus:outline-none focus:ring-1 focus:ring-blue-400"
+                className="w-full text-xs text-gray-700 bg-white border border-primary-400 rounded px-1.5 py-1 focus:outline-none focus:ring-1 focus:ring-primary-400"
               />
             </td>
           )
@@ -323,8 +323,8 @@ export function TaskRow({ task, isDragging, isOver, onDragStart, onDragEnd, onDr
       onDrop={onDrop}
       className={`group border-b border-gray-100 cursor-pointer transition-all ${
         isDragging ? 'opacity-40' : ''
-      } ${isOver ? 'border-t-2 border-blue-400' : ''} ${
-        isSelected ? 'bg-blue-50' : isCompleted ? 'bg-gray-50/50' : 'hover:bg-gray-50'
+      } ${isOver ? 'border-t-2 border-primary-400' : ''} ${
+        isSelected ? 'bg-primary-50' : isCompleted ? 'bg-gray-50/50' : 'hover:bg-gray-50'
       }`}
     >
       {/* Checkbox / drag handle */}
@@ -354,7 +354,7 @@ export function TaskRow({ task, isDragging, isOver, onDragStart, onDragEnd, onDr
                 if (e.key === 'Enter') { e.preventDefault(); saveTitle() }
                 if (e.key === 'Escape') setEditingTitle(false)
               }}
-              className="text-sm flex-1 min-w-0 px-1.5 py-0.5 -my-0.5 border border-blue-400 rounded focus:outline-none focus:ring-1 focus:ring-blue-400 text-gray-800"
+              className="text-sm flex-1 min-w-0 px-1.5 py-0.5 -my-0.5 border border-primary-400 rounded focus:outline-none focus:ring-1 focus:ring-primary-400 text-gray-800"
             />
           ) : (
             <span
@@ -530,7 +530,7 @@ export function TaskRow({ task, isDragging, isOver, onDragStart, onDragEnd, onDr
               <>
                 <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wide px-3 py-1.5 border-b border-gray-100">Agregar</p>
                 {availableUsers.map(u => (
-                  <button key={u.id} onClick={e => addAssignee(e, u.id)} className="w-full flex items-center gap-2 px-3 py-1.5 hover:bg-blue-50 transition-colors">
+                  <button key={u.id} onClick={e => addAssignee(e, u.id)} className="w-full flex items-center gap-2 px-3 py-1.5 hover:bg-primary-50 transition-colors">
                     <AssigneeAvatar userId={u.id} size="sm" />
                     <span className="text-xs text-gray-700">{u.name}</span>
                   </button>
@@ -556,7 +556,7 @@ export function TaskRow({ task, isDragging, isOver, onDragStart, onDragEnd, onDr
               <button
                 key={s.slug}
                 onClick={e => changeStatus(e, s.slug)}
-                className={`w-full px-2 py-1.5 text-left hover:bg-gray-50 transition-colors ${s.slug === currentStatus ? 'bg-blue-50' : ''}`}
+                className={`w-full px-2 py-1.5 text-left hover:bg-gray-50 transition-colors ${s.slug === currentStatus ? 'bg-primary-50' : ''}`}
               >
                 <StatusBadge status={s.slug} />
               </button>
@@ -577,7 +577,7 @@ export function TaskRow({ task, isDragging, isOver, onDragStart, onDragEnd, onDr
               <button
                 key={p}
                 onClick={e => changePriority(e, p)}
-                className={`w-full px-2 py-1.5 text-left hover:bg-gray-50 transition-colors ${p === currentPriority ? 'bg-blue-50' : ''}`}
+                className={`w-full px-2 py-1.5 text-left hover:bg-gray-50 transition-colors ${p === currentPriority ? 'bg-primary-50' : ''}`}
               >
                 <PriorityBadge priority={p} />
               </button>
@@ -612,11 +612,11 @@ export function TaskRow({ task, isDragging, isOver, onDragStart, onDragEnd, onDr
                   className="w-full flex items-center gap-2 px-3 py-1.5 hover:bg-gray-50 transition-colors"
                 >
                   <span
-                    className={`w-2.5 h-2.5 rounded-sm shrink-0 ${active ? 'ring-2 ring-offset-1 ring-blue-400' : ''}`}
+                    className={`w-2.5 h-2.5 rounded-sm shrink-0 ${active ? 'ring-2 ring-offset-1 ring-primary-400' : ''}`}
                     style={{ backgroundColor: u.color }}
                   />
                   <span className="text-xs text-gray-700 flex-1 text-left">{u.name}</span>
-                  {active && <span className="text-[10px] text-blue-500 font-semibold">✓</span>}
+                  {active && <span className="text-[10px] text-primary-500 font-semibold">✓</span>}
                 </button>
               )
             })}
@@ -654,11 +654,11 @@ export function TaskRow({ task, isDragging, isOver, onDragStart, onDragEnd, onDr
                   className="w-full flex items-center gap-2 px-3 py-1.5 hover:bg-gray-50 transition-colors"
                 >
                   <span
-                    className={`w-2.5 h-2.5 rounded-sm shrink-0 ${currentValue === o.id ? 'ring-2 ring-offset-1 ring-blue-400' : ''}`}
+                    className={`w-2.5 h-2.5 rounded-sm shrink-0 ${currentValue === o.id ? 'ring-2 ring-offset-1 ring-primary-400' : ''}`}
                     style={{ backgroundColor: o.color }}
                   />
                   <span className="text-xs text-gray-700 flex-1 text-left truncate">{o.label}</span>
-                  {currentValue === o.id && <span className="text-[10px] text-blue-500 font-semibold">✓</span>}
+                  {currentValue === o.id && <span className="text-[10px] text-primary-500 font-semibold">✓</span>}
                 </button>
               ))}
             </div>

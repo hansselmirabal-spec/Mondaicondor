@@ -30,9 +30,9 @@ function SummaryModal({ isOpen, onClose }: { isOpen: boolean; onClose: () => voi
           ))}
         </div>
         {byStatus['Bloqueado'] > 0 && (
-          <div className="bg-blue-50 rounded-lg p-3">
-            <p className="text-xs font-semibold text-blue-700 mb-1">Recomendación IA</p>
-            <p className="text-xs text-blue-600">Hay {byStatus['Bloqueado']} {byStatus['Bloqueado'] === 1 ? 'tarea bloqueada que requiere' : 'tareas bloqueadas que requieren'} atención inmediata.</p>
+          <div className="bg-primary-50 rounded-lg p-3">
+            <p className="text-xs font-semibold text-primary-700 mb-1">Recomendación IA</p>
+            <p className="text-xs text-primary-600">Hay {byStatus['Bloqueado']} {byStatus['Bloqueado'] === 1 ? 'tarea bloqueada que requiere' : 'tareas bloqueadas que requieren'} atención inmediata.</p>
           </div>
         )}
       </div>
@@ -47,7 +47,7 @@ function GamifyModal({ isOpen, onClose }: { isOpen: boolean; onClose: () => void
         <div className="bg-amber-50 border border-amber-200 rounded-lg px-3 py-2 text-xs text-amber-700">
           Datos de ejemplo — esta función está en desarrollo.
         </div>
-        <div className="flex items-center gap-4 bg-gradient-to-r from-purple-50 to-blue-50 rounded-xl p-4">
+        <div className="flex items-center gap-4 bg-gradient-to-r from-purple-50 to-primary-50 rounded-xl p-4">
           <div className="text-4xl">🏆</div>
           <div>
             <p className="text-lg font-bold text-gray-900">Nivel 3 — Estratega</p>
@@ -116,7 +116,7 @@ export function FloatingActions() {
         <button
           onClick={() => openSoon('Ayuda contextual')}
           title="Ayuda"
-          className="w-10 h-10 bg-white border border-gray-200 rounded-full flex items-center justify-center text-gray-500 hover:text-blue-600 hover:border-blue-300 shadow-md transition-all"
+          className="w-10 h-10 bg-white border border-gray-200 rounded-full flex items-center justify-center text-gray-500 hover:text-primary-600 hover:border-primary-300 shadow-md transition-all"
         >
           <HelpCircle className="w-5 h-5" />
         </button>

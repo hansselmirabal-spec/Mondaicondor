@@ -225,7 +225,7 @@ export function BoardHeader({ board }: BoardHeaderProps) {
               <Users className="w-3.5 h-3.5" />
               <span>Personas</span>
               {apiUsers.length > 0 && (
-                <span className="bg-blue-100 text-blue-700 text-xs font-semibold rounded-full px-1.5 py-0.5 leading-none">
+                <span className="bg-primary-100 text-primary-700 text-xs font-semibold rounded-full px-1.5 py-0.5 leading-none">
                   {apiUsers.length}
                 </span>
               )}
@@ -281,7 +281,7 @@ export function BoardHeader({ board }: BoardHeaderProps) {
             value={renameDraft}
             onChange={e => setRenameDraft(e.target.value)}
             onKeyDown={e => { if (e.key === 'Enter') handleRenameBoard() }}
-            className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
             autoFocus
           />
           <div className="flex gap-2">
@@ -289,7 +289,7 @@ export function BoardHeader({ board }: BoardHeaderProps) {
             <button
               onClick={handleRenameBoard}
               disabled={!renameDraft.trim() || renameSaving}
-              className="flex-1 py-2 text-sm bg-blue-600 hover:bg-blue-700 disabled:bg-blue-200 text-white font-medium rounded-lg transition-colors flex items-center justify-center gap-2"
+              className="flex-1 py-2 text-sm bg-primary-600 hover:bg-primary-700 disabled:bg-primary-200 text-white font-medium rounded-lg transition-colors flex items-center justify-center gap-2"
             >
               {renameSaving && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
               Guardar
@@ -329,7 +329,7 @@ export function BoardHeader({ board }: BoardHeaderProps) {
                             onChange={e => handleChangeMemberRole(u.id, e.target.value as 'ADMIN' | 'MEMBER')}
                             disabled={savingRoleFor === u.id}
                             title="Rol en este tablero"
-                            className="shrink-0 text-xs border border-gray-200 rounded-md px-1.5 py-1 bg-white text-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50"
+                            className="shrink-0 text-xs border border-gray-200 rounded-md px-1.5 py-1 bg-white text-gray-600 focus:outline-none focus:ring-2 focus:ring-primary-500 disabled:opacity-50"
                           >
                             <option value="MEMBER">Miembro</option>
                             <option value="ADMIN">Admin</option>
@@ -363,14 +363,14 @@ export function BoardHeader({ board }: BoardHeaderProps) {
                       <button
                         key={u.id}
                         onClick={() => handleAddMember(u.id)}
-                        className="w-full flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-blue-50 border border-transparent hover:border-blue-200 transition-colors text-left"
+                        className="w-full flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-primary-50 border border-transparent hover:border-primary-200 transition-colors text-left"
                       >
                         <AssigneeAvatar userId={u.id} size="md" />
                         <div className="flex-1 min-w-0">
                           <p className="text-sm font-medium text-gray-800 truncate">{u.name}</p>
                           <p className="text-xs text-gray-400 truncate">{u.email}</p>
                         </div>
-                        <span className="text-xs text-blue-500 font-medium shrink-0">+ Agregar</span>
+                        <span className="text-xs text-primary-500 font-medium shrink-0">+ Agregar</span>
                       </button>
                     ))}
                   </div>
@@ -389,12 +389,12 @@ export function BoardHeader({ board }: BoardHeaderProps) {
                   value={inviteEmail}
                   onChange={e => setInviteEmail(e.target.value)}
                   placeholder="nuevo@empresa.com"
-                  className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
                 />
                 <select
                   value={inviteRole}
                   onChange={e => setInviteRole(e.target.value as 'ADMIN' | 'MEMBER' | 'VIEWER')}
-                  className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-primary-500"
                 >
                   <option value="MEMBER">Miembro</option>
                   <option value="VIEWER">Visualizador</option>
@@ -403,7 +403,7 @@ export function BoardHeader({ board }: BoardHeaderProps) {
                 <button
                   onClick={handleInvite}
                   disabled={inviting || !inviteEmail.includes('@')}
-                  className="w-full py-2.5 text-sm bg-blue-600 hover:bg-blue-700 disabled:bg-blue-200 text-white font-medium rounded-lg transition-colors flex items-center justify-center gap-2"
+                  className="w-full py-2.5 text-sm bg-primary-600 hover:bg-primary-700 disabled:bg-primary-200 text-white font-medium rounded-lg transition-colors flex items-center justify-center gap-2"
                 >
                   {inviting ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <UserPlus className="w-3.5 h-3.5" />}
                   Agregar miembro

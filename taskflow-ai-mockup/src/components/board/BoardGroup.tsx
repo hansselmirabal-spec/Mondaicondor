@@ -286,7 +286,7 @@ export function BoardGroup({ group, tasks, label, onAddTask, isDragging, isOver,
 
   return (
     <div
-      className={`mb-6 transition-opacity ${isDragging ? 'opacity-40' : 'opacity-100'} ${isOver ? 'border-t-2 border-blue-400 pt-0.5' : ''}`}
+      className={`mb-6 transition-opacity ${isDragging ? 'opacity-40' : 'opacity-100'} ${isOver ? 'border-t-2 border-primary-400 pt-0.5' : ''}`}
       draggable={!!onDragStart}
       onDragStart={onDragStart}
       onDragEnd={onDragEnd}
@@ -320,7 +320,7 @@ export function BoardGroup({ group, tasks, label, onAddTask, isDragging, isOver,
               }}
               onBlur={commitNameEdit}
               onClick={e => e.stopPropagation()}
-              className="text-sm font-semibold border border-blue-400 rounded px-1 focus:outline-none focus:ring-2 focus:ring-blue-400"
+              className="text-sm font-semibold border border-primary-400 rounded px-1 focus:outline-none focus:ring-2 focus:ring-primary-400"
               style={{ color: group.color, minWidth: '100px' }}
             />
           ) : (
@@ -368,17 +368,17 @@ export function BoardGroup({ group, tasks, label, onAddTask, isDragging, isOver,
         {/* ── Mobile card list ── */}
         <div className="block md:hidden rounded-sm border border-gray-100" style={{ borderLeft: `4px solid ${group.color}` }}>
           {adding ? (
-            <div className="p-3 border-b border-gray-100 bg-blue-50/40">
+            <div className="p-3 border-b border-gray-100 bg-primary-50/40">
               <input
                 ref={inputRef}
                 value={newTitle}
                 onChange={e => setNewTitle(e.target.value)}
                 onKeyDown={handleAddKeyDown}
                 placeholder="Nombre del elemento..."
-                className="w-full text-base text-gray-800 bg-white border border-blue-400 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-400 mb-2"
+                className="w-full text-base text-gray-800 bg-white border border-primary-400 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary-400 mb-2"
               />
               <div className="flex gap-2">
-                <button onClick={commitAdd} disabled={!newTitle.trim()} className="flex-1 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-200 text-white text-sm font-medium rounded-md transition-colors">
+                <button onClick={commitAdd} disabled={!newTitle.trim()} className="flex-1 py-2 bg-primary-600 hover:bg-primary-700 disabled:bg-primary-200 text-white text-sm font-medium rounded-md transition-colors">
                   Agregar
                 </button>
                 <button onClick={() => { setNewTitle(''); setAdding(false) }} className="px-3 py-2 text-gray-400 hover:bg-gray-200 rounded-md transition-colors">
@@ -423,7 +423,7 @@ export function BoardGroup({ group, tasks, label, onAddTask, isDragging, isOver,
             <ColumnHeaderRow orderedVisible={orderedVisible} />
             <tbody className="bg-white">
               {adding ? (
-                <tr className="border-b border-gray-100 bg-blue-50/40">
+                <tr className="border-b border-gray-100 bg-primary-50/40">
                   <td className="w-8 px-2" />
                   <td className="py-1.5 px-3">
                     <div className="flex items-center gap-2">
@@ -433,12 +433,12 @@ export function BoardGroup({ group, tasks, label, onAddTask, isDragging, isOver,
                         onChange={e => setNewTitle(e.target.value)}
                         onKeyDown={handleAddKeyDown}
                         placeholder="Nombre del elemento..."
-                        className="flex-1 text-sm text-gray-800 bg-white border border-blue-400 rounded-md px-2 py-1 focus:outline-none focus:ring-2 focus:ring-blue-400 min-w-[180px]"
+                        className="flex-1 text-sm text-gray-800 bg-white border border-primary-400 rounded-md px-2 py-1 focus:outline-none focus:ring-2 focus:ring-primary-400 min-w-[180px]"
                       />
                       <button
                         onClick={commitAdd}
                         disabled={!newTitle.trim()}
-                        className="p-1 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-200 text-white rounded-md transition-colors"
+                        className="p-1 bg-primary-600 hover:bg-primary-700 disabled:bg-primary-200 text-white rounded-md transition-colors"
                         title="Confirmar (Enter)"
                       >
                         <Check className="w-3.5 h-3.5" />
@@ -459,7 +459,7 @@ export function BoardGroup({ group, tasks, label, onAddTask, isDragging, isOver,
                         value={newDeadline}
                         onChange={e => setNewDeadline(e.target.value)}
                         onKeyDown={handleAddKeyDown}
-                        className="w-full text-xs text-gray-700 bg-white border border-gray-300 rounded-md px-2 py-1 focus:outline-none focus:border-blue-400 focus:ring-1 focus:ring-blue-400"
+                        className="w-full text-xs text-gray-700 bg-white border border-gray-300 rounded-md px-2 py-1 focus:outline-none focus:border-primary-400 focus:ring-1 focus:ring-primary-400"
                       />
                     </td>
                   ) : (
@@ -485,7 +485,7 @@ export function BoardGroup({ group, tasks, label, onAddTask, isDragging, isOver,
                     <td colSpan={colSpan}>
                       {isGroupDragOver && draggingTaskId === null
                         ? (
-                          <div className="m-2 border-2 border-dashed border-blue-400 rounded-lg py-4 text-center text-xs text-blue-500 font-medium">
+                          <div className="m-2 border-2 border-dashed border-primary-400 rounded-lg py-4 text-center text-xs text-primary-500 font-medium">
                             Soltar aquí
                           </div>
                         )
@@ -523,9 +523,9 @@ export function BoardGroup({ group, tasks, label, onAddTask, isDragging, isOver,
                 </tr>
               )}
               {isGroupDragOver && draggingTaskId === null && tasks.length > 0 && (
-                <tr className="border-t border-blue-100">
+                <tr className="border-t border-primary-100">
                   <td colSpan={colSpan} className="px-3 py-2">
-                    <div className="border-2 border-dashed border-blue-400 rounded-lg py-2 text-center text-xs text-blue-500 font-medium">
+                    <div className="border-2 border-dashed border-primary-400 rounded-lg py-2 text-center text-xs text-primary-500 font-medium">
                       Soltar aquí
                     </div>
                   </td>

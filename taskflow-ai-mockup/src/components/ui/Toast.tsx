@@ -33,7 +33,7 @@ export function ToastContainer() {
 
   const icons = {
     success: <CheckCircle className="w-4 h-4 text-green-500 shrink-0" />,
-    info:    <Info className="w-4 h-4 text-blue-500 shrink-0" />,
+    info:    <Info className="w-4 h-4 text-primary-500 shrink-0" />,
     error:   <XCircle className="w-4 h-4 text-red-500 shrink-0" />,
   }
 
